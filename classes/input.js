@@ -5,15 +5,11 @@ class CustomInput {
     this.selected = true;
     this.color = { r: 0, g: 0, b: 0 };
     this.parentColor = parentColor;
-    this.value = "&hearts;";
+    this.value = "";
     this.modifiedText = createDiv(this.value);
     this.modifiedText.style('white-space', 'pre');
-    this.modifiedText.style("height", "50px");
-    this.fontSize = 20;
+    this.fontSize = 15;
 
-    this.modifiedText.style("display", "flex");
-    this.modifiedText.style("align-items", "center");
-    this.modifiedText.style("justify-content", "center");
     this.modifiedText.style("text-align", "center");
     this.modifiedText.style("font-size", `${this.fontSize}px`);
 
