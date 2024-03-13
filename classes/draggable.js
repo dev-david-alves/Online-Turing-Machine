@@ -18,7 +18,7 @@ class DraggableCircle {
 
   over() {
     // Is mouse over object
-    if (mouseX > this.x - this.r && mouseX < this.x + this.r && mouseY > this.y - this.r && mouseY < this.y + this.r) {
+    if (mouseX > this.x - this.w / 2 && mouseX < this.x + this.w / 2 && mouseY > this.y - this.r && mouseY < this.y + this.r) {
       this.rollover = true;
     } else {
       this.rollover = false;

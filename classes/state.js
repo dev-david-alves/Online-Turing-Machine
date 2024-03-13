@@ -74,6 +74,7 @@ class State extends DraggableCircle {
     this.input.x = this.x;
     this.input.y = this.y;
     this.input.selected = this.selected;
+    this.w = Math.max(this.r * 2, this.input.w + 20);
   }
 
   draw() {
@@ -88,6 +89,6 @@ class State extends DraggableCircle {
     }
 
     ellipseMode(CENTER);
-    ellipse(this.x, this.y, Math.max(this.r * 2, this.input.w), this.r * 2);
+    ellipse(this.x, this.y, this.w, this.r * 2);
   }
 }

@@ -5,12 +5,22 @@ class CustomInput {
     this.selected = true;
     this.color = { r: 0, g: 0, b: 0 };
     this.parentColor = parentColor;
-    this.value = "";
-    this.modifiedText = "";
+    this.value = "&hearts;";
+    this.modifiedText = createDiv(this.value);
+    this.modifiedText.style('white-space', 'pre');
+    this.modifiedText.style("height", "50px");
+    this.fontSize = 20;
+
+    this.modifiedText.style("display", "flex");
+    this.modifiedText.style("align-items", "center");
+    this.modifiedText.style("justify-content", "center");
+    this.modifiedText.style("text-align", "center");
+    this.modifiedText.style("font-size", `${this.fontSize}px`);
+
     this.texMap = texMap;
     
     this.h = 20;
-    this.w = textWidth(this.value) + 20;
+    this.w = this.modifiedText.elt.offsetWidth + 20;
     this.cursorY = this.y - (this.h * 0.8) / 2;
     this.cursorX = this.x;
 
@@ -23,9 +33,9 @@ class CustomInput {
   }
   
   update() {
-    this.w = textWidth(this.modifiedText) + 20;
+    this.w = this.modifiedText.elt.offsetWidth;
     this.cursorY = this.y - (this.h * 0.8) / 2;
-    this.cursorX = this.x - this.w / 2 + textWidth(this.modifiedText) + 11;
+    this.cursorX = this.x - this.w / 2 + this.modifiedText.elt.offsetWidth + 1;
 
     if(this.isTyping) {
       this.isVisible = true;
@@ -35,10 +45,36 @@ class CustomInput {
       this.lastBlinkTime = millis();
     }
 
-    this.modifiedText = this.value;
+    if(this.selected) {
+      this.modifiedText.style("color", `rgb(${this.color.r}, ${this.color.g}, ${this.color.b})`);
+    }
+
+    this.modifiedText.html(this.value);
+    let regexPattern = "\\\\sub\\(.+?\\)";
+    let regex = new RegExp(regexPattern, "g");
+    let matches = this.modifiedText.html().match(regex);
+      
+    if(matches) {
+      for(let i = 0; i < matches.length; i++) {
+        let sub = matches[i].slice(5, -1);
+        this.modifiedText.html(this.modifiedText.html().replace(matches[i], `<sub>${sub}</sub>`));
+      }
+    }
+
+    regexPattern = "\\\\sup\\(.+?\\)";
+    regex = new RegExp(regexPattern, "g");
+    matches = this.modifiedText.html().match(regex);
+      
+    if(matches) {
+      for(let i = 0; i < matches.length; i++) {
+        let sup = matches[i].slice(5, -1);
+        this.modifiedText.html(this.modifiedText.html().replace(matches[i], `<sup>${sup}</sup>`));
+      }
+    }
+
     for(let key in this.texMap) {
       let reg = new RegExp(`\\${key}`, 'g');
-      this.modifiedText = this.modifiedText.replace(reg, this.texMap[key]);
+      this.modifiedText.html(this.modifiedText.html().replace(reg, this.texMap[key]));
     }
 
     if(this.selected) {
@@ -74,14 +110,24 @@ class CustomInput {
       this.value = this.value.slice(0, -1);
       this.isTyping = true;
     }
+
+    // handle ctrl + v
+    if(keyCode === 86 && keyIsDown(CONTROL)) {
+      navigator.clipboard.readText().then((text) => {
+        this.value += text;
+      });
+    }
   }
 
   draw() {
     push();
-      noStroke();
-      fill(this.color.r, this.color.g, this.color.b);
-      textAlign(CENTER, CENTER);
-      text(this.modifiedText, this.x, this.y);
+      let windowOffsetX = windowWidth - width;
+      let windowOffsetY = windowHeight - height;
+
+      this.modifiedText.style("position", "absolute");
+      this.modifiedText.style("left", `${this.x + windowOffsetX / 2}px`);
+      this.modifiedText.style("top", `${this.y + windowOffsetY / 2 - 2}px`);
+      this.modifiedText.style("transform", `translate(-50%, -50%)`);
 
       if(this.selected && this.isVisible) {
         stroke(this.color.r, this.color.g, this.color.b);
