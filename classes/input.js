@@ -37,8 +37,8 @@ class CustomInput {
 
     this.modifiedText = this.value;
     for(let key in this.texMap) {
-      this.reg = new RegExp(`\\${key}`, 'g');
-      this.modifiedText = this.modifiedText.replace(this.reg, this.texMap[key]);
+      let reg = new RegExp(`\\${key}`, 'g');
+      this.modifiedText = this.modifiedText.replace(reg, this.texMap[key]);
     }
 
     if(this.selected) {
