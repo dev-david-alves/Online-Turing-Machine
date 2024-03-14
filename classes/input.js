@@ -1,10 +1,9 @@
 class CustomInput {
-  constructor(x, y, parentColor = { r: 0, g: 0, b: 0 }, texMap = {}) {
+  constructor(x, y, color = { r: 0, g: 0, b: 0 }, texMap = {}) {
     this.x = x;
     this.y = y;
     this.selected = true;
-    this.color = { r: 0, g: 0, b: 0 };
-    this.parentColor = parentColor;
+    this.color = color;
     this.value = "";
     this.modifiedText = createDiv(this.value);
     this.modifiedText.style('white-space', 'pre');
@@ -12,6 +11,7 @@ class CustomInput {
 
     this.modifiedText.style("text-align", "center");
     this.modifiedText.style("font-size", `${this.fontSize}px`);
+    // this.modifiedText.style("font-style", "italic");
 
     this.texMap = texMap;
     
@@ -40,11 +40,13 @@ class CustomInput {
       this.isVisible = !this.isVisible;
       this.lastBlinkTime = millis();
     }
-
+      
     if(this.selected) {
       this.modifiedText.style("color", `rgb(${this.color.r}, ${this.color.g}, ${this.color.b})`);
+    } else {
+      this.modifiedText.style("color", `rgb(0, 0, 0)`);
     }
-
+    
     this.modifiedText.html(this.value);
     let regexPattern = "\\\\sub\\(.+?\\)";
     let regex = new RegExp(regexPattern, "g");
@@ -71,12 +73,6 @@ class CustomInput {
     for(let key in this.texMap) {
       let reg = new RegExp(`\\${key}`, 'g');
       this.modifiedText.html(this.modifiedText.html().replace(reg, this.texMap[key]));
-    }
-
-    if(this.selected) {
-      this.color = this.parentColor;
-    } else {
-      this.color = { r: 0, g: 0, b: 0 };
     }
   }
 
