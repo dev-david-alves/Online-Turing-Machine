@@ -27,6 +27,56 @@ class CustomInput {
     this.isVisible = true;
     this.isTyping = false;
   }
+
+  subMatch() {
+    this.modifiedText.html(this.value);
+    let regexPattern = "(?<!\\\\)_\\{.+?\\}|(?<!\\\\)_\\w|\\\\sub\\(.+?\\)|\\\\sub\\{.+?\\}";
+    let regex = new RegExp(regexPattern, "g");
+    let matches = this.modifiedText.html().match(regex);
+      
+    if(matches) {
+      for(let i = 0; i < matches.length; i++) {
+        let sub = undefined;
+        if(matches[i].includes("\\sub")) {
+          sub = matches[i].slice(5, -1);
+        } else if(matches[i].includes("_{")) {
+          sub = matches[i].slice(2, -1);
+        } else {
+          sub = matches[i].slice(1);
+        }
+
+        this.modifiedText.html(this.modifiedText.html().replace(matches[i], `<sub>${sub}</sub>`));
+      }
+    }
+  }
+
+  supMatch() {
+    let regexPattern = "(?<!\\\\)\\^\\{.+?\\}|(?<!\\\\)\\^\\w|\\\\sup\\(.+?\\)|\\\\sup\\{.+?\\}";
+    let regex = new RegExp(regexPattern, "g");
+    let matches = this.modifiedText.html().match(regex);
+      
+    if(matches) {
+      for(let i = 0; i < matches.length; i++) {
+        let sup = undefined;
+        if(matches[i].includes("\\sup")) {
+          sup = matches[i].slice(5, -1);
+        } else if(matches[i].includes("^{")) {
+          sup = matches[i].slice(2, -1);
+        } else {
+          sup = matches[i].slice(1);
+        }
+
+        this.modifiedText.html(this.modifiedText.html().replace(matches[i], `<sup>${sup}</sup>`));
+      }
+    }
+  }
+
+  mapMatch() {
+    for(let key in this.texMap) {
+      let reg = new RegExp(`\\${key}`, 'g');
+      this.modifiedText.html(this.modifiedText.html().replace(reg, this.texMap[key]));
+    }
+  }
   
   update() {
     this.w = this.modifiedText.elt.offsetWidth;
@@ -47,33 +97,9 @@ class CustomInput {
       this.modifiedText.style("color", `rgb(0, 0, 0)`);
     }
     
-    this.modifiedText.html(this.value);
-    let regexPattern = "\\\\sub\\(.+?\\)";
-    let regex = new RegExp(regexPattern, "g");
-    let matches = this.modifiedText.html().match(regex);
-      
-    if(matches) {
-      for(let i = 0; i < matches.length; i++) {
-        let sub = matches[i].slice(5, -1);
-        this.modifiedText.html(this.modifiedText.html().replace(matches[i], `<sub>${sub}</sub>`));
-      }
-    }
-
-    regexPattern = "\\\\sup\\(.+?\\)";
-    regex = new RegExp(regexPattern, "g");
-    matches = this.modifiedText.html().match(regex);
-      
-    if(matches) {
-      for(let i = 0; i < matches.length; i++) {
-        let sup = matches[i].slice(5, -1);
-        this.modifiedText.html(this.modifiedText.html().replace(matches[i], `<sup>${sup}</sup>`));
-      }
-    }
-
-    for(let key in this.texMap) {
-      let reg = new RegExp(`\\${key}`, 'g');
-      this.modifiedText.html(this.modifiedText.html().replace(reg, this.texMap[key]));
-    }
+    this.subMatch();
+    this.supMatch();    
+    this.mapMatch();    
   }
 
   keyTyped() {
