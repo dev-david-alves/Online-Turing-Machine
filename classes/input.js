@@ -22,6 +22,8 @@ class CustomInput {
         blinkInterval: 500,
         lastBlinkTime: 0,
         isVisible: true,
+        thickness: 1,
+        height: this.h * 0.8,
       },
     };
   }
@@ -99,7 +101,6 @@ class CustomInput {
 
   update() {
     this.w = this.value.elt.offsetWidth;
-    this.cursor.position.y = this.y - (this.h * 0.8) / 2;
     let span = this.createSpan(this.value.html().slice(0, this.cursor.index));
     this.cursor.position.x = this.x - this.w / 2 + span.elt.offsetWidth + 1;
     span.remove();
@@ -121,12 +122,60 @@ class CustomInput {
     this.subMatch();
     this.supMatch();
     this.mapMatch();
+
+    // check if there is a empty sub or sup tag
+    let regexPattern = "<sub></sub>|<sup></sup>";
+    let regex = new RegExp(regexPattern, "g");
+    let matches = this.value.html().match(regex);
+
+    if (matches) {
+      for (let i = 0; i < matches.length; i++) {
+        this.value.html(this.value.html().replace(matches[i], ""));
+        this.cursor.index -= 5;
+      }
+    }
+
+    // check if the cursor.index is between a <sub></sub> or <sup></sup> tag
+    let regexPattern01 = "<sub>.+?</sub>";
+    let regexPattern02 = "<sup>.+?</sup>";
+    let regex01 = new RegExp(regexPattern01, "g");
+    let regex02 = new RegExp(regexPattern02, "g");
+    let matches01 = this.value.html().match(regex01);
+    let matches02 = this.value.html().match(regex02);
+
+    let isBetweenSubOrSup = false;
+    if (matches01) {
+      for (let i = 0; i < matches01.length; i++) {
+        if (this.cursor.index > this.value.html().indexOf(matches01[i]) && this.cursor.index < this.value.html().indexOf(matches01[i]) + matches01[i].length) {
+          this.cursor.position.y = this.y - 2;
+          this.cursor.properties.height = this.h * 0.5;
+          isBetweenSubOrSup = true;
+          break;
+        }
+      }
+    }
+
+    if (matches02) {
+      for (let i = 0; i < matches02.length; i++) {
+        if (this.cursor.index > this.value.html().indexOf(matches02[i]) && this.cursor.index < this.value.html().indexOf(matches02[i]) + matches02[i].length) {
+          this.cursor.position.y = this.y - 10;
+          this.cursor.properties.height = this.h * 0.5;
+          isBetweenSubOrSup = true;
+          break;
+        }
+      }
+    }
+
+    if (!isBetweenSubOrSup) {
+      this.cursor.position.y = this.y - (this.h * 0.8) / 2;
+      this.cursor.properties.height = this.h * 0.8;
+    }
   }
 
   keyTyped() {
     if (!this.selected) return;
 
-    if (!(keyCode === BACKSPACE || keyCode === DELETE || keyCode === ENTER)) {
+    if (!(keyCode === BACKSPACE || keyCode === DELETE || keyCode === ENTER || key === "<" || key === ">")) {
       this.isTyping = true;
       this.value.html(this.value.html().slice(0, this.cursor.index) + key + this.value.html().slice(this.cursor.index));
       this.cursor.index++;
@@ -143,12 +192,6 @@ class CustomInput {
 
     if (keyCode === BACKSPACE) {
       this.isTyping = true;
-      this.cursor.index = max(0, this.cursor.index - 1);
-      this.value.html(this.value.html().slice(0, this.cursor.index) + this.value.html().slice(this.cursor.index + 1));
-    } else if (keyCode === LEFT_ARROW) {
-      this.isTyping = true;
-
-      this.cursor.index = max(0, this.cursor.index - 1);
 
       do {
         let didMatch = false;
@@ -166,7 +209,12 @@ class CustomInput {
 
         if (!didMatch) break;
       } while (true);
-    } else if (keyCode === RIGHT_ARROW) {
+
+      if (this.value.html().length === 0) return;
+      if (this.cursor.index === 0) return;
+      this.cursor.index = max(0, this.cursor.index - 1);
+      this.value.html(this.value.html().slice(0, this.cursor.index) + this.value.html().slice(this.cursor.index + 1));
+    } else if (keyCode === DELETE) {
       this.isTyping = true;
 
       do {
@@ -174,7 +222,7 @@ class CustomInput {
         // check if the cursor is at the start of a sub or sup tag
         let match01 = this.value.html().slice(this.cursor.index, this.cursor.index + 5); // open tag
         let match02 = this.value.html().slice(this.cursor.index, this.cursor.index + 6); // close tag
-        console.log(match01, match02);
+
         if (match01 === "<sub>" || match01 === "<sup>") {
           this.cursor.index = min(this.value.html().length, this.cursor.index + 5);
           didMatch = true;
@@ -186,14 +234,68 @@ class CustomInput {
         if (!didMatch) break;
       } while (true);
 
-      this.cursor.index = min(this.value.html().length, this.cursor.index + 1);
+      if (this.value.html().length === 0) return;
+      if (this.cursor.index === this.value.html().length) return;
+      this.value.html(this.value.html().slice(0, this.cursor.index) + this.value.html().slice(this.cursor.index + 1));
+    } else if (keyCode === LEFT_ARROW) {
+      let isThereAnyTag = false;
+
+      do {
+        let didMatch = false;
+        // check if the cursor is at the end of a sub or sup tag
+        let match01 = this.value.html().slice(this.cursor.index - 5, this.cursor.index); // open tag
+        let match02 = this.value.html().slice(this.cursor.index - 6, this.cursor.index); // close tag
+
+        if (match01 === "<sub>" || match01 === "<sup>") {
+          this.cursor.index = max(0, this.cursor.index - 5);
+          didMatch = true;
+          isThereAnyTag = true;
+        } else if (match02 === "</sub>" || match02 === "</sup>") {
+          this.cursor.index = max(0, this.cursor.index - 6);
+          didMatch = true;
+          isThereAnyTag = true;
+        }
+
+        if (!didMatch) break;
+      } while (true);
+
+      if (!isThereAnyTag) {
+        this.isTyping = true;
+        this.cursor.index = max(0, this.cursor.index - 1);
+      }
+    } else if (keyCode === RIGHT_ARROW) {
+      let isThereAnyTag = false;
+
+      do {
+        let didMatch = false;
+        // check if the cursor is at the start of a sub or sup tag
+        let match01 = this.value.html().slice(this.cursor.index, this.cursor.index + 5); // open tag
+        let match02 = this.value.html().slice(this.cursor.index, this.cursor.index + 6); // close tag
+
+        if (match01 === "<sub>" || match01 === "<sup>") {
+          this.cursor.index = min(this.value.html().length, this.cursor.index + 5);
+          didMatch = true;
+          isThereAnyTag = true;
+        } else if (match02 === "</sub>" || match02 === "</sup>") {
+          this.cursor.index = min(this.value.html().length, this.cursor.index + 6);
+          didMatch = true;
+          isThereAnyTag = true;
+        }
+
+        if (!didMatch) break;
+      } while (true);
+
+      if (!isThereAnyTag) {
+        this.isTyping = true;
+        this.cursor.index = min(this.value.html().length, this.cursor.index + 1);
+      }
     }
 
     // handle ctrl + v
     if (keyCode === 86 && keyIsDown(CONTROL)) {
       navigator.clipboard.readText().then((text) => {
         this.value.html(this.value.html().slice(0, this.cursor.index) + text + this.value.html().slice(this.cursor.index));
-        this.cursor.index += text.length;
+        this.cursor.index = min(this.value.html().length, this.cursor.index + text.length);
       });
     }
   }
@@ -218,8 +320,8 @@ class CustomInput {
 
     if (this.selected && this.cursor.properties.isVisible) {
       stroke(this.color.r, this.color.g, this.color.b);
-      strokeWeight(1);
-      line(this.cursor.position.x, this.cursor.position.y, this.cursor.position.x, this.cursor.position.y + this.h * 0.8);
+      strokeWeight(this.cursor.properties.thickness);
+      line(this.cursor.position.x, this.cursor.position.y, this.cursor.position.x, this.cursor.position.y + this.cursor.properties.height);
     }
     pop();
   }
