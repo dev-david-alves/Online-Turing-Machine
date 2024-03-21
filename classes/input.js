@@ -6,7 +6,7 @@ class CustomInput {
     this.texMap = texMap;
 
     this.value = this.createSpan("");
-    this.selected = true;
+    this.selected = false;
     this.isTyping = false;
 
     this.h = 20;
@@ -185,10 +185,10 @@ class CustomInput {
   keyPressed() {
     if (!this.selected) return;
 
-    if (keyCode === ENTER) {
-      console.log(this.value.html());
-      console.log(this.cursor.index);
-    }
+    // if (keyCode === ENTER) {
+    //   console.log(this.value.html());
+    //   console.log(this.cursor.index);
+    // }
 
     if (keyCode === BACKSPACE) {
       this.isTyping = true;
