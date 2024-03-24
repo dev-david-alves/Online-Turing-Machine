@@ -9,64 +9,90 @@ class State extends DraggableCircle {
 
     this.texMap = {
       // Greek alphabet
-      '\\Alpha': 'Α',
-      '\\alpha': 'α',
-      '\\Beta': 'Β',
-      '\\beta': 'β',
-      '\\Gamma': 'Γ',
-      '\\gamma': 'γ',
-      '\\Delta': 'Δ',
-      '\\delta': 'δ',
-      '\\Epsilon': 'Ε',
-      '\\epsilon': 'ε',
-      '\\Zeta': 'Ζ',
-      '\\zeta': 'ζ',
-      '\\Eta': 'Η',
-      '\\eta': 'η',
-      '\\Theta': 'Θ',
-      '\\theta': 'θ',
-      '\\Iota': 'Ι',
-      '\\iota': 'ι',
-      '\\Kappa': 'Κ',
-      '\\kappa': 'κ',
-      '\\Lambda': 'Λ',
-      '\\lambda': 'λ',
-      '\\Mu': 'Μ',
-      '\\mu': 'μ',
-      '\\Nu': 'Ν',
-      '\\nu': 'ν',
-      '\\Xi': 'Ξ',
-      '\\xi': 'ξ',
-      '\\Omicron': 'Ο',
-      '\\omicron': 'ο',
-      '\\Pi': 'Π',
-      '\\pi': 'π',
-      '\\Rho': 'Ρ',
-      '\\rho': 'ρ',
-      '\\Sigma': 'Σ',
-      '\\sigma': 'σ',
-      '\\fsigma': 'ς',
-      '\\Tau': 'Τ',
-      '\\tau': 'τ',
-      '\\Upsilon': 'Υ',
-      '\\upsilon': 'υ',
-      '\\Phi': 'Φ',
-      '\\phi': 'φ',
-      '\\Chi': 'Χ',
-      '\\chi': 'χ',
-      '\\Psi': 'Ψ',
-      '\\psi': 'ψ',
-      '\\Omega': 'Ω',
-      '\\omega': 'ω',
+      "\\Alpha": "Α",
+      "\\alpha": "α",
+      "\\Beta": "Β",
+      "\\beta": "β",
+      "\\Gamma": "Γ",
+      "\\gamma": "γ",
+      "\\Delta": "Δ",
+      "\\delta": "δ",
+      "\\Epsilon": "Ε",
+      "\\epsilon": "ε",
+      "\\Zeta": "Ζ",
+      "\\zeta": "ζ",
+      "\\Eta": "Η",
+      "\\eta": "η",
+      "\\Theta": "Θ",
+      "\\theta": "θ",
+      "\\Iota": "Ι",
+      "\\iota": "ι",
+      "\\Kappa": "Κ",
+      "\\kappa": "κ",
+      "\\Lambda": "Λ",
+      "\\lambda": "λ",
+      "\\Mu": "Μ",
+      "\\mu": "μ",
+      "\\Nu": "Ν",
+      "\\nu": "ν",
+      "\\Xi": "Ξ",
+      "\\xi": "ξ",
+      "\\Omicron": "Ο",
+      "\\omicron": "ο",
+      "\\Pi": "Π",
+      "\\pi": "π",
+      "\\Rho": "Ρ",
+      "\\rho": "ρ",
+      "\\Sigma": "Σ",
+      "\\sigma": "σ",
+      "\\fsigma": "ς",
+      "\\Tau": "Τ",
+      "\\tau": "τ",
+      "\\Upsilon": "Υ",
+      "\\upsilon": "υ",
+      "\\Phi": "Φ",
+      "\\phi": "φ",
+      "\\Chi": "Χ",
+      "\\chi": "χ",
+      "\\Psi": "Ψ",
+      "\\psi": "ψ",
+      "\\Omega": "Ω",
+      "\\omega": "ω",
 
       // Especial symbols
-      '\\Blank': '☐',
-      '\\blank': '☐',
-      '\\Branco': '☐',
-      '\\branco': '☐',
-    }
+      "\\Blank": "☐",
+      "\\blank": "☐",
+      "\\Branco": "☐",
+      "\\branco": "☐",
+    };
 
     this.input = new CustomInput(x, y, color, this.texMap);
+  }
+
+  getSnapLinkPoint(x, y) {
+    let dx = x - this.x;
+    let dy = y - this.y;
+    let scale = Math.sqrt(dx * dx + dy * dy);
+
+    return {
+      x: this.x + (dx * this.r) / scale,
+      y: this.y + (dy * this.r) / scale,
+    };
+  }
+
+  closestPointOnCircle(x, y) {
+    var dx = x - this.x;
+    var dy = y - this.y;
+    var scale = Math.sqrt(dx * dx + dy * dy);
+
+    return {
+      x: this.x + (dx * this.r) / scale,
+      y: this.y + (dy * this.r) / scale,
+    };
+  }
+
+  containsPoint(x, y) {
+    return (x - this.x) * (x - this.x) + (y - this.y) * (y - this.y) < this.r * this.r;
   }
 
   update() {
@@ -78,7 +104,7 @@ class State extends DraggableCircle {
   }
 
   draw() {
-    stroke(0);
+    push();
     // Different fill based on state
     if (this.rollover && !this.selected) {
       stroke(0, 100, 0);
@@ -90,5 +116,6 @@ class State extends DraggableCircle {
 
     ellipseMode(CENTER);
     ellipse(this.x, this.y, this.w, this.r * 2);
+    pop();
   }
 }
