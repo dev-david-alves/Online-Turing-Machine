@@ -10,13 +10,16 @@ class SelfLink {
     this.hitTargetPadding = 6;
 
     this.setAnchorPoint(mouseX, mouseY);
+
+    // TextBox
+    this.transitionBox = new TransitionBox(-1000, -1000, { r: 0, g: 0, b: 0 }, texMap);
   }
 
   containsPoint(x, y) {
     let stuff = this.getEndPointsAndCircle();
     let dx = x - stuff.circleX;
     let dy = y - stuff.circleY;
-    let distance = sqrt(dx * dx + dy * dy) - stuff.circleRadius;
+    let distance = sqrt(dx * dx + dy * dy) - stuff.circleR;
 
     return abs(distance) < this.hitTargetPadding;
   }
@@ -34,13 +37,13 @@ class SelfLink {
   getEndPointsAndCircle() {
     let circleX = this.state.x + 1.5 * this.state.r * cos(this.anchorAngle);
     let circleY = this.state.y + 1.5 * this.state.r * sin(this.anchorAngle);
-    let circleRadius = 0.75 * this.state.r;
+    let circleR = 0.75 * this.state.r;
     let startAngle = this.anchorAngle - PI * 0.8;
     let endAngle = this.anchorAngle + PI * 0.8;
-    let startX = circleX + circleRadius * cos(startAngle);
-    let startY = circleY + circleRadius * sin(startAngle);
-    let endX = circleX + circleRadius * cos(endAngle);
-    let endY = circleY + circleRadius * sin(endAngle);
+    let startX = circleX + circleR * cos(startAngle);
+    let startY = circleY + circleR * sin(startAngle);
+    let endX = circleX + circleR * cos(endAngle);
+    let endY = circleY + circleR * sin(endAngle);
 
     return {
       hasCircle: true,
@@ -52,13 +55,14 @@ class SelfLink {
       endAngle: endAngle,
       circleX: circleX,
       circleY: circleY,
-      circleRadius: circleRadius,
+      circleR: circleR,
     };
   }
 
   mousePressed() {
     this.isMousePressed = true;
     this.selected = this.containsPoint(mouseX, mouseY);
+    this.transitionBox.mousePressed();
   }
 
   mouseReleased() {
@@ -71,6 +75,22 @@ class SelfLink {
     }
 
     this.rollover = this.containsPoint(mouseX, mouseY);
+
+    let stuff = this.getEndPointsAndCircle();
+
+    // update the box
+    if (stuff.hasCircle) {
+      let startAngle = stuff.startAngle;
+      let endAngle = stuff.endAngle;
+
+      if (endAngle < startAngle) {
+        endAngle += PI * 2;
+      }
+      let boxX = stuff.circleX + stuff.circleR * cos(this.anchorAngle);
+      let boxY = stuff.circleY + stuff.circleR * sin(this.anchorAngle);
+
+      updateBoxPosition(this.transitionBox, boxX, boxY, stuff.anchorAngle, true, this.state);
+    }
   }
 
   draw() {
@@ -81,7 +101,7 @@ class SelfLink {
     if (this.selected) stroke(0, 0, 255);
 
     noFill();
-    arc(stuff.circleX, stuff.circleY, stuff.circleRadius * 2, stuff.circleRadius * 2, stuff.startAngle, stuff.endAngle);
+    arc(stuff.circleX, stuff.circleY, stuff.circleR * 2, stuff.circleR * 2, stuff.startAngle, stuff.endAngle);
 
     // draw the head of the arrow
     drawArrow(stuff.endX, stuff.endY, stuff.endAngle + PI * 0.4);

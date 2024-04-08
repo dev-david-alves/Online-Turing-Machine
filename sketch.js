@@ -81,6 +81,9 @@ function draw() {
   for (let i = 0; i < links.length; i++) {
     links[i].update();
     links[i].draw();
+    links[i].transitionBox.over();
+    links[i].transitionBox.update();
+    links[i].transitionBox.draw();
   }
 
   if (startLink) {
@@ -111,6 +114,7 @@ function mousePressed() {
   if (startLink) startLink.mousePressed();
 
   for (let i = 0; i < links.length; i++) {
+    links[i].transitionBox.mousePressed();
     links[i].mousePressed();
   }
 
@@ -169,6 +173,10 @@ function keyPressed() {
   for (let i = 0; i < states.length; i++) {
     states[i].input.keyPressed();
   }
+
+  for (let i = 0; i < links.length; i++) {
+    links[i].transitionBox.keyPressed();
+  }
 }
 
 function keyReleased() {
@@ -180,11 +188,19 @@ function keyReleased() {
   for (let i = 0; i < states.length; i++) {
     states[i].input.keyReleased();
   }
+
+  for (let i = 0; i < links.length; i++) {
+    links[i].transitionBox.keyReleased();
+  }
 }
 
 function keyTyped() {
   for (let i = 0; i < states.length; i++) {
     states[i].input.keyTyped();
+  }
+
+  for (let i = 0; i < links.length; i++) {
+    links[i].transitionBox.keyTyped();
   }
 }
 

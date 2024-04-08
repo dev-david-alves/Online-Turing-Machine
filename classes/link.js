@@ -14,6 +14,9 @@ class Link {
     this.lineAngleAdjust = 0;
     this.snapToPadding = 6;
     this.hitTargetPadding = 6;
+
+    // TextBox
+    this.transitionBox = new TransitionBox(-1000, -1000, { r: 0, g: 0, b: 0 }, texMap);
   }
 
   det(a, b, c, d, e, f, g, h, i) {
@@ -149,6 +152,7 @@ class Link {
   mousePressed() {
     this.isMousePressed = true;
     this.selected = this.containsPoint(mouseX, mouseY);
+    this.transitionBox.mousePressed();
   }
 
   mouseReleased() {
@@ -161,29 +165,46 @@ class Link {
     }
 
     this.rollover = this.containsPoint(mouseX, mouseY);
+
+    let stuff = this.getEndPointsAndCircle();
+
+    // update the box
+    if (stuff.hasCircle) {
+      let startAngle = stuff.startAngle;
+      let endAngle = stuff.endAngle;
+
+      if (endAngle < startAngle) {
+        endAngle += PI * 2;
+      }
+      let boxAngle = (startAngle + endAngle) / 2 + stuff.isReversed * PI;
+      let boxX = stuff.circleX + stuff.circleR * cos(boxAngle);
+      let boxY = stuff.circleY + stuff.circleR * sin(boxAngle);
+      updateBoxPosition(this.transitionBox, boxX, boxY, boxAngle);
+    } else {
+      let boxX = (stuff.startX + stuff.endX) / 2;
+      let boxY = (stuff.startY + stuff.endY) / 2;
+      let boxAngle = atan2(stuff.endX - stuff.startX, stuff.startY - stuff.endY);
+      updateBoxPosition(this.transitionBox, boxX, boxY, boxAngle);
+    }
   }
 
   draw() {
-    let stuff = this.getEndPointsAndCircle();
-    let startAngle = stuff.startAngle;
-    let endAngle = stuff.endAngle;
-
-    if (stuff.isReversed) {
-      let auxAngle = stuff.endAngle;
-      endAngle = stuff.startAngle;
-      startAngle = auxAngle;
-    }
-
     push();
     if (this.rollover) stroke(100, 100, 200);
     if (this.selected) stroke(0, 0, 255);
+
+    let stuff = this.getEndPointsAndCircle();
 
     if (stuff.hasCircle) {
       let circleW = max(dist(this.stateA.x, this.stateA.y, this.stateB.x, this.stateB.y), stuff.circleR * 2);
 
       // Draw arc
       noFill();
-      arc(stuff.circleX, stuff.circleY, circleW, stuff.circleR * 2, startAngle, endAngle);
+      if (stuff.isReversed) {
+        arc(stuff.circleX, stuff.circleY, circleW, stuff.circleR * 2, stuff.endAngle, stuff.startAngle);
+      } else {
+        arc(stuff.circleX, stuff.circleY, circleW, stuff.circleR * 2, stuff.startAngle, stuff.endAngle);
+      }
     } else {
       // Draw line
       line(stuff.startX, stuff.startY, stuff.endX, stuff.endY);

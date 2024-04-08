@@ -7,6 +7,8 @@ class TransitionBox {
     this.inputs = [];
     this.selectedInputIndex = -1;
     this.rollover = false;
+    this.isSelected = false;
+    this.seletedCondition = false;
 
     // Create the first input
     this.inputs.push(new RuleInput(this.x, this.y, color, texMap));
@@ -93,6 +95,12 @@ class TransitionBox {
   update() {
     for (let i = 0; i < this.inputs.length; i++) {
       this.inputs[i].update();
+      this.inputs[i].x = this.x;
+      this.inputs[i].y = this.y + this.inputs[0].h * i - (this.inputs[0].h * (this.inputs.length - 1)) / 2;
+
+      if (this.inputs[i].selected) {
+        this.isSelected = true;
+      }
     }
   }
 
@@ -140,12 +148,16 @@ class TransitionBox {
   draw() {
     let padding = 20;
     let maxW = this.getTheWidestInput();
-    this.w = max(maxW + padding, 100);
-    this.h = this.inputs.length * this.inputs[0].h;
+    this.w = maxW;
+    this.h = this.inputs.length * this.inputs[0].h * 0.7;
 
     push();
-    if (this.isSelected || (this.inputs.length === 1 && this.inputs[0].value.html() == "")) {
+    if (this.isSelected || (this.inputs.length === 1 && this.inputs[0].value.html().trim() === "")) {
+      this.w = max(maxW + padding, 100);
+      this.h = this.inputs.length * this.inputs[0].h;
+
       stroke(129, 133, 137);
+      if (this.isSelected) stroke(100, 100, 200);
       strokeWeight(2);
       rectMode(CENTER);
       rect(this.x, this.y, this.w, this.h, 5);
@@ -155,7 +167,7 @@ class TransitionBox {
 
     for (let i = 0; i < this.inputs.length; i++) {
       this.inputs[i].w = maxW;
-      this.inputs[i].y = this.y + this.inputs[0].h * i - (this.inputs[0].h * (this.inputs.length - 1)) / 2;
+      this.inputs[i].y = this.y + this.inputs[0].h * i * (!this.isSelected ? 0.7 : 1) - (this.inputs[0].h * (this.inputs.length - 1)) / 2;
       this.inputs[i].draw();
 
       if (i === this.inputs.length - 1 || !this.isSelected) continue;
