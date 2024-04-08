@@ -91,20 +91,9 @@ class TransitionBox {
     }
   }
 
-  update() {
-    this.rollover = this.containsPoint(mouseX, mouseY);
-    for (let i = 0; i < this.inputs.length; i++) {
-      this.inputs[i].update();
-      this.inputs[i].x = this.x;
-      this.inputs[i].y = this.y + this.inputs[0].h * i - (this.inputs[0].h * (this.inputs.length - 1)) / 2;
-
-      if (this.inputs[i].selected) {
-        this.selected = true;
-      }
-    }
-  }
-
   mousePressed() {
+    this.selected = this.containsPoint(mouseX, mouseY);
+
     for (let i = 0; i < this.inputs.length; i++) {
       this.inputs[i].mousePressed();
       if (this.inputs[i].selected) {
@@ -115,8 +104,18 @@ class TransitionBox {
         }
       }
     }
+  }
 
-    this.selected = this.rollover;
+  update() {
+    this.rollover = this.containsPoint(mouseX, mouseY);
+    for (let i = 0; i < this.inputs.length; i++) {
+      this.inputs[i].update();
+      this.inputs[i].x = this.x;
+      this.inputs[i].y = this.y + this.inputs[0].h * i - (this.inputs[0].h * (this.inputs.length - 1)) / 2;
+
+      if (this.inputs[i].selected) this.selected = true;
+    }
+
     if (!this.selected) {
       this.selectedInputIndex = -1;
 
