@@ -2,7 +2,7 @@ let states = [];
 let stateColor = { r: 0, g: 0, b: 255 };
 let stateRadius = 25;
 let lastSelectedState = null;
-let rolloverStateIndex = -1;
+let selectedObject = null;
 
 let links = [];
 let startLink = null;
@@ -12,14 +12,10 @@ let isShiftPressed = false;
 
 let texMap;
 
-let currentLink;
+let currentLink = null;
 
 function preload() {
   texMap = loadJSON("./utils/texMap.json");
-}
-
-function indexOfHoveredState() {
-  return states.findIndex((state) => state.rollover);
 }
 
 function setup() {
@@ -33,10 +29,9 @@ function setup() {
 
 function draw() {
   background(255);
-  rolloverStateIndex = indexOfHoveredState();
+  selectedObject = checkFirstSelectedObject((x = mouseX), (y = mouseY), (uncheckAll = false));
 
   for (let i = 0; i < states.length; i++) {
-    states[i].over();
     states[i].update();
     states[i].draw();
     states[i].input.update();
@@ -44,9 +39,9 @@ function draw() {
   }
 
   if (isMouseWithShiftPressed && isShiftPressed) {
-    if (rolloverStateIndex !== -1 && !(currentLink instanceof TemporaryLink && lastSelectedState !== states[rolloverStateIndex])) {
-      currentLink = new SelfLink(states[rolloverStateIndex]);
-      lastSelectedState = states[rolloverStateIndex];
+    if (selectedObject && !(currentLink instanceof TemporaryLink && lastSelectedState !== states[selectedObject.index])) {
+      currentLink = new SelfLink(states[selectedObject.index]);
+      lastSelectedState = states[selectedObject.index];
     } else {
       if (lastSelectedState) {
         if (currentLink instanceof SelfLink && !currentLink.from) {
@@ -64,12 +59,12 @@ function draw() {
     if (currentLink instanceof TemporaryLink) {
       currentLink.to = { x: mouseX, y: mouseY };
 
-      if (rolloverStateIndex !== -1 && lastSelectedState && states[rolloverStateIndex].id !== lastSelectedState.id) {
-        currentLink.to = states[rolloverStateIndex].getSnapLinkPoint(lastSelectedState.x, lastSelectedState.y);
+      if (selectedObject && lastSelectedState && states[selectedObject.index].id !== lastSelectedState.id) {
+        currentLink.to = states[selectedObject.index].getSnapLinkPoint(lastSelectedState.x, lastSelectedState.y);
       } else if (lastSelectedState) {
         currentLink.from = lastSelectedState.closestPointOnCircle(mouseX, mouseY);
-      } else if (rolloverStateIndex !== -1 && !lastSelectedState) {
-        currentLink.to = states[rolloverStateIndex].getSnapLinkPoint(currentLink.from.x, currentLink.from.y);
+      } else if (selectedObject && !lastSelectedState) {
+        currentLink.to = states[selectedObject.index].getSnapLinkPoint(currentLink.from.x, currentLink.from.y);
       }
     }
   }
@@ -81,7 +76,7 @@ function draw() {
   for (let i = 0; i < links.length; i++) {
     links[i].update();
     links[i].draw();
-    links[i].transitionBox.over();
+    links[i].transitionBox.containsPoint();
     links[i].transitionBox.update();
     links[i].transitionBox.draw();
   }
@@ -92,34 +87,47 @@ function draw() {
   }
 }
 
-function mouseClicked() {
-  if (isShiftPressed) return;
-
-  rolloverStateIndex = indexOfHoveredState();
-
-  if (rolloverStateIndex !== -1) {
-    states.map((state) => (state.selected = false));
-    states[rolloverStateIndex].clicked();
-  } else {
-    for (let i = 0; i < states.length; i++) {
-      states[i].selected = false;
-    }
+function checkFirstSelectedObject(x = mouseX, y = mouseY, uncheckAll = true) {
+  if (uncheckAll) {
+    states.forEach((state) => (state.selected = false));
+    links.forEach((link) => {
+      link.selected = false;
+      link.transitionBox.selected = false;
+      link.transitionBox.inputs.forEach((input) => (input.selected = false));
+    });
+    if (startLink) startLink.selected = false;
   }
+
+  if (startLink && startLink.containsPoint(x, y)) return { object: startLink, index: -1 };
+  for (let i = links.length - 1; i >= 0; i--) {
+    if (links[i].transitionBox.containsPoint(x, y)) return { object: links[i].transitionBox, index: i };
+    if (links[i].containsPoint(x, y)) return { object: links[i], index: i };
+  }
+
+  for (let i = states.length - 1; i >= 0; i--) {
+    if (states[i].containsPoint(x, y)) return { object: states[i], index: i };
+  }
+
+  return null;
 }
 
 function mousePressed() {
   isMouseWithShiftPressed = mouseButton === LEFT && isShiftPressed;
   if (isShiftPressed) return;
+  selectedObject = checkFirstSelectedObject();
+  if (selectedObject) {
+    selectedObject.object.selected = true;
 
-  if (startLink) startLink.mousePressed();
-
-  for (let i = 0; i < links.length; i++) {
-    links[i].transitionBox.mousePressed();
-    links[i].mousePressed();
-  }
-
-  for (let i = 0; i < states.length; i++) {
-    states[i].pressed();
+    if (selectedObject.object instanceof State) {
+      selectedObject.object.mousePressed();
+    } else if (selectedObject.object instanceof Link || selectedObject.object instanceof SelfLink) {
+      selectedObject.object.mousePressed();
+      selectedObject.object.transitionBox.selected = true;
+    } else if (selectedObject.object instanceof StartLink) {
+      startLink.mousePressed();
+    } else if (selectedObject.object instanceof TransitionBox) {
+      selectedObject.object.mousePressed();
+    }
   }
 }
 
@@ -130,18 +138,18 @@ function mouseReleased() {
         let from = lastSelectedState;
         let to = null;
 
-        rolloverStateIndex = indexOfHoveredState();
-        if (rolloverStateIndex !== -1 && states[rolloverStateIndex].id !== lastSelectedState.id) {
-          to = states[rolloverStateIndex];
+        selectedObject = checkFirstSelectedObject();
+        if (selectedObject && states[selectedObject.index].id !== lastSelectedState.id) {
+          to = states[selectedObject.index];
         }
 
         if (from && to) {
           links.push(new Link(from, to));
         }
       } else {
-        rolloverStateIndex = indexOfHoveredState();
-        if (rolloverStateIndex !== -1) {
-          stateOnIndex = states[rolloverStateIndex];
+        selectedObject = checkFirstSelectedObject();
+        if (selectedObject) {
+          stateOnIndex = states[selectedObject.index];
           startLink = new StartLink(stateOnIndex, currentLink.from);
         }
       }

@@ -61,7 +61,6 @@ class SelfLink {
 
   mousePressed() {
     this.isMousePressed = true;
-    this.selected = this.containsPoint(mouseX, mouseY);
     this.transitionBox.mousePressed();
   }
 

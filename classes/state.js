@@ -92,7 +92,7 @@ class State extends DraggableCircle {
   }
 
   containsPoint(x, y) {
-    return (x - this.x) * (x - this.x) + (y - this.y) * (y - this.y) < this.r * this.r;
+    return x > this.x - this.w / 2 && x < this.x + this.w / 2 && y > this.y - this.r && y < this.y + this.r;
   }
 
   update() {
@@ -101,18 +101,14 @@ class State extends DraggableCircle {
     this.input.y = this.y;
     this.input.selected = this.selected;
     this.w = Math.max(this.r * 2, this.input.w + 20);
+    this.rollover = this.containsPoint(mouseX, mouseY);
   }
 
   draw() {
     push();
     // Different fill based on state
-    if (this.rollover && !this.selected) {
-      stroke(0, 100, 0);
-    } else if (this.selected) {
-      stroke(this.color.r, this.color.g, this.color.b);
-    } else {
-      stroke(0);
-    }
+    if (this.rollover) stroke(100, 100, 200);
+    if (this.selected) stroke(0, 0, 255);
 
     ellipseMode(CENTER);
     ellipse(this.x, this.y, this.w, this.r * 2);

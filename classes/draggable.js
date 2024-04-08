@@ -16,16 +16,6 @@ class DraggableCircle {
     this.w = r;
   }
 
-  over() {
-    // Is mouse over object
-    if (mouseX > this.x - this.w / 2 && mouseX < this.x + this.w / 2 && mouseY > this.y - this.r && mouseY < this.y + this.r) {
-      this.rollover = true;
-    } else {
-      this.rollover = false;
-    }
-
-  }
-
   update() {
     // Adjust location if being dragged
     if (this.dragging) {
@@ -56,7 +46,7 @@ class DraggableCircle {
     }
   }
 
-  pressed() {
+  mousePressed() {
     // Did I click on the circle?
     if (this.rollover) {
       this.dragging = true;
