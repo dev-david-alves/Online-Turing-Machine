@@ -90,6 +90,12 @@ class SelfLink {
 
       updateBoxPosition(this.transitionBox, boxX, boxY, stuff.anchorAngle, true, this.state);
     }
+
+    if (this.selected) {
+      this.transitionBox.selected = true;
+    } else if (this.transitionBox.selected) {
+      this.selected = true;
+    }
   }
 
   draw() {

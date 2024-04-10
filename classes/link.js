@@ -185,6 +185,12 @@ class Link {
       let boxAngle = atan2(stuff.endX - stuff.startX, stuff.startY - stuff.endY);
       updateBoxPosition(this.transitionBox, boxX, boxY, boxAngle);
     }
+
+    if (this.selected) {
+      this.transitionBox.selected = true;
+    } else if (this.transitionBox.selected) {
+      this.selected = true;
+    }
   }
 
   draw() {
