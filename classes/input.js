@@ -33,6 +33,8 @@ class CustomInput {
     span.style("white-space", "pre");
     span.style("text-align", "center");
     span.style("font-size", "15px");
+    span.style("pointer-events", "none");
+    span.style("user-select", "none");
     // span.style("font-style", "italic");
 
     return span;
