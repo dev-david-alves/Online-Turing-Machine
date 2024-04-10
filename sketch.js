@@ -29,7 +29,7 @@ function setup() {
 
 function draw() {
   background(255);
-  selectedObject = checkFirstSelectedObject((x = mouseX), (y = mouseY), (uncheckAll = false));
+  let hoveredObject = checkFirstSelectedObject((x = mouseX), (y = mouseY), (uncheckAll = false));
 
   for (let i = 0; i < states.length; i++) {
     states[i].update();
@@ -38,10 +38,10 @@ function draw() {
     states[i].input.draw();
   }
 
-  if (isMouseWithShiftPressed && isShiftPressed) {
-    if (selectedObject && !(currentLink instanceof TemporaryLink && lastSelectedState !== states[selectedObject.index])) {
-      currentLink = new SelfLink(states[selectedObject.index]);
-      lastSelectedState = states[selectedObject.index];
+  if (isMouseWithShiftPressed) {
+    if (hoveredObject && !(currentLink instanceof TemporaryLink && lastSelectedState !== states[hoveredObject.index])) {
+      currentLink = new SelfLink(states[hoveredObject.index]);
+      lastSelectedState = states[hoveredObject.index];
     } else {
       if (lastSelectedState) {
         if (currentLink instanceof SelfLink && !currentLink.from) {
@@ -59,12 +59,12 @@ function draw() {
     if (currentLink instanceof TemporaryLink) {
       currentLink.to = { x: mouseX, y: mouseY };
 
-      if (selectedObject && lastSelectedState && states[selectedObject.index].id !== lastSelectedState.id) {
-        currentLink.to = states[selectedObject.index].getSnapLinkPoint(lastSelectedState.x, lastSelectedState.y);
+      if (hoveredObject && lastSelectedState && states[hoveredObject.index].id !== lastSelectedState.id) {
+        currentLink.to = states[hoveredObject.index].getSnapLinkPoint(lastSelectedState.x, lastSelectedState.y);
       } else if (lastSelectedState) {
         currentLink.from = lastSelectedState.closestPointOnCircle(mouseX, mouseY);
-      } else if (selectedObject && !lastSelectedState) {
-        currentLink.to = states[selectedObject.index].getSnapLinkPoint(currentLink.from.x, currentLink.from.y);
+      } else if (hoveredObject && !lastSelectedState) {
+        currentLink.to = states[hoveredObject.index].getSnapLinkPoint(currentLink.from.x, currentLink.from.y);
       }
     }
   }
@@ -84,6 +84,12 @@ function draw() {
   if (startLink) {
     startLink.update();
     startLink.draw();
+  }
+}
+
+function reCalculateStateIds() {
+  for (let i = 0; i < states.length; i++) {
+    states[i].id = i;
   }
 }
 
@@ -114,7 +120,9 @@ function checkFirstSelectedObject(x = mouseX, y = mouseY, uncheckAll = true) {
 function mousePressed() {
   isMouseWithShiftPressed = mouseButton === LEFT && isShiftPressed;
   if (isShiftPressed) return;
+
   selectedObject = checkFirstSelectedObject();
+
   if (selectedObject) {
     selectedObject.object.selected = true;
 
@@ -135,27 +143,38 @@ function mouseReleased() {
   if (currentLink instanceof TemporaryLink) {
     if (currentLink.from && currentLink.to) {
       if (lastSelectedState) {
-        let from = lastSelectedState;
-        let to = null;
+        // Check if already exists a link between the two states
+        let hoveredObject = checkFirstSelectedObject();
 
-        selectedObject = checkFirstSelectedObject();
-        if (selectedObject && states[selectedObject.index].id !== lastSelectedState.id) {
-          to = states[selectedObject.index];
-        }
+        if (!links.some((link) => link instanceof Link && link.stateA.id === lastSelectedState.id && link.stateB.id === states[hoveredObject.index].id)) {
+          let from = lastSelectedState;
+          let to = null;
 
-        if (from && to) {
-          links.push(new Link(from, to));
+          if (hoveredObject && states[hoveredObject.index].id !== lastSelectedState.id) {
+            to = states[hoveredObject.index];
+          }
+
+          if (from && to) {
+            links.push(new Link(from, to));
+          }
+        } else {
+          console.log("Link already exists");
         }
       } else {
-        selectedObject = checkFirstSelectedObject();
-        if (selectedObject) {
-          stateOnIndex = states[selectedObject.index];
+        let hoveredObject = checkFirstSelectedObject();
+        if (hoveredObject) {
+          stateOnIndex = states[hoveredObject.index];
           startLink = new StartLink(stateOnIndex, currentLink.from);
         }
       }
     }
   } else if (currentLink instanceof SelfLink) {
-    links.push(new SelfLink(currentLink.state));
+    // Check if already exists a link to itself
+    if (!links.some((link) => link instanceof SelfLink && link.state.id === lastSelectedState.id)) {
+      links.push(new SelfLink(currentLink.state));
+    } else {
+      console.log("Link already exists");
+    }
   }
 
   isMouseWithShiftPressed = false;
@@ -177,6 +196,28 @@ function mouseReleased() {
 
 function keyPressed() {
   if (keyCode === SHIFT) isShiftPressed = true;
+  if (keyCode === DELETE) {
+    if (selectedObject) {
+      if (selectedObject.object instanceof State) {
+        // Need to continue later
+        for (let i = 0; i < links.length; i++) {
+          if ((links[i] instanceof Link && links[i].stateA.id === selectedObject.object.id) || links[i].stateB.id === selectedObject.object.id) {
+            links.splice(i, 1);
+            i--;
+          }
+        }
+
+        states.splice(selectedObject.index, 1);
+        reCalculateStateIds();
+      } else if (selectedObject.object instanceof Link || selectedObject.object instanceof SelfLink) {
+        links.splice(selectedObject.index, 1);
+      } else if (selectedObject.object instanceof StartLink) {
+        startLink = null;
+      }
+
+      selectedObject = null;
+    }
+  }
 
   for (let i = 0; i < states.length; i++) {
     states[i].input.keyPressed();
@@ -213,5 +254,14 @@ function keyTyped() {
 }
 
 function doubleClick() {
-  console.log("Double clicked");
+  let overState = checkFirstSelectedObject(mouseX, mouseY, false);
+  if (!overState) {
+    console.log("Double clicked on empty space");
+    states.push(new State(states.length, mouseX, mouseY, stateRadius, stateColor));
+  } else {
+    if (overState.object instanceof State) {
+      console.log("Double clicked on state");
+      overState.object.isEndState = !overState.object.isEndState;
+    }
+  }
 }
