@@ -15,7 +15,7 @@ class TransitionBox {
   }
 
   containsPoint(x = mouseX, y = mouseY) {
-    return this.x - this.w / 2 && x <= this.x + this.w / 2 && y >= this.y - this.h / 2 && y <= this.y + this.h / 2;
+    return x > this.x - this.w / 2 && x < this.x + this.w / 2 && y >= this.y - this.h / 2 && y <= this.y + this.h / 2;
   }
 
   checkRule(index = undefined) {
@@ -108,6 +108,7 @@ class TransitionBox {
 
   update() {
     this.rollover = this.containsPoint(mouseX, mouseY);
+
     for (let i = 0; i < this.inputs.length; i++) {
       this.inputs[i].update();
       this.inputs[i].x = this.x;
@@ -129,6 +130,12 @@ class TransitionBox {
             this.inputs[i].value.html("");
           }
         }
+      }
+    } else {
+      // if theres is no selected input, select the first one
+      if (this.selectedInputIndex === -1) {
+        this.selectedInputIndex = 0;
+        this.inputs[0].selected = true;
       }
     }
   }
