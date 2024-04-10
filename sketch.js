@@ -39,19 +39,21 @@ function draw() {
   }
 
   if (isMouseWithShiftPressed) {
-    if (hoveredObject && !(currentLink instanceof TemporaryLink && lastSelectedState !== states[hoveredObject.index])) {
-      currentLink = new SelfLink(states[hoveredObject.index]);
-      lastSelectedState = states[hoveredObject.index];
-    } else {
-      if (lastSelectedState) {
-        if (currentLink instanceof SelfLink && !currentLink.from) {
-          currentLink = new TemporaryLink();
-          currentLink.from = lastSelectedState.closestPointOnCircle(mouseX, mouseY);
-        }
+    if ((hoveredObject && hoveredObject.object instanceof State) || !hoveredObject) {
+      if (hoveredObject && !(currentLink instanceof TemporaryLink && lastSelectedState !== states[hoveredObject.index])) {
+        currentLink = new SelfLink(states[hoveredObject.index]);
+        lastSelectedState = states[hoveredObject.index];
       } else {
-        if (!currentLink || !currentLink.from) {
-          currentLink = new TemporaryLink();
-          currentLink.from = { x: mouseX, y: mouseY };
+        if (lastSelectedState) {
+          if (currentLink instanceof SelfLink && !currentLink.from) {
+            currentLink = new TemporaryLink();
+            currentLink.from = lastSelectedState.closestPointOnCircle(mouseX, mouseY);
+          }
+        } else {
+          if (!currentLink || !currentLink.from) {
+            currentLink = new TemporaryLink();
+            currentLink.from = { x: mouseX, y: mouseY };
+          }
         }
       }
     }
@@ -59,18 +61,14 @@ function draw() {
     if (currentLink instanceof TemporaryLink) {
       currentLink.to = { x: mouseX, y: mouseY };
 
-      if (hoveredObject && lastSelectedState && states[hoveredObject.index].id !== lastSelectedState.id) {
+      if (hoveredObject && hoveredObject.object instanceof State && lastSelectedState && states[hoveredObject.index].id !== lastSelectedState.id) {
         currentLink.to = states[hoveredObject.index].getSnapLinkPoint(lastSelectedState.x, lastSelectedState.y);
       } else if (lastSelectedState) {
         currentLink.from = lastSelectedState.closestPointOnCircle(mouseX, mouseY);
-      } else if (hoveredObject && !lastSelectedState) {
+      } else if (hoveredObject && hoveredObject.object instanceof State && !lastSelectedState) {
         currentLink.to = states[hoveredObject.index].getSnapLinkPoint(currentLink.from.x, currentLink.from.y);
       }
     }
-  }
-
-  if (currentLink) {
-    currentLink.draw();
   }
 
   for (let i = 0; i < links.length; i++) {
@@ -84,6 +82,10 @@ function draw() {
   if (startLink) {
     startLink.update();
     startLink.draw();
+  }
+
+  if (currentLink) {
+    currentLink.draw();
   }
 }
 
@@ -105,6 +107,7 @@ function checkFirstSelectedObject(x = mouseX, y = mouseY, uncheckAll = true) {
   }
 
   if (startLink && startLink.containsPoint(x, y)) return { object: startLink, index: -1 };
+
   for (let i = links.length - 1; i >= 0; i--) {
     if (links[i].transitionBox.containsPoint(x, y)) return { object: links[i].transitionBox, index: i };
     if (links[i].containsPoint(x, y)) return { object: links[i], index: i };
@@ -130,7 +133,6 @@ function mousePressed() {
       selectedObject.object.mousePressed();
     } else if (selectedObject.object instanceof Link || selectedObject.object instanceof SelfLink) {
       selectedObject.object.mousePressed();
-      selectedObject.object.transitionBox.selected = true;
     } else if (selectedObject.object instanceof StartLink) {
       startLink.mousePressed();
     } else if (selectedObject.object instanceof TransitionBox) {
@@ -146,7 +148,7 @@ function mouseReleased() {
         // Check if already exists a link between the two states
         let hoveredObject = checkFirstSelectedObject();
 
-        if (!links.some((link) => link instanceof Link && link.stateA.id === lastSelectedState.id && link.stateB.id === states[hoveredObject.index].id)) {
+        if (hoveredObject && !links.some((link) => link instanceof Link && link.stateA.id === lastSelectedState.id && link.stateB.id === states[hoveredObject.index].id)) {
           let from = lastSelectedState;
           let to = null;
 
@@ -156,6 +158,7 @@ function mouseReleased() {
 
           if (from && to) {
             links.push(new Link(from, to));
+            links[links.length - 1].selected = true;
           }
         } else {
           console.log("Link already exists");
@@ -165,6 +168,7 @@ function mouseReleased() {
         if (hoveredObject) {
           stateOnIndex = states[hoveredObject.index];
           startLink = new StartLink(stateOnIndex, currentLink.from);
+          startLink.selected = true;
         }
       }
     }
@@ -172,6 +176,7 @@ function mouseReleased() {
     // Check if already exists a link to itself
     if (!links.some((link) => link instanceof SelfLink && link.state.id === lastSelectedState.id)) {
       links.push(new SelfLink(currentLink.state));
+      links[links.length - 1].selected = true;
     } else {
       console.log("Link already exists");
     }
@@ -201,9 +206,16 @@ function keyPressed() {
       if (selectedObject.object instanceof State) {
         // Need to continue later
         for (let i = 0; i < links.length; i++) {
-          if ((links[i] instanceof Link && links[i].stateA.id === selectedObject.object.id) || links[i].stateB.id === selectedObject.object.id) {
-            links.splice(i, 1);
-            i--;
+          if (links[i] instanceof Link) {
+            if (links[i].stateA.id === selectedObject.object.id || links[i].stateB.id === selectedObject.object.id) {
+              links.splice(i, 1);
+              i--;
+            }
+          } else {
+            if (links[i].state.id === selectedObject.object.id) {
+              links.splice(i, 1);
+              i--;
+            }
           }
         }
 
@@ -258,6 +270,7 @@ function doubleClick() {
   if (!overState) {
     console.log("Double clicked on empty space");
     states.push(new State(states.length, mouseX, mouseY, stateRadius, stateColor));
+    states[states.length - 1].selected = true;
   } else {
     if (overState.object instanceof State) {
       console.log("Double clicked on state");
