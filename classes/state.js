@@ -6,6 +6,7 @@ class State extends DraggableCircle {
     this.y = y;
     this.r = r;
     this.color = color;
+    this.isEndState = false;
 
     this.texMap = {
       // Greek alphabet
@@ -112,6 +113,8 @@ class State extends DraggableCircle {
 
     ellipseMode(CENTER);
     ellipse(this.x, this.y, this.w, this.r * 2);
+    if (this.isEndState) ellipse(this.x, this.y, this.w * 0.8, this.r * 1.6);
+
     pop();
   }
 }
