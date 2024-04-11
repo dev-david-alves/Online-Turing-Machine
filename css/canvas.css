@@ -1,0 +1,32 @@
+.canvaMenuButton {
+  padding: 5px;
+  width: 40px;
+  height: 40px;
+  font-size: 16px;
+  border: none;
+  border-radius: 5px;
+  background-color: rgb(78, 95, 111);
+  color: white;
+  transition: background-color 0.2s;
+}
+
+.canvaMenuButton:hover {
+  background-color: rgb(82, 106, 124)
+}
+
+.canvaMenuButtonSelected {
+  background-color: rgb(23, 98, 163);
+}
+
+.canvaMenuButtonSelected:hover {
+  background-color: rgb(17, 82, 140);
+}
+
+
+.canvaMenuButton.canvaMenuDeleteButton {
+  background-color: rgb(218, 12, 12);
+}
+
+.canvaMenuButton.canvaMenuDeleteButton:hover {
+  background-color: rgb(190, 12, 12);
+}
