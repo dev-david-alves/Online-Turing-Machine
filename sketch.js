@@ -7,12 +7,33 @@ let selectedObject = null;
 let links = [];
 let startLink = null;
 
-let isMouseWithShiftPressed = false;
 let isShiftPressed = false;
+let isMouseWithShiftPressed = false;
 
 let texMap;
 
 let currentLink = null;
+
+let menuButtons = [];
+
+// Button functions
+
+let timeoutID = null;
+let buttonActivateActions = false;
+// Menu buttons
+function menuButtonAction(btnIndex) {
+  clearTimeout(timeoutID);
+  buttonActivateActions = false;
+
+  menuButtons.forEach((btn) => (btn.selected = false));
+  menuButtons[btnIndex].selected = !menuButtons[btnIndex].selected;
+
+  timeoutID = setTimeout(() => {
+    buttonActivateActions = true;
+  }, 200);
+}
+
+// Button functions
 
 function preload() {
   texMap = loadJSON("./utils/texMap.json");
@@ -25,6 +46,12 @@ function setup() {
 
   states.push(new State(states.length, 150, 200, stateRadius, stateColor));
   states.push(new State(states.length, 350, 200, stateRadius, stateColor));
+
+  // Menu buttons
+  menuButtons.push(new Button(10, 10, "fa-solid fa-arrow-pointer", () => menuButtonAction(0))); // Default
+  menuButtons.push(new Button(55, 10, "fa-solid fa-circle-plus", () => menuButtonAction(1))); // Add state
+  menuButtons.push(new Button(100, 10, "fa-solid fa-arrow-right", () => menuButtonAction(2))); // Add transition
+  menuButtons.push(new Button(145, 10, "fa-solid fa-trash", () => menuButtonAction(3), (selectedClass = "canvaMenuDeleteButton"))); // Delete
 }
 
 function draw() {
@@ -87,6 +114,10 @@ function draw() {
   if (currentLink) {
     currentLink.draw();
   }
+
+  for (let i = 0; i < menuButtons.length; i++) {
+    menuButtons[i].update();
+  }
 }
 
 function reCalculateStateIds() {
@@ -120,9 +151,47 @@ function checkFirstSelectedObject(x = mouseX, y = mouseY, uncheckAll = true) {
   return null;
 }
 
+function deleteObject() {
+  if (selectedObject) {
+    if (selectedObject.object instanceof State) {
+      // Need to continue later
+      for (let i = 0; i < links.length; i++) {
+        if (links[i] instanceof Link) {
+          if (links[i].stateA.id === selectedObject.object.id || links[i].stateB.id === selectedObject.object.id) {
+            links.splice(i, 1);
+            i--;
+          }
+        } else {
+          if (links[i].state.id === selectedObject.object.id) {
+            links.splice(i, 1);
+            i--;
+          }
+        }
+      }
+
+      states.splice(selectedObject.index, 1);
+      reCalculateStateIds();
+    } else if (selectedObject.object instanceof Link || selectedObject.object instanceof SelfLink) {
+      links.splice(selectedObject.index, 1);
+    } else if (selectedObject.object instanceof StartLink) {
+      startLink = null;
+    }
+
+    selectedObject = null;
+  }
+}
+
 function mousePressed() {
-  isMouseWithShiftPressed = mouseButton === LEFT && isShiftPressed;
-  if (isShiftPressed) return;
+  // If add state menu button is selected
+  if (menuButtons[1].selected && !checkFirstSelectedObject(mouseX, mouseY, false) && buttonActivateActions) {
+    states.forEach((state) => (state.selected = false));
+    states.push(new State(states.length, mouseX, mouseY, stateRadius, stateColor));
+    states[states.length - 1].selected = true;
+    return;
+  }
+
+  isMouseWithShiftPressed = mouseButton === LEFT && (isShiftPressed || (menuButtons[2].selected && buttonActivateActions));
+  if (isShiftPressed || menuButtons[2].selected) return;
 
   selectedObject = checkFirstSelectedObject();
 
@@ -138,6 +207,11 @@ function mousePressed() {
     } else if (selectedObject.object instanceof TransitionBox) {
       selectedObject.object.mousePressed();
     }
+  }
+
+  // Delete button
+  if (menuButtons[3].selected && buttonActivateActions) {
+    deleteObject();
   }
 }
 
@@ -202,33 +276,7 @@ function mouseReleased() {
 function keyPressed() {
   if (keyCode === SHIFT) isShiftPressed = true;
   if (keyCode === DELETE) {
-    if (selectedObject) {
-      if (selectedObject.object instanceof State) {
-        // Need to continue later
-        for (let i = 0; i < links.length; i++) {
-          if (links[i] instanceof Link) {
-            if (links[i].stateA.id === selectedObject.object.id || links[i].stateB.id === selectedObject.object.id) {
-              links.splice(i, 1);
-              i--;
-            }
-          } else {
-            if (links[i].state.id === selectedObject.object.id) {
-              links.splice(i, 1);
-              i--;
-            }
-          }
-        }
-
-        states.splice(selectedObject.index, 1);
-        reCalculateStateIds();
-      } else if (selectedObject.object instanceof Link || selectedObject.object instanceof SelfLink) {
-        links.splice(selectedObject.index, 1);
-      } else if (selectedObject.object instanceof StartLink) {
-        startLink = null;
-      }
-
-      selectedObject = null;
-    }
+    deleteObject();
   }
 
   for (let i = 0; i < states.length; i++) {
@@ -244,6 +292,7 @@ function keyReleased() {
   if (keyCode === SHIFT) {
     isShiftPressed = false;
     isMouseWithShiftPressed = false;
+    currentLink = null;
   }
 
   for (let i = 0; i < states.length; i++) {
