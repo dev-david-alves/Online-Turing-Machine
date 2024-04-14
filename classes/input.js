@@ -1,28 +1,31 @@
 class CustomInput {
-  constructor(x, y, color = { r: 0, g: 0, b: 0 }, texMap = {}) {
-    this.x = x;
-    this.y = y;
+  constructor(x, y, color = { r: 0, g: 0, b: 0 }, texMap = {}, scaleFactor = 1.0) {
+    this.scaleFactor = scaleFactor;
+    this.x = x * scaleFactor;
+    this.y = y * scaleFactor;
     this.color = color;
     this.texMap = texMap;
 
     this.value = this.createSpan("");
+    this.value.style("position", "absolute");
+    this.value.style("transform", `translate(-50%, -50%)`);
     this.selected = false;
     this.isTyping = false;
 
-    this.h = 20;
-    this.w = this.value.elt.offsetWidth;
+    this.h = 20 * scaleFactor;
+    this.w = this.value.elt.offsetWidth * scaleFactor;
 
     this.cursor = {
       index: 0,
       position: {
         y: this.y - (this.h * 0.8) / 2,
-        x: this.x,
+        x: this.x * scaleFactor,
       },
       properties: {
         blinkInterval: 500,
         lastBlinkTime: 0,
         isVisible: true,
-        thickness: 1,
+        thickness: scaleFactor,
         height: this.h * 0.8,
       },
     };
@@ -32,7 +35,7 @@ class CustomInput {
     let span = createSpan(value);
     span.style("white-space", "pre");
     span.style("text-align", "center");
-    span.style("font-size", "15px");
+    span.style("font-size", `${15 * this.scaleFactor}px`);
     span.style("pointer-events", "none");
     span.style("user-select", "none");
     // span.style("font-style", "italic");
@@ -101,11 +104,15 @@ class CustomInput {
   }
   // End of RegEx Functions
 
-  update() {
+  update(scaleFactor = 1.0) {
+    this.scaleFactor = scaleFactor;
+    this.h = 20 * this.scaleFactor;
     this.w = this.value.elt.offsetWidth;
     let span = this.createSpan(this.value.html().slice(0, this.cursor.index));
     this.cursor.position.x = this.x - this.w / 2 + span.elt.offsetWidth + 1;
     span.remove();
+
+    this.cursor.properties.thickness = this.scaleFactor;
 
     if (this.isTyping) {
       this.cursor.properties.isVisible = true;
@@ -149,7 +156,7 @@ class CustomInput {
     if (matches01) {
       for (let i = 0; i < matches01.length; i++) {
         if (this.cursor.index > this.value.html().indexOf(matches01[i]) && this.cursor.index < this.value.html().indexOf(matches01[i]) + matches01[i].length) {
-          this.cursor.position.y = this.y - 2;
+          this.cursor.position.y = this.y - 2 * this.scaleFactor;
           this.cursor.properties.height = this.h * 0.5;
           isBetweenSubOrSup = true;
           break;
@@ -160,7 +167,7 @@ class CustomInput {
     if (matches02) {
       for (let i = 0; i < matches02.length; i++) {
         if (this.cursor.index > this.value.html().indexOf(matches02[i]) && this.cursor.index < this.value.html().indexOf(matches02[i]) + matches02[i].length) {
-          this.cursor.position.y = this.y - 10;
+          this.cursor.position.y = this.y - 10 * this.scaleFactor;
           this.cursor.properties.height = this.h * 0.5;
           isBetweenSubOrSup = true;
           break;
@@ -172,6 +179,10 @@ class CustomInput {
       this.cursor.position.y = this.y - (this.h * 0.8) / 2;
       this.cursor.properties.height = this.h * 0.8;
     }
+
+    this.value.style("left", `${this.x + windowOffset.x}px`);
+    this.value.style("top", `${this.y + windowOffset.y - 2 * this.scaleFactor}px`);
+    this.value.style("font-size", `${15 * this.scaleFactor}px`);
   }
 
   keyTyped() {
@@ -312,14 +323,6 @@ class CustomInput {
 
   draw() {
     push();
-    let windowOffsetX = windowWidth - width;
-    let windowOffsetY = windowHeight - height;
-
-    this.value.style("position", "absolute");
-    this.value.style("left", `${this.x + windowOffsetX / 2}px`);
-    this.value.style("top", `${this.y + windowOffsetY / 2 - 2}px`);
-    this.value.style("transform", `translate(-50%, -50%)`);
-
     if (this.selected && this.cursor.properties.isVisible) {
       stroke(this.color.r, this.color.g, this.color.b);
       strokeWeight(this.cursor.properties.thickness);

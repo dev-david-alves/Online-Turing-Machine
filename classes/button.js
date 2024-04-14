@@ -1,7 +1,9 @@
 class Button {
-  constructor(x = -1000, y = -1000, label = "My Custom Button", onClick = () => {}, selectedClass = "canvaMenuButtonSelected") {
-    this.x = x;
-    this.y = y;
+  constructor(x = 0, y = 0, offset, label = "My Custom Button", onClick = () => {}, selectedClass = "canvaMenuButtonSelected") {
+    this.x = x + offset.x;
+    this.y = y + offset.y;
+    this.w = 40;
+    this.h = 40;
     this.selected = false;
     this.selectedClass = selectedClass;
 
@@ -10,12 +12,11 @@ class Button {
 
     // add class to button
     this.button.addClass("canvaMenuButton");
+    this.button.size(this.w, this.h);
   }
 
   update() {
-    let offsetX = windowWidth / 2 - width / 2;
-    let offsetY = windowHeight / 2 - height / 2;
-    this.button.position(this.x + offsetX, this.y + offsetY);
+    this.button.position(this.x + windowOffset.x, this.y + windowOffset.y);
 
     if (this.selected) {
       this.button.addClass(this.selectedClass);

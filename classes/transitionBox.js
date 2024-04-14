@@ -1,5 +1,5 @@
 class TransitionBox {
-  constructor(x, y, color = { r: 0, g: 0, b: 0 }, texMap = {}) {
+  constructor(x, y, color = { r: 0, g: 0, b: 0 }, texMap = {}, scaleFactor = 1.0) {
     this.x = x;
     this.y = y;
     this.w = 0;
@@ -9,6 +9,7 @@ class TransitionBox {
     this.rollover = false;
     this.selected = false;
     this.seletedCondition = false;
+    this.scaleFactor = scaleFactor;
 
     // Create the first input
     this.inputs.push(new RuleInput(this.x, this.y, color, texMap));
@@ -106,11 +107,13 @@ class TransitionBox {
     }
   }
 
-  update() {
+  update(scaleFactor = 1.0) {
+    this.scaleFactor = scaleFactor;
+
     this.rollover = this.containsPoint(mouseX, mouseY);
 
     for (let i = 0; i < this.inputs.length; i++) {
-      this.inputs[i].update();
+      this.inputs[i].update(scaleFactor);
       this.inputs[i].x = this.x;
       this.inputs[i].y = this.y + this.inputs[0].h * i - (this.inputs[0].h * (this.inputs.length - 1)) / 2;
 
@@ -152,28 +155,28 @@ class TransitionBox {
   }
 
   draw() {
-    let padding = 20;
+    let padding = 20 * this.scaleFactor;
     let maxW = this.getTheWidestInput();
     this.w = maxW;
-    this.h = this.inputs.length * this.inputs[0].h * 0.7;
+    this.h = this.inputs.length * this.inputs[0].h * 0.7 * this.scaleFactor;
 
     push();
     if (this.selected || (this.inputs.length === 1 && this.inputs[0].value.html().trim() === "")) {
-      this.w = max(maxW + padding, 100);
-      this.h = this.inputs.length * this.inputs[0].h + 5;
+      this.w = max(maxW + padding, 100 * this.scaleFactor);
+      this.h = this.inputs.length * this.inputs[0].h + 5 * this.scaleFactor;
 
       if (this.rollover) stroke(100, 100, 200);
       if (this.selected) stroke(0, 0, 255);
       strokeWeight(1);
       rectMode(CENTER);
-      rect(this.x, this.y, this.w, this.h, 5);
+      rect(this.x, this.y, this.w, this.h, 5 * this.scaleFactor);
     }
 
     pop();
 
     for (let i = 0; i < this.inputs.length; i++) {
       this.inputs[i].w = maxW;
-      this.inputs[i].y = this.y + this.inputs[0].h * i * (!this.selected ? 0.7 : 1) - (this.inputs[0].h * (this.inputs.length - 1)) / 2;
+      this.inputs[i].y = this.y + this.inputs[0].h * i * (!this.selected ? 0.7 : 1) - (this.inputs[0].h * (this.inputs.length - 1)) / 2 + 2 * this.scaleFactor;
       this.inputs[i].draw();
 
       if (i === this.inputs.length - 1 || !this.selected) continue;
@@ -181,7 +184,7 @@ class TransitionBox {
       push();
       stroke(129, 133, 137);
       strokeWeight(1);
-      line(this.inputs[i].x - this.inputs[i].w / 2, this.inputs[i].y + this.inputs[i].h / 2, this.inputs[i].x + this.inputs[i].w / 2, this.inputs[i].y + this.inputs[i].h / 2);
+      line(this.inputs[i].x - this.w / 2, this.inputs[i].y + this.inputs[i].h / 2, this.inputs[i].x + this.w / 2, this.inputs[i].y + this.inputs[i].h / 2);
       pop();
     }
 

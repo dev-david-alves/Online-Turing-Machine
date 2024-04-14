@@ -1,13 +1,14 @@
 class SelfLink {
-  constructor(state) {
+  constructor(state, scaleFactor = 1.0) {
     this.state = state;
+    this.scaleFactor = scaleFactor;
     this.anchorAngle = 0;
     this.mouseOffsetAngle = 0;
     this.isMousePressed = false;
     this.selected = false;
     this.rollover = false;
     this.text = "";
-    this.hitTargetPadding = 6;
+    this.hitTargetPadding = 6 * this.scaleFactor;
 
     this.setAnchorPoint(mouseX, mouseY);
 
@@ -68,7 +69,10 @@ class SelfLink {
     this.isMousePressed = false;
   }
 
-  update() {
+  update(scaleFactor = 1.0) {
+    this.scaleFactor = scaleFactor;
+    this.hitTargetPadding = 6 * this.scaleFactor;
+    
     if (this.isMousePressed && this.selected) {
       this.setAnchorPoint(mouseX, mouseY);
     }

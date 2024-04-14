@@ -1,12 +1,9 @@
-class State extends DraggableCircle {
-  constructor(id, x, y, r, color) {
-    super(x, y, r, color);
+class State {
+  constructor(id, x, y, r, color, scaleFactor = 1.0) {
     this.id = id;
-    this.x = x;
-    this.y = y;
-    this.r = r;
-    this.color = color;
+    this.scaleFactor = scaleFactor;
     this.isEndState = false;
+    this.color = color;
 
     this.texMap = {
       // Greek alphabet
@@ -67,24 +64,31 @@ class State extends DraggableCircle {
       "\\branco": "☐",
     };
 
-    this.input = new CustomInput(x, y, color, this.texMap);
-  }
+    
+    // Dragging
+    this.dragging = false; // Is the object being dragged?
+    this.rollover = false; // Is the mouse over the ellipse?
+    this.selected = false;
+    
+    // Position
+    this.x = x * scaleFactor;
+    this.y = y * scaleFactor;
+    this.offsetX = 0;
+    this.offsetY = 0;
+    
+    // Dimensions
+    this.r = r * scaleFactor;
+    this.h = this.r * 2;
+    this.w = this.r * 2;
 
-  getSnapLinkPoint(x, y) {
-    let dx = x - this.x;
-    let dy = y - this.y;
-    let scale = Math.sqrt(dx * dx + dy * dy);
-
-    return {
-      x: this.x + (dx * this.r) / scale,
-      y: this.y + (dy * this.r) / scale,
-    };
+    // Text input
+    this.input = new CustomInput(this.x, this.y, color, this.texMap);
   }
 
   closestPointOnCircle(x, y) {
-    var dx = x - this.x;
-    var dy = y - this.y;
-    var scale = Math.sqrt(dx * dx + dy * dy);
+    let dx = x - this.x;
+    let dy = y - this.y;
+    let scale = Math.sqrt(dx * dx + dy * dy);
 
     return {
       x: this.x + (dx * this.r) / scale,
@@ -96,13 +100,43 @@ class State extends DraggableCircle {
     return x > this.x - this.w / 2 && x < this.x + this.w / 2 && y > this.y - this.r && y < this.y + this.r;
   }
 
-  update() {
-    super.update();
+  mousePressed() {
+    // Did I click on the circle?
+    if (this.rollover) {
+      this.dragging = true;
+      // If so, keep track of relative location of click to corner of circle
+      this.offsetX = this.x - mouseX;
+      this.offsetY = this.y - mouseY;
+    }
+  }
+
+  mouseReleased() {
+    // Quit dragging
+    this.dragging = false;
+  }
+
+  update(scaleFactor = 1.0) {
+    if(this.scaleFactor != scaleFactor) {
+      this.r = this.r / this.scaleFactor * scaleFactor;
+      this.x = this.x / this.scaleFactor * scaleFactor;
+      this.y = this.y / this.scaleFactor * scaleFactor;
+      this.scaleFactor = scaleFactor;
+    }
+    
     this.input.x = this.x;
     this.input.y = this.y;
     this.input.selected = this.selected;
-    this.w = Math.max(this.r * 2, this.input.w + 20);
+    
+    
+    // this.w = Math.max(this.r * 2, this.input.w + 20 * this.scaleFactor);
+    this.w = this.r * 2;
     this.rollover = this.containsPoint(mouseX, mouseY);
+
+    // Adjust location if being dragged
+    if (this.dragging) {
+      this.x = this.offsetX + mouseX;
+      this.y = this.offsetY + mouseY;
+    }
   }
 
   draw() {

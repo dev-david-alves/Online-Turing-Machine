@@ -1,10 +1,11 @@
 class StartLink {
-  constructor(state, start) {
+  constructor(state, start, scaleFactor = 1.0) {
     this.state = state;
+    this.scaleFactor = scaleFactor;
     this.deltaX = 0;
     this.deltaY = 0;
-    this.snapToPadding = 6;
-    this.hitTargetPadding = 6;
+    this.snapToPadding = 6 * this.scaleFactor;
+    this.hitTargetPadding = 6 * this.scaleFactor;
     this.isMousePressed = false;
     this.selected = false;
     this.rollover = false;
@@ -54,7 +55,11 @@ class StartLink {
     this.isMousePressed = false;
   }
 
-  update() {
+  update(scaleFactor = 1.0) {
+    this.scaleFactor = scaleFactor;
+    this.snapToPadding = 6 * this.scaleFactor;
+    this.hitTargetPadding = 6 * this.scaleFactor;
+    
     if (this.isMousePressed && this.selected) {
       this.setAnchorPoint(mouseX, mouseY);
     }

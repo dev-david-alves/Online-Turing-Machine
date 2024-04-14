@@ -23,12 +23,9 @@ class RuleInput extends CustomInput {
 
   draw() {
     push();
-    let windowOffsetX = windowWidth - width;
-    let windowOffsetY = windowHeight - height;
-
     this.value.style("position", "absolute");
-    this.value.style("left", `${this.x + windowOffsetX / 2}px`);
-    this.value.style("top", `${this.y + windowOffsetY / 2 - 2}px`);
+    this.value.style("left", `${this.x + windowOffset.x}px`);
+    this.value.style("top", `${this.y + windowOffset.y - 2 * this.scaleFactor}px`);
     this.value.style("transform", `translate(-50%, -50%)`);
 
     let padding = 20;

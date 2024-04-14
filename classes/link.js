@@ -1,10 +1,11 @@
 class Link {
-  constructor(stateA, stateB) {
+  constructor(stateA, stateB, scaleFactor = 1.0) {
     this.stateA = stateA;
     this.stateB = stateB;
     this.rollover = false;
     this.selected = false;
     this.isMousePressed = false;
+    this.scaleFactor = scaleFactor;
 
     // Make anchor point relative to the locations of stateA and stateB
     this.parallelPart = 0.5;
@@ -12,8 +13,8 @@ class Link {
 
     // Extra
     this.lineAngleAdjust = 0;
-    this.snapToPadding = 6;
-    this.hitTargetPadding = 6;
+    this.snapToPadding = 6 * this.scaleFactor;
+    this.hitTargetPadding = 6 * this.scaleFactor;
 
     // TextBox
     this.transitionBox = new TransitionBox(-1000, -1000, { r: 0, g: 0, b: 0 }, texMap);
@@ -51,6 +52,7 @@ class Link {
     let dx = this.stateB.x - this.stateA.x;
     let dy = this.stateB.y - this.stateA.y;
     let scale = sqrt(dx * dx + dy * dy);
+
     this.parallelPart = (dx * (x - this.stateA.x) + dy * (y - this.stateA.y)) / (scale * scale);
     this.perpendicularPart = (dx * (y - this.stateA.y) - dy * (x - this.stateA.x)) / scale;
 
@@ -158,7 +160,11 @@ class Link {
     this.isMousePressed = false;
   }
 
-  update() {
+  update(scaleFactor = 1.0) {
+    this.scaleFactor = scaleFactor;
+    this.snapToPadding = 6 * this.scaleFactor;
+    this.hitTargetPadding = 6 * this.scaleFactor;
+
     if (this.isMousePressed && this.selected) {
       this.setAnchorPoint(mouseX, mouseY);
     }
