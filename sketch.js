@@ -61,7 +61,6 @@ function setup() {
   // Create slider
   slider = createSlider(0.5, 2, scaleFactor, 0.25);
   slider.size(100);
-  slider.input(onChangeSlider);
 
   // Create a boxDom for the slider
   offBoxes.push(new BoxDom(0, 0, [slider]));
@@ -217,6 +216,8 @@ function deleteObject() {
         }
       }
 
+      if(startLink && startLink.state.id === selectedObject.object.id) startLink = null;
+      
       states.splice(selectedObject.index, 1);
       reCalculateStateIds();
     } else if (selectedObject.object instanceof Link || selectedObject.object instanceof SelfLink) {
