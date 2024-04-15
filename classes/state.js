@@ -64,7 +64,6 @@ class State {
       "\\branco": "☐",
     };
 
-    
     // Dragging
     this.dragging = false; // Is the object being dragged?
     this.rollover = false; // Is the mouse over the ellipse?
@@ -83,6 +82,10 @@ class State {
 
     // Text input
     this.input = new CustomInput(this.x, this.y, color, this.texMap);
+  }
+
+  remove() {
+    this.input.value.remove();
   }
 
   closestPointOnCircle(x, y) {
@@ -122,6 +125,9 @@ class State {
       this.y = this.y / this.scaleFactor * scaleFactor;
       this.scaleFactor = scaleFactor;
     }
+
+    this.x -= movingCanvasOffset.x;
+    this.y -= movingCanvasOffset.y;
     
     this.input.x = this.x;
     this.input.y = this.y;

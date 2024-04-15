@@ -20,6 +20,10 @@ let slider = null;
 let lastScaleFactor = 0.75;
 let scaleFactor = 0.75;
 
+// Moving canvas view
+let movingCanvasOffset = { x: 0, y: 0 };
+let mouseIsPressed = false;
+
 // Start of Menu Button functions
 let menuButtons = [];
 
@@ -38,7 +42,7 @@ function preload() {
 }
 
 function setup() {
-  cnv = createCanvas(500, 500);
+  cnv = createCanvas(700, 500);
   cnv.parent("canvas-container");
   cnv.elt.addEventListener("contextmenu", (event) => event.preventDefault());
   cnv.doubleClicked(doubleClick);
@@ -51,9 +55,10 @@ function setup() {
 
   // Menu buttons
   menuButtons.push(new Button(0, -45, { x: 0, y: 0 }, "fa-solid fa-arrow-pointer", () => menuButtonAction(0))); // Default
-  menuButtons.push(new Button(40, -45, { x: 5, y: 0 }, "fa-solid fa-circle-plus", () => menuButtonAction(1))); // Add state
-  menuButtons.push(new Button(80, -45, { x: 10, y: 0 }, "fa-solid fa-arrow-right", () => menuButtonAction(2))); // Add transition
-  menuButtons.push(new Button(120, -45, { x: 15, y: 0 }, "fa-solid fa-trash", () => menuButtonAction(3), (selectedClass = "canvaMenuDeleteButton"))); // Delete
+  menuButtons.push(new Button(40, -45, { x: 5, y: 0 }, "fa-solid fa-arrows-up-down-left-right", () => menuButtonAction(1))); // Move canvas view
+  menuButtons.push(new Button(80, -45, { x: 10, y: 0 }, "fa-solid fa-circle-plus", () => menuButtonAction(2))); // Add state
+  menuButtons.push(new Button(120, -45, { x: 15, y: 0 }, "fa-solid fa-arrow-right", () => menuButtonAction(3))); // Add transition
+  menuButtons.push(new Button(160, -45, { x: 20, y: 0 }, "fa-solid fa-trash", () => menuButtonAction(4), (selectedClass = "canvaMenuDeleteButton"))); // Delete
 
   // Activate default button
   menuButtonAction(0);
@@ -89,6 +94,8 @@ function reCalculateDoomPositions() {
 }
 
 function draw() {
+  if((mouseIsPressed && keyIsPressed && keyCode === CONTROL) || mouseButton === CENTER || (menuButtons[1].selected && mouseIsPressed)) moveCanvas();
+
   canDoCanvaActions = !offBoxes.some((box) => box.containsPoint());
   reCalculateDoomPositions();
   background(255);
@@ -98,13 +105,6 @@ function draw() {
   // --------------
 
   let hoveredObject = checkFirstSelectedObject((x = mouseX), (y = mouseY), (uncheckAll = false));
-
-  for (let i = 0; i < states.length; i++) {
-    states[i].update(scaleFactor);
-    states[i].draw();
-    states[i].input.update(scaleFactor);
-    states[i].input.draw();
-  }
 
   if (isMouseWithShiftPressed) {
     if ((hoveredObject && hoveredObject.object instanceof State) || !hoveredObject) {
@@ -139,6 +139,14 @@ function draw() {
     }
   }
 
+  stateRepulse();
+  for (let i = 0; i < states.length; i++) {
+    states[i].update(scaleFactor);
+    states[i].draw();
+    states[i].input.update(scaleFactor);
+    states[i].input.draw();
+  }
+
   for (let i = 0; i < links.length; i++) {
     links[i].update(scaleFactor);
     links[i].draw();
@@ -164,6 +172,26 @@ function draw() {
   // Slider box
   for (let i = 0; i < offBoxes.length; i++) {
     offBoxes[i].draw();
+  }
+}
+
+function stateRepulse(repulseFactor = 30.0) {
+  repulseFactor *= scaleFactor;
+
+  for(let i = 0; i < states.length; i++) {
+    for(let j = 0; j < states.length - 1; j++) {
+      if(i == j) continue;
+      let distance = dist(states[i].x, states[i].y, states[j].x, states[j].y);
+      if(distance < stateRadius * 2 * scaleFactor + repulseFactor) {
+        let angle = atan2(states[j].y - states[i].y, states[j].x - states[i].x);
+        let pushX = cos(angle) * repulseFactor;
+        let pushY = sin(angle) * repulseFactor;
+        states[i].x -= pushX;
+        states[i].y -= pushY;
+        states[j].x += pushX;
+        states[j].y += pushY;
+      }
+    }
   }
 }
 
@@ -205,11 +233,13 @@ function deleteObject() {
       for (let i = 0; i < links.length; i++) {
         if (links[i] instanceof Link) {
           if (links[i].stateA.id === selectedObject.object.id || links[i].stateB.id === selectedObject.object.id) {
+            links[i].transitionBox.remove();
             links.splice(i, 1);
             i--;
           }
         } else {
           if (links[i].state.id === selectedObject.object.id) {
+            links[i].transitionBox.remove();
             links.splice(i, 1);
             i--;
           }
@@ -218,9 +248,11 @@ function deleteObject() {
 
       if(startLink && startLink.state.id === selectedObject.object.id) startLink = null;
       
+      selectedObject.object.remove();
       states.splice(selectedObject.index, 1);
       reCalculateStateIds();
     } else if (selectedObject.object instanceof Link || selectedObject.object instanceof SelfLink) {
+      selectedObject.object.transitionBox.remove();
       links.splice(selectedObject.index, 1);
     } else if (selectedObject.object instanceof StartLink) {
       startLink = null;
@@ -230,7 +262,16 @@ function deleteObject() {
   }
 }
 
+function moveCanvas(x = mouseX, y = mouseY) {
+  let ratioFactor = 3;
+  movingCanvasOffset.x = (movingCanvasOffset.x - (x - pmouseX)) / ratioFactor;
+  movingCanvasOffset.y = (movingCanvasOffset.y - (y - pmouseY)) / ratioFactor;
+}
+
 function mousePressed() {
+  mouseIsPressed = true;
+  if((mouseIsPressed && keyIsPressed && keyCode === CONTROL) || mouseButton === CENTER || (menuButtons[1].selected && mouseIsPressed)) return;
+
   if (!canDoCanvaActions) {
     isMouseWithShiftPressed = false;
     isShiftPressed = false;
@@ -238,15 +279,15 @@ function mousePressed() {
     return;
   }
   // If add state menu button is selected
-  if (menuButtons[1].selected && !checkFirstSelectedObject(mouseX, mouseY, false)) {
+  if (menuButtons[2].selected && !checkFirstSelectedObject(mouseX, mouseY, false)) {
     states.forEach((state) => (state.selected = false));
     states.push(new State(states.length, mouseX / scaleFactor, mouseY / scaleFactor, stateRadius, stateColor, scaleFactor));
     states[states.length - 1].selected = true;
     return;
   }
 
-  isMouseWithShiftPressed = mouseButton === LEFT && (isShiftPressed || menuButtons[2].selected);
-  if (isShiftPressed || menuButtons[2].selected) return;
+  isMouseWithShiftPressed = mouseButton === LEFT && (isShiftPressed || menuButtons[3].selected);
+  if (isShiftPressed || menuButtons[3].selected) return;
 
   selectedObject = checkFirstSelectedObject();
 
@@ -265,12 +306,17 @@ function mousePressed() {
   }
 
   // Delete button
-  if (menuButtons[3].selected) {
+  if (menuButtons[4].selected) {
     deleteObject();
   }
 }
 
 function mouseReleased() {
+  mouseButton = 0;
+  mouseIsPressed = false;
+  movingCanvasOffset.x = 0;
+  movingCanvasOffset.y = 0;
+
   if (currentLink instanceof TemporaryLink) {
     if (currentLink.from && currentLink.to) {
       if (lastSelectedState) {
@@ -348,6 +394,9 @@ function keyReleased() {
     isShiftPressed = false;
     isMouseWithShiftPressed = false;
     currentLink = null;
+  } else if(keyCode === CONTROL) {
+    movingCanvasOffset.x = 0;
+    movingCanvasOffset.y = 0;
   }
 
   for (let i = 0; i < states.length; i++) {

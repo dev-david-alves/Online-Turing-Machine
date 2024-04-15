@@ -107,6 +107,12 @@ class TransitionBox {
     }
   }
 
+  remove() {
+    for (let i = 0; i < this.inputs.length; i++) {
+      this.inputs[i].value.remove();
+    }
+  }
+
   update(scaleFactor = 1.0) {
     this.scaleFactor = scaleFactor;
 
