@@ -26,14 +26,28 @@ let mouseIsPressed = false;
 
 // Start of Menu Button functions
 let menuButtons = [];
+let buttonWaiting = true;
+let buttonTimeout = null;
 
 function setSelectedMenuButton(index) {
-  menuButtons.forEach((btn) => (btn.hasClass("canvasMenuButtonSelected") ? btn.removeClass("canvasMenuButtonSelected") : null));
-  menuButtons[index].addClass("canvasMenuButtonSelected");
+  if (menuButtons[index].elt.id === "delete") {
+    menuButtons.forEach((btn) => (btn.hasClass("canvasMenuButtonSelected") ? btn.removeClass("canvasMenuButtonSelected") : null));
+    menuButtons[index].addClass("canvasMenuButtonDelete");
+  } else {
+    menuButtons[4].removeClass("canvasMenuButtonDelete");
+    menuButtons.forEach((btn) => (btn.hasClass("canvasMenuButtonSelected") ? btn.removeClass("canvasMenuButtonSelected") : null));
+    menuButtons[index].addClass("canvasMenuButtonSelected");
+  }
+
+  if (buttonTimeout) clearTimeout(buttonTimeout);
+  buttonWaiting = true;
+  buttonTimeout = setTimeout(() => {
+    buttonWaiting = false;
+  }, 300);
 }
 
 function getIdOfSelectedButton() {
-  let selectedButton = menuButtons.find((btn) => btn.hasClass("canvasMenuButtonSelected"));
+  let selectedButton = menuButtons.find((btn) => btn.hasClass("canvasMenuButtonSelected") || btn.hasClass("canvasMenuButtonDelete"));
   if (selectedButton) return selectedButton.elt.id;
   return null;
 }
@@ -87,7 +101,7 @@ function reCalculateDoomPositions() {
 }
 
 function draw() {
-  if ((mouseIsPressed && keyIsPressed && keyCode === CONTROL) || mouseButton === CENTER || (getIdOfSelectedButton() === "move" && mouseIsPressed)) moveCanvas();
+  if ((mouseIsPressed && keyIsPressed && keyCode === CONTROL) || mouseButton === CENTER || (getIdOfSelectedButton() === "move" && !buttonWaiting && mouseIsPressed)) moveCanvas();
 
   reCalculateDoomPositions();
   background(255);
@@ -255,7 +269,7 @@ function moveCanvas(x = mouseX, y = mouseY) {
 
 function mousePressed() {
   mouseIsPressed = true;
-  if ((mouseIsPressed && keyIsPressed && keyCode === CONTROL) || mouseButton === CENTER || (getIdOfSelectedButton() === "move" && mouseIsPressed)) return;
+  if ((mouseIsPressed && keyIsPressed && keyCode === CONTROL) || mouseButton === CENTER || (getIdOfSelectedButton() === "move" && !buttonWaiting && mouseIsPressed)) return;
 
   if (!canDoCanvaActions) {
     isMouseWithShiftPressed = false;
@@ -264,15 +278,15 @@ function mousePressed() {
     return;
   }
   // If add state menu button is selected
-  if (getIdOfSelectedButton() === "addState" && !checkFirstSelectedObject(mouseX, mouseY, false)) {
+  if (getIdOfSelectedButton() === "addState" && !buttonWaiting && !checkFirstSelectedObject(mouseX, mouseY, false)) {
     unCheckAll();
     states.push(new State(states.length, mouseX / scaleFactor, mouseY / scaleFactor, stateRadius, stateColor, scaleFactor));
     states[states.length - 1].selected = true;
     return;
   }
 
-  isMouseWithShiftPressed = mouseButton === LEFT && (isShiftPressed || getIdOfSelectedButton() === "addLink");
-  if (isShiftPressed || getIdOfSelectedButton() === "addLink") return;
+  isMouseWithShiftPressed = mouseButton === LEFT && (isShiftPressed || (getIdOfSelectedButton() === "addLink" && !buttonWaiting));
+  if (isShiftPressed || (getIdOfSelectedButton() === "addLink" && !buttonWaiting)) return;
 
   selectedObject = checkFirstSelectedObject();
 
@@ -291,7 +305,7 @@ function mousePressed() {
   }
 
   // Delete button
-  if (getIdOfSelectedButton() === "delete") deleteObject();
+  if (getIdOfSelectedButton() === "delete" && !buttonWaiting) deleteObject();
 }
 
 function mouseReleased() {

@@ -12,8 +12,7 @@
     "url": "git+https://github.com/dev-david-alves/Online-Turing-Machine.git"
   },
   "keywords": [
-    "Turing",
-    "Machine"
+    "Turing Machine"
   ],
   "author": "David Alves Soares",
   "license": "MIT",
