@@ -46,6 +46,12 @@ function setup() {
   cnv.parent("canvas-container");
   cnv.elt.addEventListener("contextmenu", (event) => event.preventDefault());
   cnv.doubleClicked(doubleClick);
+  // Resize canvas
+  let canvasContainer = select("#canvas-container");
+  let canvasWidth = canvasContainer.width;
+  let canvasHeight = canvasContainer.height;
+  resizeCanvas(canvasWidth - 40, canvasHeight - 100);
+  // End of resize canvas
 
   // Set window offset
   windowOffset = cnv.position();
@@ -94,13 +100,6 @@ function reCalculateDoomPositions() {
 }
 
 function draw() {
-  // Resize canvas
-  let canvasContainer = select("#canvas-container");
-  let canvasWidth = canvasContainer.width;
-  let canvasHeight = canvasContainer.height;
-  resizeCanvas(canvasWidth - 40, canvasHeight - 100);
-  // End of resize canvas
-
   if((mouseIsPressed && keyIsPressed && keyCode === CONTROL) || mouseButton === CENTER || (menuButtons[1].selected && mouseIsPressed)) moveCanvas();
 
   canDoCanvaActions = !offBoxes.some((box) => box.containsPoint());
