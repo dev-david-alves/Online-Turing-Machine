@@ -1,5 +1,5 @@
 class SelfLink {
-  constructor(state, scaleFactor = 1.0) {
+  constructor(state, scaleFactor = 1.0, createText = false) {
     this.state = state;
     this.scaleFactor = scaleFactor;
     this.anchorAngle = 0;
@@ -13,7 +13,8 @@ class SelfLink {
     this.setAnchorPoint(mouseX, mouseY);
 
     // TextBox
-    this.transitionBox = new TransitionBox(-1000, -1000, { r: 0, g: 0, b: 0 }, texMap);
+    this.transitionBox = null;
+    if(createText) this.transitionBox = new TransitionBox(-1000, -1000, { r: 0, g: 0, b: 0 }, texMap);
   }
 
   containsPoint(x, y) {

@@ -353,7 +353,7 @@ function mouseReleased() {
     // Check if already exists a link to itself
     unCheckAll();
     if (!links.some((link) => link instanceof SelfLink && link.state.id === lastSelectedState.id)) {
-      links.push(new SelfLink(currentLink.state, scaleFactor));
+      links.push(new SelfLink(currentLink.state, scaleFactor, true));
       links[links.length - 1].selected = true;
     } else {
       console.log("Link already exists");
