@@ -378,6 +378,12 @@ function mouseReleased() {
 }
 
 function keyPressed() {
+  if(keyCode === 49 || keyCode === 50 || keyCode === 51 || keyCode === 52 || keyCode === 53) {
+    let index = keyCode - 49;
+    menuButtonAction(index);
+    return;
+  }
+
   if (keyCode === SHIFT) isShiftPressed = true;
   if (keyCode === DELETE) {
     deleteObject();
