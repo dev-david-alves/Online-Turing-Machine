@@ -104,7 +104,7 @@ function draw() {
   scaleFactor = slider.value();
   // --------------
 
-  let hoveredObject = checkFirstSelectedObject((x = mouseX), (y = mouseY), (uncheckAll = false));
+  let hoveredObject = checkFirstSelectedObject((x = mouseX), (y = mouseY), (uncheckObjects = false));
 
   if (isMouseWithShiftPressed) {
     if ((hoveredObject && hoveredObject.object instanceof State) || !hoveredObject) {
@@ -201,16 +201,18 @@ function reCalculateStateIds() {
   }
 }
 
-function checkFirstSelectedObject(x = mouseX, y = mouseY, uncheckAll = true) {
-  if (uncheckAll) {
-    states.forEach((state) => (state.selected = false));
-    links.forEach((link) => {
-      link.selected = false;
-      link.transitionBox.selected = false;
-      link.transitionBox.inputs.forEach((input) => (input.selected = false));
-    });
-    if (startLink) startLink.selected = false;
-  }
+function unCheckAll() {
+  states.forEach((state) => (state.selected = false));
+  links.forEach((link) => {
+    link.selected = false;
+    link.transitionBox.selected = false;
+    link.transitionBox.inputs.forEach((input) => (input.selected = false));
+  });
+  if (startLink) startLink.selected = false;
+}
+
+function checkFirstSelectedObject(x = mouseX, y = mouseY, uncheckObjects = true) {
+  if (uncheckObjects) unCheckAll();
 
   if (startLink && startLink.containsPoint(x, y)) return { object: startLink, index: -1 };
 
@@ -280,7 +282,7 @@ function mousePressed() {
   }
   // If add state menu button is selected
   if (menuButtons[2].selected && !checkFirstSelectedObject(mouseX, mouseY, false)) {
-    states.forEach((state) => (state.selected = false));
+    unCheckAll();
     states.push(new State(states.length, mouseX / scaleFactor, mouseY / scaleFactor, stateRadius, stateColor, scaleFactor));
     states[states.length - 1].selected = true;
     return;
@@ -349,6 +351,7 @@ function mouseReleased() {
     }
   } else if (currentLink instanceof SelfLink) {
     // Check if already exists a link to itself
+    unCheckAll();
     if (!links.some((link) => link instanceof SelfLink && link.state.id === lastSelectedState.id)) {
       links.push(new SelfLink(currentLink.state, scaleFactor));
       links[links.length - 1].selected = true;
