@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Turing Machine Viewer</title>
+    <link rel="stylesheet" href="../styles/output.css" />
+    <link rel="stylesheet" href="../styles/canvas.css" />
+
+    <script src="https://kit.fontawesome.com/682cc58901.js" crossorigin="anonymous"></script>
+
+    <script src="../p5/p5.min.js"></script>
+    <script src="./classes/input.js"></script>
+    <script src="./classes/ruleInput.js"></script>
+    <script src="./classes/transitionBox.js"></script>
+    <script src="./classes/startLink.js"></script>
+    <script src="./classes/selfLink.js"></script>
+    <script src="./classes/link.js"></script>
+    <script src="./classes/temporaryLink.js"></script>
+    <script src="./classes/state.js"></script>
+    <script src="./classes/button.js"></script>
+    <script src="./classes/boxDom.js"></script>
+    <script src="../utils/updateTBoxPosition.js"></script>
+    <script src="../utils/drawArrow.js"></script>
+    <script src="./sketch.js"></script>
+  </head>
+
+  <body class="bg-gray-800 flex items-center justify-center">
+    <div id="playground-container" class="flex flex-col gap-1">
+      <div class="flex items-center gap-1">
+        <button id="select" class="canvasMenuButton"><i class="fa-solid fa-arrow-pointer"></i></button>
+        <button id="move" class="canvasMenuButton"><i class="fa-solid fa-arrows-up-down-left-right"></i></button>
+        <button id="addState" class="canvasMenuButton"><i class="fa-solid fa-circle-plus"></i></button>
+        <button id="addLink" class="canvasMenuButton"><i class="fa-solid fa-arrow-right"></i></button>
+        <button id="delete" class="canvasMenuButton canvasMenuButtonDelete"><i class="fa-solid fa-trash"></i></button>
+      </div>
+      <div id="canvas-container"></div>
+      <div class="w-full flex items-center justify-end gap-1">
+        <span class="text-white">0.5</span>
+        <input id="scalingCanvas" type="range" min="0.5" max="2" step="0.25" value="1" class="w-[20%] min-w-[100px]" />
+        <span class="text-white">2.0</span>
+      </div>
+    </div>
+  </body>
+</html>

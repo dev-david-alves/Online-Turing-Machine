@@ -27,18 +27,22 @@ let mouseIsPressed = false;
 // Start of Menu Button functions
 let menuButtons = [];
 
+function setSelectedMenuButton(index) {
+  menuButtons.forEach((btn) => (btn.hasClass("canvasMenuButtonSelected") ? btn.removeClass("canvasMenuButtonSelected") : null));
+  menuButtons[index].addClass("canvasMenuButtonSelected");
+}
+
+function getIdOfSelectedButton() {
+  let selectedButton = menuButtons.find((btn) => btn.hasClass("canvasMenuButtonSelected"));
+  if (selectedButton) return selectedButton.elt.id;
+  return null;
+}
+
 // Window offset
 let windowOffset = { x: 0, y: 0 };
-let offBoxes = [];
-
-function menuButtonAction(btnIndex) {
-  menuButtons.forEach((btn) => (btn.selected = false));
-  menuButtons[btnIndex].selected = !menuButtons[btnIndex].selected;
-}
-// End of Menu Button functions
 
 function preload() {
-  texMap = loadJSON("./utils/texMap.json");
+  texMap = loadJSON("../utils/texMap.json");
 }
 
 function setup() {
@@ -60,49 +64,31 @@ function setup() {
   states.push(new State(states.length, 230 / scaleFactor, 200 / scaleFactor, stateRadius, stateColor, scaleFactor));
 
   // Menu buttons
-  menuButtons.push(new Button(0, -45, { x: 0, y: 0 }, "fa-solid fa-arrow-pointer", () => menuButtonAction(0))); // Default
-  menuButtons.push(new Button(40, -45, { x: 5, y: 0 }, "fa-solid fa-arrows-up-down-left-right", () => menuButtonAction(1))); // Move canvas view
-  menuButtons.push(new Button(80, -45, { x: 10, y: 0 }, "fa-solid fa-circle-plus", () => menuButtonAction(2))); // Add state
-  menuButtons.push(new Button(120, -45, { x: 15, y: 0 }, "fa-solid fa-arrow-right", () => menuButtonAction(3))); // Add transition
-  menuButtons.push(new Button(160, -45, { x: 20, y: 0 }, "fa-solid fa-trash", () => menuButtonAction(4), (selectedClass = "canvaMenuDeleteButton"))); // Delete
+  menuButtons.push(select("#select"));
+  menuButtons[0].mousePressed(() => setSelectedMenuButton(0));
+  menuButtons.push(select("#move"));
+  menuButtons[1].mousePressed(() => setSelectedMenuButton(1));
+  menuButtons.push(select("#addState"));
+  menuButtons[2].mousePressed(() => setSelectedMenuButton(2));
+  menuButtons.push(select("#addLink"));
+  menuButtons[3].mousePressed(() => setSelectedMenuButton(3));
+  menuButtons.push(select("#delete"));
+  menuButtons[4].mousePressed(() => setSelectedMenuButton(4));
 
   // Activate default button
-  menuButtonAction(0);
+  setSelectedMenuButton(0);
 
   // Create slider
-  slider = createSlider(0.5, 2, scaleFactor, 0.25);
-  slider.size(100);
-
-  // Create a boxDom for the slider
-  offBoxes.push(new BoxDom(0, 0, [slider]));
-  offBoxes.push(new BoxDom(0, 0, menuButtons));
+  slider = select("#scalingCanvas");
 }
 
 function reCalculateDoomPositions() {
   windowOffset = cnv.position();
-
-  let sliderPos = slider.position(windowOffset.x + width - slider.width, windowOffset.y + height + 5);
-  if (sliderPos && offBoxes && offBoxes[0]) {
-    offBoxes[0].x = sliderPos.x - windowOffset.x;
-    offBoxes[0].y = sliderPos.y - windowOffset.y;
-    offBoxes[0].update();
-  }
-
-  if (offBoxes && offBoxes[1] && offBoxes[1].items) {
-    offBoxes[1].items.forEach((item) => {
-      item.update();
-    });
-
-    offBoxes[1].x = offBoxes[1].items[0].x;
-    offBoxes[1].y = offBoxes[1].items[0].y;
-    offBoxes[1].update();
-  }
 }
 
 function draw() {
-  if((mouseIsPressed && keyIsPressed && keyCode === CONTROL) || mouseButton === CENTER || (menuButtons[1].selected && mouseIsPressed)) moveCanvas();
+  if ((mouseIsPressed && keyIsPressed && keyCode === CONTROL) || mouseButton === CENTER || (getIdOfSelectedButton() === "move" && mouseIsPressed)) moveCanvas();
 
-  canDoCanvaActions = !offBoxes.some((box) => box.containsPoint());
   reCalculateDoomPositions();
   background(255);
 
@@ -170,25 +156,16 @@ function draw() {
     currentLink.scaleFactor = scaleFactor;
     currentLink.draw();
   }
-
-  for (let i = 0; i < menuButtons.length; i++) {
-    menuButtons[i].update();
-  }
-
-  // Slider box
-  for (let i = 0; i < offBoxes.length; i++) {
-    offBoxes[i].draw();
-  }
 }
 
 function stateRepulse(repulseFactor = 30.0) {
   repulseFactor *= scaleFactor;
 
-  for(let i = 0; i < states.length; i++) {
-    for(let j = 0; j < states.length - 1; j++) {
-      if(i == j) continue;
+  for (let i = 0; i < states.length; i++) {
+    for (let j = 0; j < states.length - 1; j++) {
+      if (i == j) continue;
       let distance = dist(states[i].x, states[i].y, states[j].x, states[j].y);
-      if(distance < stateRadius * 2 * scaleFactor + repulseFactor) {
+      if (distance < stateRadius * 2 * scaleFactor + repulseFactor) {
         let angle = atan2(states[j].y - states[i].y, states[j].x - states[i].x);
         let pushX = cos(angle) * repulseFactor;
         let pushY = sin(angle) * repulseFactor;
@@ -254,8 +231,8 @@ function deleteObject() {
         }
       }
 
-      if(startLink && startLink.state.id === selectedObject.object.id) startLink = null;
-      
+      if (startLink && startLink.state.id === selectedObject.object.id) startLink = null;
+
       selectedObject.object.remove();
       states.splice(selectedObject.index, 1);
       reCalculateStateIds();
@@ -278,7 +255,7 @@ function moveCanvas(x = mouseX, y = mouseY) {
 
 function mousePressed() {
   mouseIsPressed = true;
-  if((mouseIsPressed && keyIsPressed && keyCode === CONTROL) || mouseButton === CENTER || (menuButtons[1].selected && mouseIsPressed)) return;
+  if ((mouseIsPressed && keyIsPressed && keyCode === CONTROL) || mouseButton === CENTER || (getIdOfSelectedButton() === "move" && mouseIsPressed)) return;
 
   if (!canDoCanvaActions) {
     isMouseWithShiftPressed = false;
@@ -287,15 +264,15 @@ function mousePressed() {
     return;
   }
   // If add state menu button is selected
-  if (menuButtons[2].selected && !checkFirstSelectedObject(mouseX, mouseY, false)) {
+  if (getIdOfSelectedButton() === "addState" && !checkFirstSelectedObject(mouseX, mouseY, false)) {
     unCheckAll();
     states.push(new State(states.length, mouseX / scaleFactor, mouseY / scaleFactor, stateRadius, stateColor, scaleFactor));
     states[states.length - 1].selected = true;
     return;
   }
 
-  isMouseWithShiftPressed = mouseButton === LEFT && (isShiftPressed || menuButtons[3].selected);
-  if (isShiftPressed || menuButtons[3].selected) return;
+  isMouseWithShiftPressed = mouseButton === LEFT && (isShiftPressed || getIdOfSelectedButton() === "addLink");
+  if (isShiftPressed || getIdOfSelectedButton() === "addLink") return;
 
   selectedObject = checkFirstSelectedObject();
 
@@ -314,9 +291,7 @@ function mousePressed() {
   }
 
   // Delete button
-  if (menuButtons[4].selected) {
-    deleteObject();
-  }
+  if (getIdOfSelectedButton() === "delete") deleteObject();
 }
 
 function mouseReleased() {
@@ -384,9 +359,9 @@ function mouseReleased() {
 }
 
 function keyPressed() {
-  if(keyCode === 49 || keyCode === 50 || keyCode === 51 || keyCode === 52 || keyCode === 53) {
+  if (keyCode === 49 || keyCode === 50 || keyCode === 51 || keyCode === 52 || keyCode === 53) {
     let index = keyCode - 49;
-    menuButtonAction(index);
+    setSelectedMenuButton(index);
     return;
   }
 
@@ -409,7 +384,7 @@ function keyReleased() {
     isShiftPressed = false;
     isMouseWithShiftPressed = false;
     currentLink = null;
-  } else if(keyCode === CONTROL) {
+  } else if (keyCode === CONTROL) {
     movingCanvasOffset.x = 0;
     movingCanvasOffset.y = 0;
   }
