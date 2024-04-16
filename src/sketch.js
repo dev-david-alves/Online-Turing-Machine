@@ -24,10 +24,8 @@ let scaleFactor = 0.75;
 let movingCanvasOffset = { x: 0, y: 0 };
 let mouseIsPressed = false;
 
-// Start of Menu Button functions
+// Start of Button functions
 let menuButtons = [];
-let buttonWaiting = true;
-let buttonTimeout = null;
 
 function setSelectedMenuButton(index) {
   if (menuButtons[index].elt.id === "delete") {
@@ -39,11 +37,7 @@ function setSelectedMenuButton(index) {
     menuButtons[index].addClass("canvasMenuButtonSelected");
   }
 
-  if (buttonTimeout) clearTimeout(buttonTimeout);
-  buttonWaiting = true;
-  buttonTimeout = setTimeout(() => {
-    buttonWaiting = false;
-  }, 300);
+  closeExportMenu();
 }
 
 function getIdOfSelectedButton() {
@@ -59,11 +53,47 @@ function preload() {
   texMap = loadJSON("../utils/texMap.json");
 }
 
+// Export functions
+
+let exportButton = null;
+let exportAsPNG = null;
+let exportAsDMT = null;
+
+function closeExportMenu() {
+  let floatingMenu = select("#floating-export-menu");
+
+  if (!floatingMenu.hasClass("hidden")) {
+    floatingMenu.removeClass("flex");
+    floatingMenu.addClass("hidden");
+  }
+}
+
+function toggleExportMenu() {
+  let floatingMenu = select("#floating-export-menu");
+  // if hidden, show it
+  if (floatingMenu.hasClass("hidden")) {
+    floatingMenu.removeClass("hidden");
+    floatingMenu.addClass("flex");
+  } else {
+    closeExportMenu();
+  }
+}
+
+function saveAsPNG() {
+  let img = get();
+  img.save("state-machine.png");
+
+  closeExportMenu();
+}
+
 function setup() {
   cnv = createCanvas(700, 500);
   cnv.parent("canvas-container");
   cnv.elt.addEventListener("contextmenu", (event) => event.preventDefault());
   cnv.doubleClicked(doubleClick);
+  cnv.mousePressed(mousePressedOnCanvas);
+  cnv.mouseReleased(mouseReleasedOnCanvas);
+
   // Resize canvas
   let canvasContainer = select("#canvas-container");
   let canvasWidth = canvasContainer.width;
@@ -94,6 +124,14 @@ function setup() {
 
   // Create slider
   slider = select("#scalingCanvas");
+
+  // Export button
+  exportButton = select("#export-button-toggle");
+  exportButton.mousePressed(() => toggleExportMenu());
+  exportAsPNG = select("#export-as-png");
+  exportAsPNG.mousePressed(() => saveAsPNG());
+  exportAsDMT = select("#export-as-dtm");
+  exportAsDMT.mousePressed(() => console.log("Export as DMT"));
 }
 
 function reCalculateDoomPositions() {
@@ -101,7 +139,7 @@ function reCalculateDoomPositions() {
 }
 
 function draw() {
-  if ((mouseIsPressed && keyIsPressed && keyCode === CONTROL) || mouseButton === CENTER || (getIdOfSelectedButton() === "move" && !buttonWaiting && mouseIsPressed)) moveCanvas();
+  if ((mouseIsPressed && keyIsPressed && keyCode === CONTROL) || mouseButton === CENTER || (getIdOfSelectedButton() === "move" && mouseIsPressed)) moveCanvas();
 
   reCalculateDoomPositions();
   background(255);
@@ -267,9 +305,11 @@ function moveCanvas(x = mouseX, y = mouseY) {
   movingCanvasOffset.y = (movingCanvasOffset.y - (y - pmouseY)) / ratioFactor;
 }
 
-function mousePressed() {
+function mousePressedOnCanvas() {
+  closeExportMenu();
+
   mouseIsPressed = true;
-  if ((mouseIsPressed && keyIsPressed && keyCode === CONTROL) || mouseButton === CENTER || (getIdOfSelectedButton() === "move" && !buttonWaiting && mouseIsPressed)) return;
+  if ((mouseIsPressed && keyIsPressed && keyCode === CONTROL) || mouseButton === CENTER || (getIdOfSelectedButton() === "move" && mouseIsPressed)) return;
 
   if (!canDoCanvaActions) {
     isMouseWithShiftPressed = false;
@@ -278,15 +318,15 @@ function mousePressed() {
     return;
   }
   // If add state menu button is selected
-  if (getIdOfSelectedButton() === "addState" && !buttonWaiting && !checkFirstSelectedObject(mouseX, mouseY, false)) {
+  if (getIdOfSelectedButton() === "addState" && !checkFirstSelectedObject(mouseX, mouseY, false)) {
     unCheckAll();
     states.push(new State(states.length, mouseX / scaleFactor, mouseY / scaleFactor, stateRadius, stateColor, scaleFactor));
     states[states.length - 1].selected = true;
     return;
   }
 
-  isMouseWithShiftPressed = mouseButton === LEFT && (isShiftPressed || (getIdOfSelectedButton() === "addLink" && !buttonWaiting));
-  if (isShiftPressed || (getIdOfSelectedButton() === "addLink" && !buttonWaiting)) return;
+  isMouseWithShiftPressed = mouseButton === LEFT && (isShiftPressed || getIdOfSelectedButton() === "addLink");
+  if (isShiftPressed || getIdOfSelectedButton() === "addLink") return;
 
   selectedObject = checkFirstSelectedObject();
 
@@ -305,10 +345,10 @@ function mousePressed() {
   }
 
   // Delete button
-  if (getIdOfSelectedButton() === "delete" && !buttonWaiting) deleteObject();
+  if (getIdOfSelectedButton() === "delete") deleteObject();
 }
 
-function mouseReleased() {
+function mouseReleasedOnCanvas() {
   mouseButton = 0;
   mouseIsPressed = false;
   movingCanvasOffset.x = 0;

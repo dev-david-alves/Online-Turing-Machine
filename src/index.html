@@ -25,14 +25,27 @@
 
   <body class="bg-gray-800 flex items-center justify-center">
     <div id="playground-container" class="flex flex-col gap-1">
-      <div class="flex items-center gap-1">
-        <button id="select" class="canvasMenuButton"><i class="fa-solid fa-arrow-pointer"></i></button>
-        <button id="move" class="canvasMenuButton"><i class="fa-solid fa-arrows-up-down-left-right"></i></button>
-        <button id="addState" class="canvasMenuButton"><i class="fa-solid fa-circle-plus"></i></button>
-        <button id="addLink" class="canvasMenuButton"><i class="fa-solid fa-arrow-right"></i></button>
-        <button id="delete" class="canvasMenuButton"><i class="fa-solid fa-trash"></i></button>
+      <div class="w-full flex justify-between items-center">
+        <div class="flex items-center gap-1">
+          <button id="select" class="canvasMenuButton"><i class="fa-solid fa-arrow-pointer"></i></button>
+          <button id="move" class="canvasMenuButton"><i class="fa-solid fa-arrows-up-down-left-right"></i></button>
+          <button id="addState" class="canvasMenuButton"><i class="fa-solid fa-circle-plus"></i></button>
+          <button id="addLink" class="canvasMenuButton"><i class="fa-solid fa-arrow-right"></i></button>
+          <button id="delete" class="canvasMenuButton"><i class="fa-solid fa-trash"></i></button>
+        </div>
+
+        <div class="relative">
+          <button class="w-[100px] py-1 rounded-[5px] text-white bg-[#4e5f6f] hover:bg-[#526a7c] transition-colors" id="export-button-toggle">Exportar</button>
+
+          <div class="menu-export absolute top-[45px] -left-[21px] bg-[#9caab7] p-[8px] rounded-lg flex-col gap-1 drop-shadow-lg z-[4] hidden" id="floating-export-menu">
+            <button class="w-[100px] py-1 rounded-[5px] text-white bg-[#4e5f6f] hover:bg-[#526a7c] transition-colors z-[5]" id="export-as-png">.PNG</button>
+            <button class="w-[100px] py-1 rounded-[5px] text-white bg-[#4e5f6f] hover:bg-[#526a7c] transition-colors z-[5]" id="export-as-dtm">.DMT</button>
+          </div>
+        </div>
       </div>
+
       <div id="canvas-container"></div>
+
       <div class="w-full flex items-center justify-end gap-1">
         <span class="text-white">0.5</span>
         <input id="scalingCanvas" type="range" min="0.5" max="2" step="0.25" value="1" class="w-[20%] min-w-[100px]" />
