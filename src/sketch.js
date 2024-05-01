@@ -37,6 +37,8 @@ function setSelectedMenuButton(index) {
     menuButtons[index].addClass("canvasMenuButtonSelected");
   }
 
+  unCheckAll();
+
   closeExportMenu();
 }
 
@@ -104,8 +106,10 @@ function setup() {
   // Set window offset
   windowOffset = cnv.position();
 
-  states.push(new State(states.length, 100 / scaleFactor, 200 / scaleFactor, stateRadius, stateColor, scaleFactor));
-  states.push(new State(states.length, 230 / scaleFactor, 200 / scaleFactor, stateRadius, stateColor, scaleFactor));
+  states.push(new State(states.length, 100 / scaleFactor, 100 / scaleFactor, stateRadius, stateColor, scaleFactor));
+  states.push(new State(states.length, 230 / scaleFactor, 100 / scaleFactor, stateRadius, stateColor, scaleFactor));
+  links.push(new Link(states[0], states[1], scaleFactor));
+  links.push(new SelfLink(states[0], scaleFactor, true));
 
   // Menu buttons
   menuButtons.push(select("#select"));
@@ -139,10 +143,10 @@ function reCalculateDoomPositions() {
 }
 
 function draw() {
-  if ((mouseIsPressed && keyIsPressed && keyCode === CONTROL) || mouseButton === CENTER || (getIdOfSelectedButton() === "move" && mouseIsPressed)) moveCanvas();
-
   reCalculateDoomPositions();
   background(255);
+
+  if ((mouseIsPressed && keyIsPressed && keyCode === CONTROL) || mouseButton === CENTER || (getIdOfSelectedButton() === "move" && mouseIsPressed)) moveCanvas();
 
   // Slider -------
   scaleFactor = slider.value();
@@ -188,13 +192,13 @@ function draw() {
     states[i].update(scaleFactor);
     states[i].draw();
     states[i].input.update(scaleFactor);
-    states[i].input.draw();
+    states[i].input.draw(states[i].x - states[i].input.w / 2, states[i].y - 7 * scaleFactor, 255);
   }
 
   for (let i = 0; i < links.length; i++) {
     links[i].update(scaleFactor);
     links[i].draw();
-    links[i].transitionBox.containsPoint();
+    // links[i].transitionBox.containsPoint();
     links[i].transitionBox.update(scaleFactor);
     links[i].transitionBox.draw();
   }
@@ -241,7 +245,7 @@ function unCheckAll() {
   links.forEach((link) => {
     link.selected = false;
     link.transitionBox.selected = false;
-    link.transitionBox.inputs.forEach((input) => (input.selected = false));
+    // link.transitionBox.inputs.forEach((input) => (input.selected = false));
   });
   if (startLink) startLink.selected = false;
 }
@@ -252,7 +256,7 @@ function checkFirstSelectedObject(x = mouseX, y = mouseY, uncheckObjects = true)
   if (startLink && startLink.containsPoint(x, y)) return { object: startLink, index: -1 };
 
   for (let i = links.length - 1; i >= 0; i--) {
-    if (links[i].transitionBox.containsPoint(x, y)) return { object: links[i].transitionBox, index: i };
+    if (links[i].transitionBox.containsPoint(x, y) && links[i].transitionBox.visible) return { object: links[i].transitionBox, index: i };
     if (links[i].containsPoint(x, y)) return { object: links[i], index: i };
   }
 
@@ -322,6 +326,7 @@ function mousePressedOnCanvas() {
     unCheckAll();
     states.push(new State(states.length, mouseX / scaleFactor, mouseY / scaleFactor, stateRadius, stateColor, scaleFactor));
     states[states.length - 1].selected = true;
+    selectedObject = { object: states[states.length - 1], index: states.length - 1 };
     return;
   }
 
@@ -333,14 +338,14 @@ function mousePressedOnCanvas() {
   if (selectedObject) {
     selectedObject.object.selected = true;
 
-    if (selectedObject.object instanceof State) {
+    if (selectedObject.object instanceof TransitionBox) {
+      selectedObject.object.mousePressed();
+    } else if (selectedObject.object instanceof State) {
       selectedObject.object.mousePressed();
     } else if (selectedObject.object instanceof Link || selectedObject.object instanceof SelfLink) {
       selectedObject.object.mousePressed();
     } else if (selectedObject.object instanceof StartLink) {
       startLink.mousePressed();
-    } else if (selectedObject.object instanceof TransitionBox) {
-      selectedObject.object.mousePressed();
     }
   }
 
@@ -413,7 +418,12 @@ function mouseReleasedOnCanvas() {
 }
 
 function keyPressed() {
-  if (keyCode === 49 || keyCode === 50 || keyCode === 51 || keyCode === 52 || keyCode === 53) {
+  if (
+    (keyCode === 49 || keyCode === 50 || keyCode === 51 || keyCode === 52 || keyCode === 53) &&
+    !isShiftPressed &&
+    !(selectedObject && selectedObject.object instanceof State) &&
+    !(selectedObject && selectedObject.object instanceof Link)
+  ) {
     let index = keyCode - 49;
     setSelectedMenuButton(index);
     return;
@@ -422,10 +432,6 @@ function keyPressed() {
   if (keyCode === SHIFT) isShiftPressed = true;
   if (keyCode === DELETE) {
     deleteObject();
-  }
-
-  for (let i = 0; i < states.length; i++) {
-    states[i].input.keyPressed();
   }
 
   for (let i = 0; i < links.length; i++) {
@@ -442,24 +448,6 @@ function keyReleased() {
     movingCanvasOffset.x = 0;
     movingCanvasOffset.y = 0;
   }
-
-  for (let i = 0; i < states.length; i++) {
-    states[i].input.keyReleased();
-  }
-
-  for (let i = 0; i < links.length; i++) {
-    links[i].transitionBox.keyReleased();
-  }
-}
-
-function keyTyped() {
-  for (let i = 0; i < states.length; i++) {
-    states[i].input.keyTyped();
-  }
-
-  for (let i = 0; i < links.length; i++) {
-    links[i].transitionBox.keyTyped();
-  }
 }
 
 function doubleClick() {
@@ -468,6 +456,7 @@ function doubleClick() {
     console.log("Double clicked on empty space");
     states.push(new State(states.length, mouseX / scaleFactor, mouseY / scaleFactor, stateRadius, stateColor, scaleFactor));
     states[states.length - 1].selected = true;
+    selectedObject = { object: states[states.length - 1], index: states.length - 1 };
   } else {
     if (overState.object instanceof State) {
       console.log("Double clicked on state");

@@ -1,31 +1,50 @@
 class TransitionBox {
-  constructor(x, y, color = { r: 0, g: 0, b: 0 }, texMap = {}, scaleFactor = 1.0) {
-    this.x = x;
-    this.y = y;
+  constructor(x, y, texMap = {}, scaleFactor = 1.0, parent = null) {
+    this.x = x * scaleFactor;
+    this.y = y * scaleFactor;
+    this.scaleFactor = scaleFactor;
     this.w = 0;
     this.h = 0;
-    this.inputs = [];
-    this.selectedInputIndex = -1;
     this.rollover = false;
     this.selected = false;
-    this.seletedCondition = false;
-    this.scaleFactor = scaleFactor;
+    this.selectedInputIndex = -1;
+    this.visible = false;
+    this.inputParent = parent;
+    this.marginBox = 5 * this.scaleFactor;
+    this.offsetBoxY = 0;
+    this.yBoxScale = 0.7;
+    this.inputMinWidth = 150;
 
     // Create the first input
-    this.inputs.push(new RuleInput(this.x, this.y, color, texMap));
+    this.labels = [];
+    this.editingInput = new RuleInput(x, y, texMap, scaleFactor, parent, true);
+
+    this.labels.push(["a->b,c"]);
+    this.labels.push(["b->c,d"]);
+    this.labels.push(["c->d,e"]);
+    this.labels.push(["d->e,f"]);
   }
 
   containsPoint(x = mouseX, y = mouseY) {
-    return x > this.x - this.w / 2 && x < this.x + this.w / 2 && y >= this.y - this.h / 2 && y <= this.y + this.h / 2;
+    return x > this.x - this.w / 2 && x < this.x + this.w / 2 && y >= this.y + this.offsetBoxY && y <= this.y + this.offsetBoxY + this.h;
   }
 
-  checkRule(index = undefined) {
-    let newIndex = index !== undefined ? index : this.selectedInputIndex;
+  labelContainsPoint(x = mouseX, y = mouseY) {
+    for (let i = 0; i < this.labels.length; i++) {
+      let yy = this.y + this.offsetBoxY + this.editingInput.h * i * this.yBoxScale + this.editingInput.h / 4 - 4 * this.scaleFactor;
+      let xx = this.x - this.w / 2;
+      let ww = this.w;
+      let hh = this.editingInput.h * this.yBoxScale;
 
-    if (newIndex < 0 || newIndex >= this.inputs.length) return false;
+      if (x > xx && x < xx + ww && y > yy && y < yy + hh) return i;
+    }
 
-    let regex = /(\s*[^ ]+\s*→\s*[^ ]+\s*,\s*[^ ]+\s*)/g;
-    let rule = this.inputs[newIndex].value.html().trim();
+    return -1;
+  }
+
+  checkRule() {
+    let regex = /(\s*[^ ]+\s*(→|->|\\arrow)\s*[^ ]+\s*,\s*[^ ]+\s*)/g;
+    let rule = this.editingInput.input.value().trim();
     let result = rule.match(regex);
 
     if (result) {
@@ -43,165 +62,240 @@ class TransitionBox {
   keyPressed() {
     if (keyCode === ENTER) {
       let isValidRule = this.checkRule();
+
       if (isValidRule) {
-        this.inputs[this.selectedInputIndex].selected = false;
-        this.selectedInputIndex = 0;
-
-        // Create a new input only if theres is no invalid rule, if it has, set the focus to the invalid rule
-        for (let i = 0; i < this.inputs.length; i++) {
-          if (!this.checkRule(i)) {
-            this.inputs[i].selected = true;
-            this.selectedInputIndex = i;
-            return;
-          }
-        }
-
-        this.inputs.unshift(new RuleInput(this.x, this.y, { r: 0, g: 0, b: 0 }, texMap));
-        this.inputs[0].selected = true;
+        this.labels.push(this.editingInput.allSubstrings);
+        this.editingInput.input.value("");
       }
-    }
-
-    for (let i = 0; i < this.inputs.length; i++) {
-      this.inputs[i].keyPressed();
-    }
-
-    if (keyCode === DOWN_ARROW) {
-      if (this.selectedInputIndex < this.inputs.length - 1) {
-        this.inputs[this.selectedInputIndex].selected = false;
-        this.selectedInputIndex++;
-        this.inputs[this.selectedInputIndex].selected = true;
-      }
-    } else if (keyCode === UP_ARROW) {
-      if (this.selectedInputIndex > 0) {
-        this.inputs[this.selectedInputIndex].selected = false;
-        this.selectedInputIndex--;
-        this.inputs[this.selectedInputIndex].selected = true;
-      }
-    }
-  }
-
-  keyTyped() {
-    for (let i = 0; i < this.inputs.length; i++) {
-      this.inputs[i].keyTyped();
-    }
-  }
-
-  keyReleased() {
-    for (let i = 0; i < this.inputs.length; i++) {
-      this.inputs[i].keyReleased();
     }
   }
 
   mousePressed() {
-    this.selected = this.containsPoint(mouseX, mouseY);
-
-    for (let i = 0; i < this.inputs.length; i++) {
-      this.inputs[i].mousePressed();
-      if (this.inputs[i].selected) {
-        if (this.selectedInputIndex !== i) {
-          if (this.selectedInputIndex !== -1) this.inputs[this.selectedInputIndex].selected = false;
-
-          this.selectedInputIndex = i;
-        }
-      }
+    if (!this.selected || !this.visible) {
+      this.editingInput.input.value("");
+      this.editingInput.input.elt.blur();
+      return;
     }
+
+    this.selectedInputIndex = this.labelContainsPoint(mouseX, mouseY);
+
+    if (this.selectedInputIndex !== -1 && this.checkRule()) {
+      this.labels.push(this.editingInput.allSubstrings);
+      this.editingInput.input.value("");
+    }
+
+    // Get label and remove it from array
+    let label = this.labels.splice(this.selectedInputIndex, 1);
+    // Replace the → with used arrow type
+    let rule = label[0].join("").replace(/(→|->|\\arrow)/g, "->");
+    // Set the input value to the rule
+    this.editingInput.input.value(rule);
+    this.editingInput.textInput(rule);
   }
 
-  remove() {
-    for (let i = 0; i < this.inputs.length; i++) {
-      this.inputs[i].value.remove();
-    }
-  }
+  // getLabelWidth(label, fontSize = 15) {
+  //   let span = createSpan(label.join(""));
+  //   span.style("font-size", fontSize * this.scaleFactor + "px");
+  //   span.style("font-family", "Arial");
+  //   span.style("visibility", "hidden");
+  //   span.style("position", "absolute");
+  //   span.style("top", "-1000px");
+  //   span.style("left", "-1000px");
 
-  update(scaleFactor = 1.0) {
-    this.scaleFactor = scaleFactor;
+  //   let maxW = span.elt.offsetWidth;
 
-    this.rollover = this.containsPoint(mouseX, mouseY);
+  //   if (span) span.remove();
 
-    for (let i = 0; i < this.inputs.length; i++) {
-      this.inputs[i].update(scaleFactor);
-      this.inputs[i].x = this.x;
-      this.inputs[i].y = this.y + this.inputs[0].h * i - (this.inputs[0].h * (this.inputs.length - 1)) / 2;
-
-      if (this.inputs[i].selected) this.selected = true;
-    }
-
-    if (!this.selected) {
-      this.selectedInputIndex = -1;
-
-      for (let i = 0; i < this.inputs.length; i++) {
-        if (!this.checkRule(i)) {
-          if (this.inputs.length > 1) {
-            this.inputs[i].value.remove();
-            this.inputs.splice(i, 1);
-            i--;
-          } else {
-            this.inputs[i].value.html("");
-          }
-        }
-      }
-    } else {
-      // if theres is no selected input, select the first one
-      if (this.selectedInputIndex === -1) {
-        this.selectedInputIndex = 0;
-        this.inputs[0].selected = true;
-      }
-    }
-  }
+  //   return maxW;
+  // }
 
   getTheWidestInput() {
-    // Find the widest input
-    let maxW = 0;
-    for (let i = 0; i < this.inputs.length; i++) {
-      if (this.inputs[i].w > maxW) maxW = this.inputs[i].w;
+    let span = createSpan(this.editingInput.input.value());
+    span.style("font-size", 12 * this.scaleFactor + "px");
+    span.style("font-family", "Arial");
+    span.style("visibility", "hidden");
+    span.style("position", "absolute");
+    span.style("top", "-1000px");
+    span.style("left", "-1000px");
+
+    let maxW = span.elt.offsetWidth + 20 * this.scaleFactor;
+
+    for (let i = 0; i < this.labels.length; i++) {
+      span.html(this.labels[i].join(""));
+
+      maxW = max(maxW, span.elt.offsetWidth + 20 * this.scaleFactor);
     }
 
-    // Return the widest input
+    this.editingInput.w = max(maxW, this.inputMinWidth * this.scaleFactor);
+    if (span) span.remove();
+
     return maxW;
   }
 
+  update(scaleFactor = 1.0) {
+    if (this.scaleFactor != scaleFactor) {
+      this.x = (this.x / this.scaleFactor) * scaleFactor;
+      this.y = (this.y / this.scaleFactor) * scaleFactor;
+      this.marginBox = 5 * scaleFactor;
+      this.scaleFactor = scaleFactor;
+    }
+
+    this.rollover = this.containsPoint(mouseX, mouseY);
+    this.visible = this.selected && !isMouseWithShiftPressed;
+
+    this.offsetBoxY = 0;
+    if (!this.selected || !this.visible) {
+      this.editingInput.selected = false;
+      this.editingInput.visible = false;
+      this.editingInput.input.elt.blur();
+    } else {
+      this.editingInput.selected = true;
+      this.editingInput.visible = true;
+      this.editingInput.input.elt.focus();
+      this.offsetBoxY = this.editingInput.h + 2 * this.marginBox;
+    }
+
+    this.editingInput.x = this.x - this.w / 2;
+    this.editingInput.y = this.y + this.marginBox;
+    this.editingInput.update(scaleFactor);
+  }
+
   draw() {
-    let padding = 20 * this.scaleFactor;
+    if (isMouseWithShiftPressed) return;
+
     let maxW = this.getTheWidestInput();
-    this.w = maxW;
-    this.h = this.inputs.length * this.inputs[0].h * 0.7 * this.scaleFactor;
+    this.w = max(maxW, this.inputMinWidth * this.scaleFactor);
+    this.h = this.labels.length * this.editingInput.h * this.yBoxScale + 2 * this.scaleFactor;
 
     push();
-    if (this.selected || (this.inputs.length === 1 && this.inputs[0].value.html().trim() === "")) {
-      this.w = max(maxW + padding, 100 * this.scaleFactor);
-      this.h = this.inputs.length * this.inputs[0].h + 5 * this.scaleFactor;
+    noFill();
+    if (this.selected && this.visible && this.labels.length > 0) rect(this.x - this.w / 2, this.y + this.offsetBoxY, this.w, this.h, this.marginBox * this.scaleFactor);
+    pop();
 
-      if (this.rollover) stroke(100, 100, 200);
-      if (this.selected) stroke(0, 0, 255);
-      strokeWeight(1);
-      rectMode(CENTER);
-      rect(this.x, this.y, this.w, this.h, 5 * this.scaleFactor);
+    if (this.selected && this.visible) {
+      for (let i = 0; i < this.labels.length; i++) {
+        let yy = this.y + this.offsetBoxY + this.editingInput.h * i * this.yBoxScale + this.editingInput.h / 4 - 4 * this.scaleFactor;
+        this.drawText(this.x, yy + 2 * this.scaleFactor, this.labels[i]);
+
+        if (i < this.labels.length - 1 && this.labels.length > 1) {
+          push();
+          stroke(23, 42, 43);
+          strokeWeight(1);
+          line(this.x - this.w / 2, yy + this.editingInput.h * this.yBoxScale - 2 * this.scaleFactor, this.x + this.w / 2, yy + this.editingInput.h * this.yBoxScale - 2 * this.scaleFactor);
+          pop();
+        }
+      }
+    } else {
+      for (let i = 0; i < this.labels.length; i++) {
+        let yy = this.y + this.offsetBoxY + this.editingInput.h * i * this.yBoxScale * 0.5 + this.editingInput.h / 4 - 4 * this.scaleFactor;
+        this.drawText(this.x, yy + 2 * this.scaleFactor, this.labels[i], 255, 12 * this.scaleFactor);
+      }
+    }
+
+    if (this.editingInput.input.value().trim() !== "") {
+      if (this.checkRule()) {
+        this.editingInput.input.style("color", "green");
+        this.editingInput.input.style("border-color", "green");
+      } else {
+        this.editingInput.input.style("color", "red");
+        this.editingInput.input.style("border-color", "red");
+      }
+    } else {
+      this.editingInput.input.style("color", "black");
+      this.editingInput.input.style("border-color", "black");
+    }
+  }
+
+  drawText(xx = this.x, yy = this.y + 40 * this.scaleFactor, substring = [], alpha = 255, fontSize = 15 * this.scaleFactor) {
+    push();
+    textAlign(LEFT, TOP);
+    textFont("Arial");
+    textSize(fontSize);
+
+    xx += this.editingInput.w / 2;
+
+    let startX = xx;
+
+    fill(23, 42, 43, 0);
+    for (let i = 0; i < substring.length; i++) {
+      let newString = substring[i];
+
+      if (substring[i].startsWith("_{") && substring[i].endsWith("}")) {
+        newString = substring[i].replace(/_{/g, "");
+        newString = newString.replace(/}/g, "");
+        push();
+        textSize(fontSize * 0.73);
+        text(newString, xx, yy + 10 * this.scaleFactor);
+        xx += textWidth(newString);
+        pop();
+      } else if (substring[i].startsWith("^{") && substring[i].endsWith("}")) {
+        newString = substring[i].replace(/\^{/g, "");
+        newString = newString.replace(/}/g, "");
+        push();
+        textSize(fontSize * 0.73);
+        text(newString, xx, yy - 2 * this.scaleFactor);
+        xx += textWidth(newString);
+        pop();
+      } else if (substring[i].startsWith("_")) {
+        newString = substring[i].replace(/_/g, "");
+        push();
+        textSize(fontSize * 0.73);
+        text(newString, xx, yy + 10 * this.scaleFactor);
+        xx += textWidth(newString);
+        pop();
+      } else if (substring[i].startsWith("^")) {
+        newString = substring[i].replace(/\^/g, "");
+        push();
+        textSize(fontSize * 0.73);
+        text(newString, xx, yy - 2 * this.scaleFactor);
+        xx += textWidth(newString);
+        pop();
+      } else {
+        text(substring[i], xx, yy);
+        xx += textWidth(newString);
+      }
+    }
+    xx = startX - (xx - startX) / 2 - this.editingInput.w / 2;
+    fill(23, 42, 43, alpha);
+    for (let i = 0; i < substring.length; i++) {
+      let newString = substring[i];
+
+      if (substring[i].startsWith("_{") && substring[i].endsWith("}")) {
+        newString = substring[i].replace(/_{/g, "");
+        newString = newString.replace(/}/g, "");
+        push();
+        textSize(fontSize * 0.73);
+        text(newString, xx, yy + 10 * this.scaleFactor);
+        xx += textWidth(newString);
+        pop();
+      } else if (substring[i].startsWith("^{") && substring[i].endsWith("}")) {
+        newString = substring[i].replace(/\^{/g, "");
+        newString = newString.replace(/}/g, "");
+        push();
+        textSize(fontSize * 0.73);
+        text(newString, xx, yy - 2 * this.scaleFactor);
+        xx += textWidth(newString);
+        pop();
+      } else if (substring[i].startsWith("_")) {
+        newString = substring[i].replace(/_/g, "");
+        push();
+        textSize(fontSize * 0.73);
+        text(newString, xx, yy + 10 * this.scaleFactor);
+        xx += textWidth(newString);
+        pop();
+      } else if (substring[i].startsWith("^")) {
+        newString = substring[i].replace(/\^/g, "");
+        push();
+        textSize(fontSize * 0.73);
+        text(newString, xx, yy - 2 * this.scaleFactor);
+        xx += textWidth(newString);
+        pop();
+      } else {
+        text(substring[i], xx, yy);
+        xx += textWidth(newString);
+      }
     }
 
     pop();
-
-    for (let i = 0; i < this.inputs.length; i++) {
-      this.inputs[i].w = maxW;
-      this.inputs[i].y = this.y + this.inputs[0].h * i * (!this.selected ? 0.7 : 1) - (this.inputs[0].h * (this.inputs.length - 1)) / 2 + 2 * this.scaleFactor;
-      this.inputs[i].draw();
-
-      if (i === this.inputs.length - 1 || !this.selected) continue;
-
-      push();
-      stroke(129, 133, 137);
-      strokeWeight(1);
-      line(this.inputs[i].x - this.w / 2, this.inputs[i].y + this.inputs[i].h / 2, this.inputs[i].x + this.w / 2, this.inputs[i].y + this.inputs[i].h / 2);
-      pop();
-    }
-
-    // Set rule color based on the checkRule() result
-    for (let i = 0; i < this.inputs.length; i++) {
-      let isValidRule = this.checkRule(i);
-      if (isValidRule) {
-        this.inputs[i].value.style("color", "green");
-      } else {
-        this.inputs[i].value.style("color", "red");
-      }
-    }
   }
 }

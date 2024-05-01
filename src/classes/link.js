@@ -17,7 +17,7 @@ class Link {
     this.hitTargetPadding = 6 * this.scaleFactor;
 
     // TextBox
-    this.transitionBox = new TransitionBox(-1000, -1000, { r: 0, g: 0, b: 0 }, texMap);
+    this.transitionBox = new TransitionBox(-1000, -1000, texMap, scaleFactor, "#canvas-container");
   }
 
   det(a, b, c, d, e, f, g, h, i) {
@@ -192,7 +192,7 @@ class Link {
       updateBoxPosition(this.transitionBox, boxX, boxY, boxAngle);
     }
 
-    if (this.selected) {
+    if (this.selected && !mouseIsPressed) {
       this.transitionBox.selected = true;
     } else if (this.transitionBox.selected) {
       this.selected = true;

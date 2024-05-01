@@ -68,24 +68,20 @@ class State {
     this.dragging = false; // Is the object being dragged?
     this.rollover = false; // Is the mouse over the ellipse?
     this.selected = false;
-    
+
     // Position
     this.x = x * scaleFactor;
     this.y = y * scaleFactor;
     this.offsetX = 0;
     this.offsetY = 0;
-    
+
     // Dimensions
     this.r = r * scaleFactor;
     this.h = this.r * 2;
     this.w = this.r * 2;
 
     // Text input
-    this.input = new CustomInput(this.x, this.y, color, this.texMap);
-  }
-
-  remove() {
-    this.input.value.remove();
+    this.input = new CustomInput(this.x, this.y, this.texMap, scaleFactor, "#canvas-container");
   }
 
   closestPointOnCircle(x, y) {
@@ -118,22 +114,28 @@ class State {
     this.dragging = false;
   }
 
+  remove() {
+    this.input.input.remove();
+  }
+
   update(scaleFactor = 1.0) {
-    if(this.scaleFactor != scaleFactor) {
-      this.r = this.r / this.scaleFactor * scaleFactor;
-      this.x = this.x / this.scaleFactor * scaleFactor;
-      this.y = this.y / this.scaleFactor * scaleFactor;
+    if (this.scaleFactor != scaleFactor) {
+      this.r = (this.r / this.scaleFactor) * scaleFactor;
+      this.x = (this.x / this.scaleFactor) * scaleFactor;
+      this.y = (this.y / this.scaleFactor) * scaleFactor;
       this.scaleFactor = scaleFactor;
     }
 
     this.x -= movingCanvasOffset.x;
     this.y -= movingCanvasOffset.y;
-    
-    this.input.x = this.x;
-    this.input.y = this.y;
-    this.input.selected = this.selected;
-    
-    
+
+    this.input.x = this.x - this.input.w / 2;
+    this.input.y = this.y - (this.r + this.input.h + 5 * this.scaleFactor);
+    this.input.visible = this.selected && !isMouseWithShiftPressed && !mouseIsPressed;
+    if (this.selected && document.activeElement !== this.input.input.elt) {
+      this.input.input.elt.focus();
+    }
+
     // this.w = Math.max(this.r * 2, this.input.w + 20 * this.scaleFactor);
     this.w = this.r * 2;
     this.rollover = this.containsPoint(mouseX, mouseY);

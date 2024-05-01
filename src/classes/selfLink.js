@@ -14,7 +14,7 @@ class SelfLink {
 
     // TextBox
     this.transitionBox = null;
-    if(createText) this.transitionBox = new TransitionBox(-1000, -1000, { r: 0, g: 0, b: 0 }, texMap);
+    if (createText) this.transitionBox = new TransitionBox(-1000, -1000, texMap, scaleFactor, "#canvas-container");
   }
 
   containsPoint(x, y) {
@@ -73,7 +73,7 @@ class SelfLink {
   update(scaleFactor = 1.0) {
     this.scaleFactor = scaleFactor;
     this.hitTargetPadding = 6 * this.scaleFactor;
-    
+
     if (this.isMousePressed && this.selected) {
       this.setAnchorPoint(mouseX, mouseY);
     }
@@ -96,7 +96,7 @@ class SelfLink {
       updateBoxPosition(this.transitionBox, boxX, boxY, stuff.anchorAngle, true, this.state);
     }
 
-    if (this.selected) {
+    if (this.selected && !mouseIsPressed) {
       this.transitionBox.selected = true;
     } else if (this.transitionBox.selected) {
       this.selected = true;
