@@ -143,6 +143,11 @@ function reCalculateDoomPositions() {
 }
 
 function draw() {
+  // Check if mouse outside canvas
+  if (mouseX < 0 || mouseX > width || mouseY < 0 || mouseY > height) {
+    mouseReleasedOnCanvas();
+  }
+
   reCalculateDoomPositions();
   background(255);
 
