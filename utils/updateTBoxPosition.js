@@ -1,5 +1,7 @@
 function updateBoxPosition(tBox, x, y, angleOrNull, isSelfLink = false, parent = null) {
   if (!tBox) return;
+  let ruleX = x;
+  let ruleY = y;
 
   // position the text intelligently if given an angle
   if (angleOrNull != null) {
@@ -7,35 +9,37 @@ function updateBoxPosition(tBox, x, y, angleOrNull, isSelfLink = false, parent =
     let sinCalc = sin(angleOrNull);
     let cornerPointX = cosCalc > 0 ? 1 : -1;
     let cornerPointY = sinCalc > 0 ? 1 : -1;
-    let slide = sinCalc * pow(abs(sinCalc), 40) * cornerPointX - cosCalc * pow(abs(cosCalc), 10) * cornerPointY;
-    x += cornerPointX - sinCalc * slide;
-    y += cornerPointY + cosCalc * slide;
+    x += cornerPointX - sinCalc;
+    y += cornerPointY + cosCalc;
 
-    let offsetY = 0;
-    if (!tBox.selected) {
-      tBox.x = x + (cosCalc * (tBox.w + 2 * tBox.marginBox) - (cosCalc * tBox.w) / 2) / 2;
-      if (sinCalc < 0) offsetY = -sinCalc * (-tBox.h / 2 - 2 * tBox.marginBox);
-      offsetY += -abs(cosCalc) * (tBox.h / 4);
-      tBox.y = y + offsetY;
-    } else {
-      tBox.x = x + (tBox.w / 2 + tBox.marginBox) * cosCalc;
-      tBox.y = y;
-      if (sinCalc < 0 && abs(round(cosCalc)) !== 1) tBox.y = tBox.y - tBox.h - tBox.editingInput.h - 3 * tBox.marginBox;
-      else if (abs(round(cosCalc)) === 1) tBox.y = tBox.y - tBox.h + (tBox.h + tBox.editingInput.h) / 2 - tBox.editingInput.h - 3 * tBox.marginBox;
+    // Rules
+    ruleX = x + (tBox.rulesWidth / 2 + 5 * tBox.scaleFactor) * cosCalc;
+    if (round(abs(sinCalc)) == 0 && round(abs(cosCalc)) == 1) ruleY = y - (tBox.rulesHeight / 2 + tBox.offsetBoxY / 2);
+    else if (sinCalc < 0) ruleY = y + (tBox.rulesHeight + tBox.offsetBoxY / 2) * sinCalc;
+    else if (round(abs(sinCalc)) == 1 && round(abs(cosCalc)) == 1) {
+      ruleX = x + (tBox.rulesWidth / 2 + tBox.offsetBoxY / 2) * cosCalc;
     }
-
-    return;
   }
 
-  let angle = atan2(y - parent.y, x - parent.x);
-  if (!tBox.selected) {
-    tBox.x = x + (tBox.w / 4) * cos(angle);
-    tBox.y = y + (tBox.h / 4) * sin(angle) - tBox.h / 4;
+  // Box
+  tBox.x = x - tBox.w / 2;
+  tBox.y = y - tBox.h / 2;
 
-    if (sin(angle) < 0) tBox.y += -2 * tBox.marginBox;
+  // Rules
+  if (!isSelfLink) {
+    tBox.rulesX = ruleX;
+    tBox.rulesY = ruleY;
   } else {
-    tBox.x = x + (tBox.w / 2 + tBox.marginBox) * cos(angle);
-    let sinn = map(sin(angle), -1, 1, -1, 0);
-    tBox.y = y + (tBox.h + tBox.marginBox) * sinn + 0.75 * parent.r * 2 * sinn;
+    let angle = atan2(y - parent.y, x - parent.x);
+    tBox.rulesX = x + (tBox.rulesWidth / 2 + 5 * tBox.scaleFactor) * cos(angle);
+    map;
+    if (angle < 0) {
+      console.log(sin(angle));
+      let sinn = map(sin(angle), 0, -1, -0.5, -1);
+      tBox.rulesY = y + (tBox.rulesHeight + tBox.offsetBoxY / 2) * sinn;
+    } else {
+      let sinn = map(sin(angle), 0, 1, -0.5, 0);
+      tBox.rulesY = y + (tBox.rulesHeight + tBox.offsetBoxY / 2) * sinn;
+    }
   }
 }

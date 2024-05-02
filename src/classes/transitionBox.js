@@ -11,35 +11,140 @@ class TransitionBox {
     this.visible = false;
     this.inputParent = parent;
     this.marginBox = 5 * this.scaleFactor;
-    this.offsetBoxY = 0;
-    this.yBoxScale = 0.7;
-    this.inputMinWidth = 150;
+    this.offsetBoxY = 18 * this.scaleFactor;
+    this.ruleFontSize = 12 * this.scaleFactor;
+
+    // Transition box
+
+    this.directionButtonPressed = "left";
+
+    this.mainDiv = null;
+    this.boxDiv = null;
+    this.inputDiv = null;
+    this.buttonDiv = null;
+    this.directionButtonDiv = null;
+    this.leftButton = null;
+    this.rightButton = null;
+    this.confirmButton = null;
+    this.labelDiv = null;
+    this.labelSpan = null;
+
+    this.createBox();
+
+    if (this.leftButton && this.rightButton) {
+      this.switchButtons("left");
+      this.leftButton.mousePressed(() => {
+        this.switchButtons("left");
+      });
+
+      this.rightButton.mousePressed(() => {
+        this.switchButtons("right");
+      });
+    }
 
     // Create the first input
-    this.labels = [];
-    this.editingInput = new RuleInput(x, y, texMap, scaleFactor, parent, true);
+    this.rules = [];
 
-    this.labels.push(["a->b,c"]);
-    this.labels.push(["b->c,d"]);
-    this.labels.push(["c->d,e"]);
-    this.labels.push(["d->e,f"]);
+    this.rules.push(
+      {
+        label: ["a->b,c"],
+        width: 0,
+      },
+      {
+        label: ["b->c,d"],
+        width: 0,
+      },
+      {
+        label: ["c->d,e"],
+        width: 0,
+      },
+      {
+        label: ["david -> bonito, demais"],
+        width: 0,
+      }
+    );
+
+    // Calculate the width of all rules
+    for (let i = 0; i < this.rules.length; i++) {
+      this.rules[i].width = this.calculateRuleWidth(-1000, -1000, this.rules[i].label, this.ruleFontSize);
+    }
+
+    this.rulesX = this.x;
+    this.rulesY = this.y;
+    this.rulesWidth = 0;
+    this.rulesHeight = 0;
+  }
+
+  switchButtons(direction) {
+    if (direction === "left") {
+      this.directionButtonPressed = "left";
+      this.leftButton.style("background-color", "#1762a3");
+      this.rightButton.style("background-color", "transparent");
+    } else {
+      this.directionButtonPressed = "right";
+      this.rightButton.style("background-color", "#1762a3");
+      this.leftButton.style("background-color", "transparent");
+    }
+  }
+
+  createBox() {
+    this.mainDiv = createDiv();
+    this.mainDiv.parent(this.inputParent);
+    this.mainDiv.class("flex flex-col gap-[2px] items-center justify-center absolute z-[100]");
+    this.boxDiv = createDiv();
+    this.boxDiv.parent(this.mainDiv);
+    this.boxDiv.class("bg-[#222831] p-2 rounded-[5px] flex flex-col gap-1 drop-shadow-md");
+
+    // Inputs
+    this.inputDiv = createDiv();
+    this.inputDiv.parent(this.boxDiv);
+    this.inputDiv.class("flex items-center justify-center gap-1");
+    this.readInput = createInput();
+    this.readInput.parent(this.inputDiv);
+    this.readInput.class("px-2 py-1 rounded-[3px] focus:outline-none focus:ring focus:ring-1 focus:border-[rgb(23, 98, 163)] w-[80px] bg-transparent border-2 border-[#1762a3] text-white");
+    this.readInput.attribute("placeholder", "Lê");
+    this.writeInput = createInput();
+    this.writeInput.parent(this.inputDiv);
+    this.writeInput.class("px-2 py-1 rounded-[3px] focus:outline-none focus:ring focus:ring-1 focus:border-[rgb(23, 98, 163)] w-[80px] bg-transparent border-2 border-[#1762a3] text-white");
+    this.writeInput.attribute("placeholder", "Escreve");
+
+    // Buttons
+    this.buttonDiv = createDiv();
+    this.buttonDiv.parent(this.boxDiv);
+    this.buttonDiv.class("flex items-center justify-between");
+    this.directionButtonDiv = createDiv();
+    this.directionButtonDiv.parent(this.buttonDiv);
+    this.directionButtonDiv.class("flex items-center gap-1");
+    this.leftButton = createButton("E");
+    this.leftButton.parent(this.directionButtonDiv);
+    this.leftButton.class("transition-box-button");
+    this.leftButton.id("leftButton");
+
+    this.rightButton = createButton("D");
+    this.rightButton.parent(this.directionButtonDiv);
+    this.rightButton.class("transition-box-button");
+    this.rightButton.id("rightButton");
+
+    this.confirmButton = createButton("<i class='fa-solid fa-check'></i>");
+    this.confirmButton.parent(this.buttonDiv);
+    this.confirmButton.class("text-center w-[40px] h-[40px] outline-none text-white");
+    this.confirmButton.mousePressed(() => this.confirmRule());
+
+    // Label
+    this.labelDiv = createDiv();
+    this.labelDiv.parent(this.mainDiv);
+    this.labelDiv.class("bg-[#222831] px-3 py-1 rounded-[5px] flex flex-col gap-1 drop-shadow-md");
+    this.labelSpan = createSpan("aasad -> b, D");
+    this.labelSpan.parent(this.labelDiv);
+    this.labelSpan.class("font-semibold text-white");
   }
 
   containsPoint(x = mouseX, y = mouseY) {
-    return x > this.x - this.w / 2 && x < this.x + this.w / 2 && y >= this.y + this.offsetBoxY && y <= this.y + this.offsetBoxY + this.h;
+    return x > this.x && x < this.x + this.w && y > this.y && y < this.y + this.h;
   }
 
-  labelContainsPoint(x = mouseX, y = mouseY) {
-    for (let i = 0; i < this.labels.length; i++) {
-      let yy = this.y + this.offsetBoxY + this.editingInput.h * i * this.yBoxScale + this.editingInput.h / 4 - 4 * this.scaleFactor;
-      let xx = this.x - this.w / 2;
-      let ww = this.w;
-      let hh = this.editingInput.h * this.yBoxScale;
-
-      if (x > xx && x < xx + ww && y > yy && y < yy + hh) return i;
-    }
-
-    return -1;
+  confirmRule() {
+    console.log("Confirming rule");
   }
 
   checkRule() {
@@ -60,79 +165,18 @@ class TransitionBox {
   }
 
   keyPressed() {
+    if (!this.visible) return;
+
     if (keyCode === ENTER) {
-      let isValidRule = this.checkRule();
-
-      if (isValidRule) {
-        this.labels.push(this.editingInput.allSubstrings);
-        this.editingInput.input.value("");
-      }
+      this.confirmRule();
     }
   }
 
-  mousePressed() {
-    if (!this.selected || !this.visible) {
-      this.editingInput.input.value("");
-      this.editingInput.input.elt.blur();
-      return;
-    }
-
-    this.selectedInputIndex = this.labelContainsPoint(mouseX, mouseY);
-
-    if (this.selectedInputIndex !== -1 && this.checkRule()) {
-      this.labels.push(this.editingInput.allSubstrings);
-      this.editingInput.input.value("");
-    }
-
-    // Get label and remove it from array
-    let label = this.labels.splice(this.selectedInputIndex, 1);
-    // Replace the → with used arrow type
-    let rule = label[0].join("").replace(/(→|->|\\arrow)/g, "->");
-    // Set the input value to the rule
-    this.editingInput.input.value(rule);
-    this.editingInput.textInput(rule);
-  }
-
-  // getLabelWidth(label, fontSize = 15) {
-  //   let span = createSpan(label.join(""));
-  //   span.style("font-size", fontSize * this.scaleFactor + "px");
-  //   span.style("font-family", "Arial");
-  //   span.style("visibility", "hidden");
-  //   span.style("position", "absolute");
-  //   span.style("top", "-1000px");
-  //   span.style("left", "-1000px");
-
-  //   let maxW = span.elt.offsetWidth;
-
-  //   if (span) span.remove();
-
-  //   return maxW;
-  // }
-
-  getTheWidestInput() {
-    let span = createSpan(this.editingInput.input.value());
-    span.style("font-size", 12 * this.scaleFactor + "px");
-    span.style("font-family", "Arial");
-    span.style("visibility", "hidden");
-    span.style("position", "absolute");
-    span.style("top", "-1000px");
-    span.style("left", "-1000px");
-
-    let maxW = span.elt.offsetWidth + 20 * this.scaleFactor;
-
-    for (let i = 0; i < this.labels.length; i++) {
-      span.html(this.labels[i].join(""));
-
-      maxW = max(maxW, span.elt.offsetWidth + 20 * this.scaleFactor);
-    }
-
-    this.editingInput.w = max(maxW, this.inputMinWidth * this.scaleFactor);
-    if (span) span.remove();
-
-    return maxW;
-  }
+  mousePressed() {}
 
   update(scaleFactor = 1.0) {
+    if (!this.mainDiv) return;
+
     if (this.scaleFactor != scaleFactor) {
       this.x = (this.x / this.scaleFactor) * scaleFactor;
       this.y = (this.y / this.scaleFactor) * scaleFactor;
@@ -140,83 +184,60 @@ class TransitionBox {
       this.scaleFactor = scaleFactor;
     }
 
+    this.rulesHeight = this.rules.length * this.offsetBoxY;
+    this.rulesWidth = this.getTheLargestWidth();
+
     this.rollover = this.containsPoint(mouseX, mouseY);
     this.visible = this.selected && !isMouseWithShiftPressed;
 
-    this.offsetBoxY = 0;
-    if (!this.selected || !this.visible) {
-      this.editingInput.selected = false;
-      this.editingInput.visible = false;
-      this.editingInput.input.elt.blur();
-    } else {
-      this.editingInput.selected = true;
-      this.editingInput.visible = true;
-      this.editingInput.input.elt.focus();
-      this.offsetBoxY = this.editingInput.h + 2 * this.marginBox;
-    }
+    if (this.visible) this.mainDiv.elt.style.visibility = "visible";
+    else this.mainDiv.elt.style.visibility = "hidden";
 
-    this.editingInput.x = this.x - this.w / 2;
-    this.editingInput.y = this.y + this.marginBox;
-    this.editingInput.update(scaleFactor);
+    this.mainDiv.position(this.x + windowOffset.x, this.y + windowOffset.y);
+    this.w = this.mainDiv.elt.offsetWidth;
+    this.h = this.mainDiv.elt.offsetHeight;
   }
 
   draw() {
-    if (isMouseWithShiftPressed) return;
-
-    let maxW = this.getTheWidestInput();
-    this.w = max(maxW, this.inputMinWidth * this.scaleFactor);
-    this.h = this.labels.length * this.editingInput.h * this.yBoxScale + 2 * this.scaleFactor;
-
+    // Draw a rectangle around the rule
     push();
     noFill();
-    if (this.selected && this.visible && this.labels.length > 0) rect(this.x - this.w / 2, this.y + this.offsetBoxY, this.w, this.h, this.marginBox * this.scaleFactor);
+    stroke(255, 0, 0);
+    strokeWeight(1);
+    rect(this.rulesX - this.rulesWidth / 2, this.rulesY, this.rulesWidth, this.rulesHeight + this.offsetBoxY / 2);
     pop();
 
-    if (this.selected && this.visible) {
-      for (let i = 0; i < this.labels.length; i++) {
-        let yy = this.y + this.offsetBoxY + this.editingInput.h * i * this.yBoxScale + this.editingInput.h / 4 - 4 * this.scaleFactor;
-        this.drawText(this.x, yy + 2 * this.scaleFactor, this.labels[i]);
+    // Draw the rules
+    for (let i = 0; i < this.rules.length; i++) {
+      let yy = this.rulesY + i * this.offsetBoxY + this.offsetBoxY * 0.8;
+      let xx = this.rulesX;
 
-        if (i < this.labels.length - 1 && this.labels.length > 1) {
-          push();
-          stroke(23, 42, 43);
-          strokeWeight(1);
-          line(this.x - this.w / 2, yy + this.editingInput.h * this.yBoxScale - 2 * this.scaleFactor, this.x + this.w / 2, yy + this.editingInput.h * this.yBoxScale - 2 * this.scaleFactor);
-          pop();
-        }
-      }
-    } else {
-      for (let i = 0; i < this.labels.length; i++) {
-        let yy = this.y + this.offsetBoxY + this.editingInput.h * i * this.yBoxScale * 0.5 + this.editingInput.h / 4 - 4 * this.scaleFactor;
-        this.drawText(this.x, yy + 2 * this.scaleFactor, this.labels[i], 255, 12 * this.scaleFactor);
-      }
-    }
-
-    if (this.editingInput.input.value().trim() !== "") {
-      if (this.checkRule()) {
-        this.editingInput.input.style("color", "green");
-        this.editingInput.input.style("border-color", "green");
-      } else {
-        this.editingInput.input.style("color", "red");
-        this.editingInput.input.style("border-color", "red");
-      }
-    } else {
-      this.editingInput.input.style("color", "black");
-      this.editingInput.input.style("border-color", "black");
+      this.drawText(xx, yy, this.rules[i].label, this.ruleFontSize);
     }
   }
 
-  drawText(xx = this.x, yy = this.y + 40 * this.scaleFactor, substring = [], alpha = 255, fontSize = 15 * this.scaleFactor) {
+  getTheLargestWidth() {
+    let largestWidth = 0;
+
+    for (let i = 0; i < this.rules.length; i++) {
+      if (this.rules[i].width > largestWidth) {
+        largestWidth = this.rules[i].width;
+      }
+    }
+
+    return largestWidth;
+  }
+
+  calculateRuleWidth(xx = this.x, yy = this.y, substring = [], fontSize = 15 * this.scaleFactor) {
     push();
-    textAlign(LEFT, TOP);
+    textAlign(CENTER, CENTER);
     textFont("Arial");
     textSize(fontSize);
 
-    xx += this.editingInput.w / 2;
-
     let startX = xx;
 
-    fill(23, 42, 43, 0);
+    fill(0, 0, 0, 0);
+
     for (let i = 0; i < substring.length; i++) {
       let newString = substring[i];
 
@@ -255,8 +276,17 @@ class TransitionBox {
         xx += textWidth(newString);
       }
     }
-    xx = startX - (xx - startX) / 2 - this.editingInput.w / 2;
-    fill(23, 42, 43, alpha);
+
+    return abs(xx - startX);
+  }
+
+  drawText(xx = this.x, yy = this.y, substring = [], fontSize = 15 * this.scaleFactor) {
+    push();
+    textAlign(CENTER, CENTER);
+    textFont("Arial");
+    textSize(fontSize);
+    fill(23, 42, 43);
+
     for (let i = 0; i < substring.length; i++) {
       let newString = substring[i];
 
