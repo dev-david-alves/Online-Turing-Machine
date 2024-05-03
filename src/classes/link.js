@@ -153,7 +153,6 @@ class Link {
 
   mousePressed() {
     this.isMousePressed = true;
-    this.transitionBox.mousePressed();
   }
 
   mouseReleased() {
@@ -164,6 +163,7 @@ class Link {
     this.scaleFactor = scaleFactor;
     this.snapToPadding = 6 * this.scaleFactor;
     this.hitTargetPadding = 6 * this.scaleFactor;
+    this.transitionBox.scaleFactor = scaleFactor;
 
     if (this.isMousePressed && this.selected) {
       this.setAnchorPoint(mouseX, mouseY);

@@ -34,7 +34,6 @@ function updateBoxPosition(tBox, x, y, angleOrNull, isSelfLink = false, parent =
     tBox.rulesX = x + (tBox.rulesWidth / 2 + 5 * tBox.scaleFactor) * cos(angle);
     map;
     if (angle < 0) {
-      console.log(sin(angle));
       let sinn = map(sin(angle), 0, -1, -0.5, -1);
       tBox.rulesY = y + (tBox.rulesHeight + tBox.offsetBoxY / 2) * sinn;
     } else {

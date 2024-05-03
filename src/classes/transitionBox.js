@@ -7,12 +7,14 @@ class TransitionBox {
     this.h = 0;
     this.rollover = false;
     this.selected = false;
-    this.selectedInputIndex = -1;
+    this.selectedRuleIndex = -1;
+    this.hoveredRuleIndex = -1;
+
     this.visible = false;
     this.inputParent = parent;
     this.marginBox = 5 * this.scaleFactor;
     this.offsetBoxY = 18 * this.scaleFactor;
-    this.ruleFontSize = 12 * this.scaleFactor;
+    this.ruleFontSize = 14 * this.scaleFactor;
 
     // Transition box
 
@@ -143,8 +145,25 @@ class TransitionBox {
     return x > this.x && x < this.x + this.w && y > this.y && y < this.y + this.h;
   }
 
+  ruleContainsPoint(x = mouseX, y = mouseY) {
+    for (let i = 0; i < this.rules.length; i++) {
+      let yy = this.rulesY + i * this.offsetBoxY + this.offsetBoxY * 0.8;
+      let xx = this.rulesX;
+
+      if (x > xx - this.rules[i].width / 2 && x < xx + this.rules[i].width / 2 && y > yy - this.offsetBoxY / 2 && y < yy + this.offsetBoxY / 2) {
+        return i;
+      }
+    }
+
+    return -1;
+  }
+
   confirmRule() {
-    console.log("Confirming rule");
+    if (this.selectedRuleIndex !== -1) {
+      console.log("Editing rule: ", this.selectedRuleIndex);
+    } else {
+      console.log("Creating new rule");
+    }
   }
 
   checkRule() {
@@ -172,7 +191,10 @@ class TransitionBox {
     }
   }
 
-  mousePressed() {}
+  mousePressed() {
+    this.selectedRuleIndex = this.ruleContainsPoint();
+    this.selected = this.selectedRuleIndex !== -1;
+  }
 
   update(scaleFactor = 1.0) {
     if (!this.mainDiv) return;
@@ -212,7 +234,12 @@ class TransitionBox {
       let yy = this.rulesY + i * this.offsetBoxY + this.offsetBoxY * 0.8;
       let xx = this.rulesX;
 
+      push();
+      if (this.ruleContainsPoint(mouseX, mouseY) === i) fill(0, 0, 255);
+      else fill(23, 42, 43);
+
       this.drawText(xx, yy, this.rules[i].label, this.ruleFontSize);
+      pop();
     }
   }
 
@@ -233,6 +260,7 @@ class TransitionBox {
     textAlign(CENTER, CENTER);
     textFont("Arial");
     textSize(fontSize);
+    textStyle(BOLD);
 
     let startX = xx;
 
@@ -285,7 +313,7 @@ class TransitionBox {
     textAlign(CENTER, CENTER);
     textFont("Arial");
     textSize(fontSize);
-    fill(23, 42, 43);
+    textStyle(BOLD);
 
     for (let i = 0; i < substring.length; i++) {
       let newString = substring[i];

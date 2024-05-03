@@ -109,7 +109,7 @@ function setup() {
   states.push(new State(states.length, 100 / scaleFactor, 100 / scaleFactor, stateRadius, stateColor, scaleFactor));
   states.push(new State(states.length, 230 / scaleFactor, 100 / scaleFactor, stateRadius, stateColor, scaleFactor));
   links.push(new Link(states[0], states[1], scaleFactor));
-  links.push(new SelfLink(states[0], scaleFactor, true));
+  // links.push(new SelfLink(states[0], scaleFactor, true));
 
   // Menu buttons
   menuButtons.push(select("#select"));
@@ -261,7 +261,6 @@ function checkFirstSelectedObject(x = mouseX, y = mouseY, uncheckObjects = true)
   if (startLink && startLink.containsPoint(x, y)) return { object: startLink, index: -1 };
 
   for (let i = links.length - 1; i >= 0; i--) {
-    if (links[i].transitionBox.containsPoint(x, y) && links[i].transitionBox.visible) return { object: links[i].transitionBox, index: i };
     if (links[i].containsPoint(x, y)) return { object: links[i], index: i };
   }
 
@@ -343,9 +342,7 @@ function mousePressedOnCanvas() {
   if (selectedObject) {
     selectedObject.object.selected = true;
 
-    if (selectedObject.object instanceof TransitionBox) {
-      selectedObject.object.mousePressed();
-    } else if (selectedObject.object instanceof State) {
+    if (selectedObject.object instanceof State) {
       selectedObject.object.mousePressed();
     } else if (selectedObject.object instanceof Link || selectedObject.object instanceof SelfLink) {
       selectedObject.object.mousePressed();
@@ -356,6 +353,10 @@ function mousePressedOnCanvas() {
 
   // Delete button
   if (getIdOfSelectedButton() === "delete") deleteObject();
+
+  for (let i = 0; i < links.length; i++) {
+    links[i].transitionBox.mousePressed();
+  }
 }
 
 function mouseReleasedOnCanvas() {

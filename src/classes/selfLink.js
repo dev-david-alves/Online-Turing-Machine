@@ -63,7 +63,6 @@ class SelfLink {
 
   mousePressed() {
     this.isMousePressed = true;
-    this.transitionBox.mousePressed();
   }
 
   mouseReleased() {
