@@ -202,8 +202,18 @@ class Link {
 
   draw() {
     push();
-    if (this.rollover) stroke(100, 100, 200);
-    if (this.selected) stroke(0, 0, 255);
+    stroke(0, 0, 0);
+    fill(0, 0, 0);
+
+    if (this.rollover) {
+      stroke(100, 100, 200);
+      fill(100, 100, 200);
+    }
+
+    if (this.selected) {
+      stroke(0, 0, 255);
+      fill(0, 0, 255);
+    }
 
     let stuff = this.getEndPointsAndCircle();
 
@@ -211,12 +221,14 @@ class Link {
       let circleW = max(dist(this.stateA.x, this.stateA.y, this.stateB.x, this.stateB.y), stuff.circleR * 2);
 
       // Draw arc
+      push();
       noFill();
       if (stuff.isReversed) {
         arc(stuff.circleX, stuff.circleY, circleW, stuff.circleR * 2, stuff.endAngle, stuff.startAngle);
       } else {
         arc(stuff.circleX, stuff.circleY, circleW, stuff.circleR * 2, stuff.startAngle, stuff.endAngle);
       }
+      pop();
     } else {
       // Draw line
       line(stuff.startX, stuff.startY, stuff.endX, stuff.endY);

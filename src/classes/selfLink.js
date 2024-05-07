@@ -107,12 +107,23 @@ class SelfLink {
     let stuff = this.getEndPointsAndCircle();
     push();
     // draw arc
-    if (this.rollover) stroke(100, 100, 200);
-    if (this.selected) stroke(0, 0, 255);
+    stroke(0, 0, 0);
+    fill(0, 0, 0);
 
+    if (this.rollover) {
+      stroke(100, 100, 200);
+      fill(100, 100, 200);
+    }
+
+    if (this.selected) {
+      stroke(0, 0, 255);
+      fill(0, 0, 255);
+    }
+
+    push();
     noFill();
     arc(stuff.circleX, stuff.circleY, stuff.circleR * 2, stuff.circleR * 2, stuff.startAngle, stuff.endAngle);
-
+    pop();
     // draw the head of the arrow
     drawArrow(stuff.endX, stuff.endY, stuff.endAngle + PI * 0.4);
     pop();

@@ -68,9 +68,19 @@ class StartLink {
   draw() {
     let stuff = this.getEndPoints();
     push();
+    stroke(0, 0, 0);
+    fill(0, 0, 0);
+
     // draw the line
-    if (this.rollover) stroke(100, 100, 200);
-    if (this.selected) stroke(0, 0, 255);
+    if (this.rollover) {
+      stroke(100, 100, 200);
+      fill(100, 100, 200);
+    }
+
+    if (this.selected) {
+      stroke(0, 0, 255);
+      fill(0, 0, 255);
+    }
 
     line(stuff.startX, stuff.startY, stuff.endX, stuff.endY);
 

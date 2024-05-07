@@ -9,6 +9,8 @@ class TemporaryLink {
     if (!this.from || !this.to) return;
     // draw the line
     push();
+    fill(0);
+    stroke(0);
     strokeWeight(this.scaleFactor);
     line(this.from.x, this.from.y, this.to.x, this.to.y);
 

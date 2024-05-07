@@ -3,7 +3,6 @@ function drawArrow(x, y, angle) {
   let dy = Math.sin(angle);
 
   push();
-  fill(0);
   strokeWeight(scaleFactor);
 
   beginShape();
