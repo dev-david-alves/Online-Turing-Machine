@@ -227,7 +227,7 @@ function draw() {
     states[i].update(scaleFactor);
     states[i].draw();
     states[i].input.update(scaleFactor);
-    states[i].input.draw(states[i].x - states[i].input.w / 2, states[i].y - 7 * scaleFactor, 255);
+    drawText(states[i].x - states[i].input.textW / 2, states[i].y, states[i].input.allSubstrings, states[i].input.fontSize);
   }
 }
 

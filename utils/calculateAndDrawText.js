@@ -1,4 +1,4 @@
-function calculateTextWidth(xx = this.x, yy = this.y, substring = [], fontSize = 12 * scaleFactor) {
+function calculateTextWidth(xx = -1000, yy = -1000, substring = [], fontSize = 12 * scaleFactor) {
   push();
   textAlign(CENTER, CENTER);
   textFont("Arial");
@@ -17,7 +17,7 @@ function calculateTextWidth(xx = this.x, yy = this.y, substring = [], fontSize =
       newString = newString.replace(/}/g, "");
       push();
       textSize(fontSize * 0.73);
-      text(newString, xx, yy + 10 * this.scaleFactor);
+      text(newString, xx, yy + 10 * scaleFactor);
       xx += textWidth(newString);
       pop();
     } else if (substring[i].startsWith("^{") && substring[i].endsWith("}")) {
@@ -25,21 +25,21 @@ function calculateTextWidth(xx = this.x, yy = this.y, substring = [], fontSize =
       newString = newString.replace(/}/g, "");
       push();
       textSize(fontSize * 0.73);
-      text(newString, xx, yy - 2 * this.scaleFactor);
+      text(newString, xx, yy - 2 * scaleFactor);
       xx += textWidth(newString);
       pop();
     } else if (substring[i].startsWith("_")) {
       newString = substring[i].replace(/_/g, "");
       push();
       textSize(fontSize * 0.73);
-      text(newString, xx, yy + 10 * this.scaleFactor);
+      text(newString, xx, yy + 10 * scaleFactor);
       xx += textWidth(newString);
       pop();
     } else if (substring[i].startsWith("^")) {
       newString = substring[i].replace(/\^/g, "");
       push();
       textSize(fontSize * 0.73);
-      text(newString, xx, yy - 2 * this.scaleFactor);
+      text(newString, xx, yy - 2 * scaleFactor);
       xx += textWidth(newString);
       pop();
     } else {
@@ -52,7 +52,7 @@ function calculateTextWidth(xx = this.x, yy = this.y, substring = [], fontSize =
   return abs(xx - startX);
 }
 
-function drawText(xx = this.x, yy = this.y, substring = [], fontSize = 12 * scaleFactor) {
+function drawText(xx = -1000, yy = -1000, substring = [], fontSize = 12 * scaleFactor) {
   push();
   textAlign(LEFT, CENTER);
   textFont("Arial");
@@ -67,7 +67,7 @@ function drawText(xx = this.x, yy = this.y, substring = [], fontSize = 12 * scal
       newString = newString.replace(/}/g, "");
       push();
       textSize(fontSize * 0.73);
-      text(newString, xx, yy + 10 * this.scaleFactor);
+      text(newString, xx, yy + 6 * scaleFactor);
       xx += textWidth(newString);
       pop();
     } else if (substring[i].startsWith("^{") && substring[i].endsWith("}")) {
@@ -75,21 +75,21 @@ function drawText(xx = this.x, yy = this.y, substring = [], fontSize = 12 * scal
       newString = newString.replace(/}/g, "");
       push();
       textSize(fontSize * 0.73);
-      text(newString, xx, yy - 2 * this.scaleFactor);
+      text(newString, xx, yy - 6 * scaleFactor);
       xx += textWidth(newString);
       pop();
     } else if (substring[i].startsWith("_")) {
       newString = substring[i].replace(/_/g, "");
       push();
       textSize(fontSize * 0.73);
-      text(newString, xx, yy + 10 * this.scaleFactor);
+      text(newString, xx, yy + 6 * scaleFactor);
       xx += textWidth(newString);
       pop();
     } else if (substring[i].startsWith("^")) {
       newString = substring[i].replace(/\^/g, "");
       push();
       textSize(fontSize * 0.73);
-      text(newString, xx, yy - 2 * this.scaleFactor);
+      text(newString, xx, yy - 6 * scaleFactor);
       xx += textWidth(newString);
       pop();
     } else {

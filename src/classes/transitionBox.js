@@ -151,12 +151,11 @@ class TransitionBox {
 
   confirmRule() {
     if (this.selectedRuleIndex !== -1) {
-      console.log("Editing rule: ", this.selectedRuleIndex);
       let { allReadSubstrings, allWriteSubstrings, direction } = this.changeResultText();
 
       // concat all arrays
       let rule = allReadSubstrings.concat([" ", "→", " "], allWriteSubstrings, [", "], [direction]);
-      this.rules[this.selectedRuleIndex] = { label: rule, width: this.calculateRuleWidth(-1000, -1000, rule, this.ruleFontSize) };
+      this.rules[this.selectedRuleIndex] = { label: rule, width: calculateTextWidth(-1000, -1000, rule, this.ruleFontSize) };
 
       this.readInput.value("");
       this.writeInput.value("");
@@ -170,7 +169,7 @@ class TransitionBox {
 
       // concat all arrays
       let rule = allReadSubstrings.concat([" ", "→", " "], allWriteSubstrings, [", "], [direction]);
-      this.rules.push({ label: rule, width: this.calculateRuleWidth(-1000, -1000, rule, this.ruleFontSize) });
+      this.rules.push({ label: rule, width: calculateTextWidth(-1000, -1000, rule, this.ruleFontSize) });
 
       this.readInput.value("");
       this.writeInput.value("");
@@ -211,7 +210,6 @@ class TransitionBox {
   getRule() {
     if (this.selectedRuleIndex !== -1) {
       let allSubstrings = convertSubstringsToString(this.rules[this.selectedRuleIndex].label);
-      console.log(allSubstrings.split("→"));
       let read = allSubstrings.split("→")[0].trim();
       let write = allSubstrings.split("→")[1].trim();
       // Remove the last character (direction)
@@ -306,13 +304,11 @@ class TransitionBox {
     this.ruleFontSize = 12 * scaleFactor;
 
     for (let i = 0; i < this.rules.length; i++) {
-      this.rules[i].width = this.calculateRuleWidth(-1000, -1000, this.rules[i].label, this.ruleFontSize);
+      this.rules[i].width = calculateTextWidth(-1000, -1000, this.rules[i].label, this.ruleFontSize);
     }
 
     this.rulesHeight = this.rules.length * this.offsetBoxY;
     this.rulesWidth = this.getTheLargestWidth();
-
-    console.log(this.rulesHeight);
 
     this.rollover = this.containsPoint(mouseX, mouseY);
     this.visible = this.selected && !isMouseWithShiftPressed;
@@ -349,7 +345,7 @@ class TransitionBox {
       if (this.ruleContainsPoint(mouseX, mouseY) === i || this.selectedRuleIndex === i) fill(0, 0, 255);
       else fill(23, 42, 43);
 
-      this.drawText(xx, yy, this.rules[i].label, this.ruleFontSize);
+      drawText(xx, yy, this.rules[i].label, this.ruleFontSize);
       pop();
     }
   }
@@ -364,108 +360,5 @@ class TransitionBox {
     }
 
     return largestWidth;
-  }
-
-  calculateRuleWidth(xx = this.x, yy = this.y, substring = [], fontSize = this.ruleFontSize) {
-    push();
-    textAlign(CENTER, CENTER);
-    textFont("Arial");
-    textSize(fontSize);
-    textStyle(BOLD);
-
-    let startX = xx;
-
-    fill(0, 0, 0, 0);
-
-    for (let i = 0; i < substring.length; i++) {
-      let newString = substring[i];
-
-      if (substring[i].startsWith("_{") && substring[i].endsWith("}")) {
-        newString = substring[i].replace(/_{/g, "");
-        newString = newString.replace(/}/g, "");
-        push();
-        textSize(fontSize * 0.73);
-        text(newString, xx, yy + 10 * this.scaleFactor);
-        xx += textWidth(newString);
-        pop();
-      } else if (substring[i].startsWith("^{") && substring[i].endsWith("}")) {
-        newString = substring[i].replace(/\^{/g, "");
-        newString = newString.replace(/}/g, "");
-        push();
-        textSize(fontSize * 0.73);
-        text(newString, xx, yy - 2 * this.scaleFactor);
-        xx += textWidth(newString);
-        pop();
-      } else if (substring[i].startsWith("_")) {
-        newString = substring[i].replace(/_/g, "");
-        push();
-        textSize(fontSize * 0.73);
-        text(newString, xx, yy + 10 * this.scaleFactor);
-        xx += textWidth(newString);
-        pop();
-      } else if (substring[i].startsWith("^")) {
-        newString = substring[i].replace(/\^/g, "");
-        push();
-        textSize(fontSize * 0.73);
-        text(newString, xx, yy - 2 * this.scaleFactor);
-        xx += textWidth(newString);
-        pop();
-      } else {
-        text(substring[i], xx, yy);
-        xx += textWidth(newString);
-      }
-    }
-
-    pop();
-    return abs(xx - startX);
-  }
-
-  drawText(xx = this.x, yy = this.y, substring = [], fontSize = 15 * this.scaleFactor) {
-    push();
-    textAlign(LEFT, CENTER);
-    textFont("Arial");
-    textSize(fontSize);
-    textStyle(BOLD);
-
-    for (let i = 0; i < substring.length; i++) {
-      let newString = substring[i];
-
-      if (substring[i].startsWith("_{") && substring[i].endsWith("}")) {
-        newString = substring[i].replace(/_{/g, "");
-        newString = newString.replace(/}/g, "");
-        push();
-        textSize(fontSize * 0.73);
-        text(newString, xx, yy + 10 * this.scaleFactor);
-        xx += textWidth(newString);
-        pop();
-      } else if (substring[i].startsWith("^{") && substring[i].endsWith("}")) {
-        newString = substring[i].replace(/\^{/g, "");
-        newString = newString.replace(/}/g, "");
-        push();
-        textSize(fontSize * 0.73);
-        text(newString, xx, yy - 2 * this.scaleFactor);
-        xx += textWidth(newString);
-        pop();
-      } else if (substring[i].startsWith("_")) {
-        newString = substring[i].replace(/_/g, "");
-        push();
-        textSize(fontSize * 0.73);
-        text(newString, xx, yy + 10 * this.scaleFactor);
-        xx += textWidth(newString);
-        pop();
-      } else if (substring[i].startsWith("^")) {
-        newString = substring[i].replace(/\^/g, "");
-        push();
-        textSize(fontSize * 0.73);
-        text(newString, xx, yy - 2 * this.scaleFactor);
-        xx += textWidth(newString);
-        pop();
-      } else {
-        text(substring[i], xx, yy);
-        xx += textWidth(newString);
-      }
-    }
-
-    pop();
   }
 }

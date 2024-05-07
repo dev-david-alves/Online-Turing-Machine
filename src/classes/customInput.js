@@ -1,15 +1,15 @@
 class CustomInput {
-  constructor(x, y, texMap = {}, scaleFactor = 1.0, parent = null, textColorSameAsInput = false) {
+  constructor(x, y, texMap = {}, scaleFactor = 1.0, parent = null) {
     this.scaleFactor = scaleFactor;
     this.x = x * scaleFactor;
     this.y = y * scaleFactor;
-    this.offsetX = 0;
     this.texMap = texMap;
     this.w = 100 * scaleFactor;
     this.h = 30 * scaleFactor;
     this.padding = 30;
     this.visible = false;
-    this.textColorSameAsInput = textColorSameAsInput;
+    this.fontSize = 15 * this.scaleFactor;
+    this.textW = 0;
 
     this.input = createInput("");
     this.input.style("position", "absolute");
@@ -25,11 +25,6 @@ class CustomInput {
     this.input.style("text-align", "center");
 
     this.allSubstrings = [];
-
-    this.subAndSupMatch(this.input.value());
-
-    this.draw();
-    this.textInput(this.input.value());
   }
 
   // RegEx Functions
@@ -79,6 +74,9 @@ class CustomInput {
       this.scaleFactor = scaleFactor;
     }
 
+    this.fontSize = 15 * scaleFactor;
+    this.textW = calculateTextWidth(this.x, this.y, this.allSubstrings, this.fontSize);
+
     this.input.style("border-radius", 5 * this.scaleFactor + "px");
 
     // this.w = max(this.offsetX * 2 + this.padding * this.scaleFactor, 100 * this.scaleFactor);
@@ -96,75 +94,8 @@ class CustomInput {
     }
   }
 
-  getFullTextSize() {
-    return this.draw(-1000, -1000, 0);
-  }
-
   textInput(value) {
     this.subAndSupMatch(value);
     this.texMapMatch();
-    this.offsetX = this.getFullTextSize() / 2;
-  }
-
-  draw(xx = this.x, yy = this.y + 40 * this.scaleFactor, alpha = 255, fontSize = 15 * this.scaleFactor) {
-    push();
-    textAlign(LEFT, TOP);
-    textFont("Arial");
-    textSize(fontSize);
-    textStyle(ITALIC);
-
-    if (this.textColorSameAsInput) {
-      let color = this.input.style("color");
-      let rgb = color.match(/\d+/g);
-      fill(rgb[0], rgb[1], rgb[2], alpha);
-    } else {
-      fill(23, 42, 43, alpha);
-    }
-
-    xx += this.w / 2 - this.offsetX;
-
-    let startX = xx;
-
-    for (let i = 0; i < this.allSubstrings.length; i++) {
-      let newString = this.allSubstrings[i];
-
-      if (this.allSubstrings[i].startsWith("_{") && this.allSubstrings[i].endsWith("}")) {
-        newString = this.allSubstrings[i].replace(/_{/g, "");
-        newString = newString.replace(/}/g, "");
-        push();
-        textSize(fontSize * 0.73);
-        text(newString, xx, yy + 10 * this.scaleFactor);
-        xx += textWidth(newString);
-        pop();
-      } else if (this.allSubstrings[i].startsWith("^{") && this.allSubstrings[i].endsWith("}")) {
-        newString = this.allSubstrings[i].replace(/\^{/g, "");
-        newString = newString.replace(/}/g, "");
-        push();
-        textSize(fontSize * 0.73);
-        text(newString, xx, yy - 2 * this.scaleFactor);
-        xx += textWidth(newString);
-        pop();
-      } else if (this.allSubstrings[i].startsWith("_")) {
-        newString = this.allSubstrings[i].replace(/_/g, "");
-        push();
-        textSize(fontSize * 0.73);
-        text(newString, xx, yy + 10 * this.scaleFactor);
-        xx += textWidth(newString);
-        pop();
-      } else if (this.allSubstrings[i].startsWith("^")) {
-        newString = this.allSubstrings[i].replace(/\^/g, "");
-        push();
-        textSize(fontSize * 0.73);
-        text(newString, xx, yy - 2 * this.scaleFactor);
-        xx += textWidth(newString);
-        pop();
-      } else {
-        text(this.allSubstrings[i], xx, yy);
-        xx += textWidth(newString);
-      }
-    }
-    pop();
-
-    return xx - startX;
   }
 }
