@@ -192,18 +192,22 @@ function draw() {
     }
   }
 
-  stateRepulse();
-  for (let i = 0; i < states.length; i++) {
-    states[i].update(scaleFactor);
-    states[i].draw();
-    states[i].input.update(scaleFactor);
-    states[i].input.draw(states[i].x - states[i].input.w / 2, states[i].y - 7 * scaleFactor, 255);
+  // Remove links that has no rules
+  for (let i = 0; i < links.length; i++) {
+    if (!links[i].transitionBox.selected && links[i].transitionBox.rules.length === 0) {
+      links[i].transitionBox.remove();
+      links.splice(i, 1);
+      i--;
+    }
   }
+  // ----------
+
+  unHoverAll();
+  if (hoveredObject) hoveredObject.object.rollover = hoveredObject.object.containsPoint(mouseX, mouseY);
 
   for (let i = 0; i < links.length; i++) {
     links[i].update(scaleFactor);
     links[i].draw();
-    // links[i].transitionBox.containsPoint();
     links[i].transitionBox.update(scaleFactor);
     links[i].transitionBox.draw();
   }
@@ -217,6 +221,23 @@ function draw() {
     currentLink.scaleFactor = scaleFactor;
     currentLink.draw();
   }
+
+  stateRepulse();
+  for (let i = 0; i < states.length; i++) {
+    states[i].update(scaleFactor);
+    states[i].draw();
+    states[i].input.update(scaleFactor);
+    states[i].input.draw(states[i].x - states[i].input.w / 2, states[i].y - 7 * scaleFactor, 255);
+  }
+}
+
+function getNewStateId() {
+  let maxId = 0;
+  for (let i = 0; i < states.length; i++) {
+    if (states[i].id > maxId) maxId = states[i].id;
+  }
+
+  return maxId + 1;
 }
 
 function stateRepulse(repulseFactor = 30.0) {
@@ -239,10 +260,13 @@ function stateRepulse(repulseFactor = 30.0) {
   }
 }
 
-function reCalculateStateIds() {
-  for (let i = 0; i < states.length; i++) {
-    states[i].id = i;
-  }
+function unHoverAll() {
+  states.forEach((state) => (state.rollover = false));
+  links.forEach((link) => {
+    link.rollover = false;
+    link.transitionBox.rollover = false;
+  });
+  if (startLink) startLink.rollover = false;
 }
 
 function unCheckAll() {
@@ -250,7 +274,6 @@ function unCheckAll() {
   links.forEach((link) => {
     link.selected = false;
     link.transitionBox.selected = false;
-    // link.transitionBox.inputs.forEach((input) => (input.selected = false));
   });
   if (startLink) startLink.selected = false;
 }
@@ -258,14 +281,14 @@ function unCheckAll() {
 function checkFirstSelectedObject(x = mouseX, y = mouseY, uncheckObjects = true) {
   if (uncheckObjects) unCheckAll();
 
+  for (let i = states.length - 1; i >= 0; i--) {
+    if (states[i].containsPoint(x, y)) return { object: states[i], index: i };
+  }
+
   if (startLink && startLink.containsPoint(x, y)) return { object: startLink, index: -1 };
 
   for (let i = links.length - 1; i >= 0; i--) {
     if (links[i].containsPoint(x, y)) return { object: links[i], index: i };
-  }
-
-  for (let i = states.length - 1; i >= 0; i--) {
-    if (states[i].containsPoint(x, y)) return { object: states[i], index: i };
   }
 
   return null;
@@ -295,7 +318,6 @@ function deleteObject() {
 
       selectedObject.object.remove();
       states.splice(selectedObject.index, 1);
-      reCalculateStateIds();
     } else if (selectedObject.object instanceof Link || selectedObject.object instanceof SelfLink) {
       selectedObject.object.transitionBox.remove();
       links.splice(selectedObject.index, 1);
@@ -328,7 +350,9 @@ function mousePressedOnCanvas() {
   // If add state menu button is selected
   if (getIdOfSelectedButton() === "addState" && !checkFirstSelectedObject(mouseX, mouseY, false)) {
     unCheckAll();
-    states.push(new State(states.length, mouseX / scaleFactor, mouseY / scaleFactor, stateRadius, stateColor, scaleFactor));
+    if (links.some((link) => link.transitionBox.containsPoint(mouseX, mouseY))) return;
+    let stateID = getNewStateId();
+    states.push(new State(stateID, mouseX / scaleFactor, mouseY / scaleFactor, stateRadius, stateColor, scaleFactor));
     states[states.length - 1].selected = true;
     selectedObject = { object: states[states.length - 1], index: states.length - 1 };
     return;
@@ -382,9 +406,15 @@ function mouseReleasedOnCanvas() {
           if (from && to) {
             links.push(new Link(from, to, scaleFactor));
             links[links.length - 1].selected = true;
+            links[links.length - 1].transitionBox.selected = true;
           }
         } else {
           console.log("Link already exists");
+          let link = links.find((link) => link.stateA.id === lastSelectedState.id && link.stateB.id === states[hoveredObject.index].id);
+          if (link) {
+            link.selected = true;
+            link.transitionBox.selected = true;
+          }
         }
       } else {
         let hoveredObject = checkFirstSelectedObject();
@@ -401,8 +431,14 @@ function mouseReleasedOnCanvas() {
     if (!links.some((link) => link instanceof SelfLink && link.state.id === lastSelectedState.id)) {
       links.push(new SelfLink(currentLink.state, scaleFactor, true));
       links[links.length - 1].selected = true;
+      links[links.length - 1].transitionBox.selected = true;
     } else {
       console.log("Link already exists");
+      let link = links.find((link) => link.state.id === lastSelectedState.id);
+      if (link) {
+        link.selected = true;
+        link.transitionBox.selected = true;
+      }
     }
   }
 
@@ -420,6 +456,16 @@ function mouseReleasedOnCanvas() {
 
   for (let i = 0; i < states.length; i++) {
     states[i].mouseReleased();
+  }
+}
+
+function mouseWheel(event) {
+  if (event.delta > 0) {
+    scaleFactor = max(scaleFactor - 0.25, 0.5);
+    slider.value(scaleFactor);
+  } else {
+    scaleFactor = min(scaleFactor + 0.25, 2.0);
+    slider.value(scaleFactor);
   }
 }
 
@@ -458,9 +504,18 @@ function keyReleased() {
 
 function doubleClick() {
   let overState = checkFirstSelectedObject(mouseX, mouseY, false);
+
+  for (let i = 0; i < links.length; i++) {
+    links[i].transitionBox.doubleClick();
+    links[i].doubleClick();
+  }
+
+  if (links.some((link) => link.transitionBox.containsPoint(mouseX, mouseY))) return;
+
   if (!overState) {
     console.log("Double clicked on empty space");
-    states.push(new State(states.length, mouseX / scaleFactor, mouseY / scaleFactor, stateRadius, stateColor, scaleFactor));
+    let stateID = getNewStateId();
+    states.push(new State(stateID, mouseX / scaleFactor, mouseY / scaleFactor, stateRadius, stateColor, scaleFactor));
     states[states.length - 1].selected = true;
     selectedObject = { object: states[states.length - 1], index: states.length - 1 };
   } else {

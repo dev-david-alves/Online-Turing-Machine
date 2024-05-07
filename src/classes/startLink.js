@@ -59,12 +59,10 @@ class StartLink {
     this.scaleFactor = scaleFactor;
     this.snapToPadding = 6 * this.scaleFactor;
     this.hitTargetPadding = 6 * this.scaleFactor;
-    
+
     if (this.isMousePressed && this.selected) {
       this.setAnchorPoint(mouseX, mouseY);
     }
-
-    this.rollover = this.containsPoint(mouseX, mouseY);
   }
 
   draw() {

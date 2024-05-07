@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 .canvasMenuButton {
   width: 40px;
   height: 40px;
@@ -51,6 +55,18 @@ canvas {
   border: 2px solid black;
   text-align: center;
   font-size: 12px;
+}
+
+.transition-box-button {
+  width: 35px;
+  height: 35px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 2px solid #1762a3;
+  border-radius: 5px;
+  background: none;
+  color: white;
+  transition: background-color 0.2s;
 }
 
 /* #canvas-container {

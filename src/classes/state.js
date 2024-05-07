@@ -82,6 +82,8 @@ class State {
 
     // Text input
     this.input = new CustomInput(this.x, this.y, this.texMap, scaleFactor, "#canvas-container");
+    this.input.input.value("Q_{" + id + "}");
+    this.input.textInput("Q_{" + id + "}");
   }
 
   closestPointOnCircle(x, y) {
@@ -131,6 +133,7 @@ class State {
 
     this.input.x = this.x - this.input.w / 2;
     this.input.y = this.y - (this.r + this.input.h + 5 * this.scaleFactor);
+
     this.input.visible = this.selected && !isMouseWithShiftPressed && !mouseIsPressed;
     if (this.selected && document.activeElement !== this.input.input.elt) {
       this.input.input.elt.focus();
@@ -138,7 +141,6 @@ class State {
 
     // this.w = Math.max(this.r * 2, this.input.w + 20 * this.scaleFactor);
     this.w = this.r * 2;
-    this.rollover = this.containsPoint(mouseX, mouseY);
 
     // Adjust location if being dragged
     if (this.dragging) {
@@ -153,6 +155,7 @@ class State {
     if (this.rollover) stroke(100, 100, 200);
     if (this.selected) stroke(0, 0, 255);
 
+    fill(255);
     ellipseMode(CENTER);
     ellipse(this.x, this.y, this.w, this.r * 2);
     if (this.isEndState) ellipse(this.x, this.y, this.w * 0.8, this.r * 1.6);

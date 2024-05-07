@@ -159,6 +159,10 @@ class Link {
     this.isMousePressed = false;
   }
 
+  doubleClick() {
+    if (this.rollover) this.transitionBox.selected = true;
+  }
+
   update(scaleFactor = 1.0) {
     this.scaleFactor = scaleFactor;
     this.snapToPadding = 6 * this.scaleFactor;
@@ -168,8 +172,6 @@ class Link {
     if (this.isMousePressed && this.selected) {
       this.setAnchorPoint(mouseX, mouseY);
     }
-
-    this.rollover = this.containsPoint(mouseX, mouseY);
 
     let stuff = this.getEndPointsAndCircle();
 
@@ -192,10 +194,9 @@ class Link {
       updateBoxPosition(this.transitionBox, boxX, boxY, boxAngle);
     }
 
-    if (this.selected && !mouseIsPressed) {
-      this.transitionBox.selected = true;
-    } else if (this.transitionBox.selected) {
-      this.selected = true;
+    if (this.transitionBox.selected) {
+      this.selected = false;
+      selectedObject = null;
     }
   }
 

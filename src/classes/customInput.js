@@ -111,6 +111,7 @@ class CustomInput {
     textAlign(LEFT, TOP);
     textFont("Arial");
     textSize(fontSize);
+    textStyle(ITALIC);
 
     if (this.textColorSameAsInput) {
       let color = this.input.style("color");
