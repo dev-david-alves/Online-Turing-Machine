@@ -25,8 +25,8 @@ let selectedArea = {
 
 // Scaling
 let slider = null;
-let lastScaleFactor = 0.75;
-let scaleFactor = 0.75;
+let lastScaleFactor = 1.0;
+let scaleFactor = 1.0;
 
 // Context menu
 let contextMenuObj = null;
@@ -60,14 +60,19 @@ function getIdOfSelectedButton() {
   return null;
 }
 
+function setMenuMousePressed(index) {
+  if (mouseButton === LEFT) {
+    setSelectedMenuButton(index);
+  }
+}
+
 // Window offset
 let windowOffset = { x: 0, y: 0 };
 
 // Export functions
-
 let exportButton = null;
-let exportAsPNG = null;
-let exportAsDMT = null;
+let exportAsPNGButton = null;
+let exportAsDMTButton = null;
 
 function closeExportMenu() {
   let floatingMenu = select("#floating-export-menu");
@@ -89,17 +94,115 @@ function toggleExportMenu() {
   }
 }
 
-function saveAsPNG() {
+function exportAsPNG() {
   let img = get();
   img.save("state-machine.png");
 
   closeExportMenu();
 }
 
-function setMenuMousePressed(index) {
-  if (mouseButton === LEFT) {
-    setSelectedMenuButton(index);
+function exportAsJSON() {
+  let dmt = {
+    scaleFactor: scaleFactor,
+    states: [],
+    links: [],
+    initialStateLink: null,
+  };
+
+  for (let i = 0; i < states.length; i++) {
+    dmt.states.push({
+      id: states[i].id,
+      x: states[i].x / scaleFactor,
+      y: states[i].y / scaleFactor,
+      isStartState: states[i].isStartState,
+      isEndState: states[i].isEndState,
+      isRejectState: states[i].isRejectState,
+      label: states[i].input.input.value(),
+    });
   }
+
+  for (let i = 0; i < links.length; i++) {
+    if (links[i] instanceof Link) {
+      dmt.links.push({
+        stateA: links[i].stateA.id,
+        stateB: links[i].stateB.id,
+        rules: links[i].transitionBox.rules,
+        parallelPart: links[i].parallelPart,
+        perpendicularPart: links[i].perpendicularPart,
+        lineAngleAdjust: links[i].lineAngleAdjust,
+      });
+    } else if (links[i] instanceof SelfLink) {
+      dmt.links.push({
+        state: links[i].state.id,
+        rules: links[i].transitionBox.rules,
+        anchorAngle: links[i].anchorAngle,
+      });
+    }
+  }
+
+  if (startLink) {
+    dmt.initialStateLink = {
+      state: startLink.state.id,
+      deltaX: startLink.deltaX,
+      deltaY: startLink.deltaY,
+    };
+  }
+
+  saveJSON(dmt, "state-machine.json");
+
+  closeExportMenu();
+}
+
+// Import file
+let inputFile = null;
+let importButton = null;
+
+function handleInputFile(file) {
+  if (file.type === "application" && file.subtype === "json") {
+    let reader = new FileReader();
+    reader.onload = (event) => {
+      let result = JSON.parse(event.target.result);
+
+      scaleFactor = result.scaleFactor;
+      states = [];
+      links = [];
+      startLink = null;
+
+      for (let i = 0; i < result.states.length; i++) {
+        let state = result.states[i];
+        states.push(new State(state.id, state.x, state.y, stateRadius, scaleFactor));
+        states[states.length - 1].isStartState = state.isStartState;
+        states[states.length - 1].isEndState = state.isEndState;
+        states[states.length - 1].isRejectState = state.isRejectState;
+        states[states.length - 1].input.input.value(state.label);
+      }
+
+      for (let i = 0; i < result.links.length; i++) {
+        let link = result.links[i];
+        if (Number.isInteger(link.stateA) && Number.isInteger(link.stateB)) {
+          let stateA = states.find((state) => state.id === link.stateA);
+          let stateB = states.find((state) => state.id === link.stateB);
+          links.push(new Link(stateA, stateB, scaleFactor, link.rules, link.parallelPart, link.perpendicularPart, link.lineAngleAdjust));
+        } else if (Number.isInteger(link.state)) {
+          let state = states.find((state) => state.id === link.state);
+          links.push(new SelfLink(state, scaleFactor, true, link.rules, link.anchorAngle));
+        }
+      }
+
+      if (result.initialStateLink) {
+        setInitialState(result.initialStateLink.state, { deltaX: result.initialStateLink.deltaX, deltaY: result.initialStateLink.deltaY });
+        startLink.selected = false;
+      }
+    };
+
+    reader.readAsText(file.file);
+  }
+}
+
+// Main functions
+
+function preload() {
+  texMap = loadJSON("../files/texMap.json");
 }
 
 function setup() {
@@ -120,8 +223,8 @@ function setup() {
   // Set window offset
   windowOffset = cnv.position();
 
-  states.push(new State(states.length, 100 / scaleFactor, 100 / scaleFactor, stateRadius, stateColor, scaleFactor));
-  states.push(new State(states.length, 230 / scaleFactor, 100 / scaleFactor, stateRadius, stateColor, scaleFactor));
+  states.push(new State(states.length, 150 / scaleFactor, 200 / scaleFactor, stateRadius, scaleFactor));
+  states.push(new State(states.length, 450 / scaleFactor, 200 / scaleFactor, stateRadius, scaleFactor));
 
   // Menu buttons
   menuButtons.push(select("#select"));
@@ -144,24 +247,30 @@ function setup() {
   // Export button
   exportButton = select("#export-button-toggle");
   exportButton.mousePressed(() => toggleExportMenu());
-  exportAsPNG = select("#export-as-png");
-  exportAsPNG.mousePressed(() => saveAsPNG());
+  exportAsPNGButton = select("#export-as-png");
+  exportAsPNGButton.mousePressed(() => exportAsPNG());
   exportAsDMT = select("#export-as-dtm");
-  exportAsDMT.mousePressed(() => console.log("Export as DMT"));
+  exportAsDMT.mousePressed(() => exportAsJSON());
+
+  // Import button
+  importButton = select("#import-button");
+  importButton.mousePressed(() => inputFile.elt.click());
 
   createContextMenu();
 
   if (contextMenuObj.mainDiv) {
     contextMenuObj.mainDiv.hide();
   }
+
+  // Input type file
+  inputFile = createFileInput(handleInputFile);
+  inputFile.attribute("accept", ".json");
+  inputFile.hide();
+  inputFile.position(-1000, -1000);
 }
 
 function reCalculateDoomPositions() {
   windowOffset = cnv.position();
-}
-
-function preload() {
-  texMap = loadJSON("../files/texMap.json");
 }
 
 function draw() {
@@ -270,12 +379,37 @@ function draw() {
   // ---------------
 }
 
-function setInitialState() {
-  if (selectedObject && selectedObject.object instanceof State) {
-    let from = { x: selectedObject.object.x - 80 * scaleFactor, y: selectedObject.object.y };
-    startLink = new StartLink(selectedObject.object, from, scaleFactor);
+// End of main functions
+
+function setInitialState(index = null, props = null) {
+  if (index === null) {
+    if (selectedObject && selectedObject.object instanceof State) {
+      let from = { x: selectedObject.object.x - 80 * scaleFactor, y: selectedObject.object.y };
+      startLink = new StartLink(selectedObject.object, from, scaleFactor);
+      startLink.selected = true;
+      startLink.setAnchorPoint(from.x, from.y);
+
+      for (let i = 0; i < states.length; i++) {
+        selectedObject.object.isStartState = false;
+      }
+
+      selectedObject.object.isStartState = true;
+    }
+  } else {
+    let from = { x: states[index].x - 80 * scaleFactor, y: states[index].y };
+    if (props) {
+      from = { x: states[index].x + props.deltaX, y: states[index].y + props.deltaY };
+    }
+
+    startLink = new StartLink(states[index], from, scaleFactor, props);
     startLink.selected = true;
     startLink.setAnchorPoint(from.x, from.y);
+
+    for (let i = 0; i < states.length; i++) {
+      states[i].isStartState = false;
+    }
+
+    states[index].isStartState = true;
   }
 
   contextMenuObj.mainDiv.hide();
@@ -368,40 +502,42 @@ function createContextMenu() {
   button.parent(contextMenuObj.li[contextMenuObj.li.length - 1]);
   button.mousePressed(options[2].mousePressed);
 
-  contextMenuObj.li.push(createElement("div"));
-  contextMenuObj.li[contextMenuObj.li.length - 1].class("w-full pt-1 mt-1 border-t-[1px] border-t-[#36404e]");
-  contextMenuObj.li[contextMenuObj.li.length - 1].parent(contextMenuObj.ul);
+  // Separator
+  // contextMenuObj.li.push(createElement("div"));
+  // contextMenuObj.li[contextMenuObj.li.length - 1].class("w-full pt-1 mt-1 border-t-[1px] border-t-[#36404e]");
+  // contextMenuObj.li[contextMenuObj.li.length - 1].parent(contextMenuObj.ul);
 
-  contextMenuObj.li.push(createElement("li"));
-  contextMenuObj.li[contextMenuObj.li.length - 1].class("w-full");
-  contextMenuObj.li[contextMenuObj.li.length - 1].parent(contextMenuObj.li[contextMenuObj.li.length - 2]);
-  button = createButton(options[3].label);
-  button.class("w-full py-1 px-3 text-left hover:bg-[#1762a3] text-white text-sm flex items-center justify-between");
-  button.parent(contextMenuObj.li[contextMenuObj.li.length - 1]);
-  button.mousePressed(options[3].mousePressed);
+  // contextMenuObj.li.push(createElement("li"));
+  // contextMenuObj.li[contextMenuObj.li.length - 1].class("w-full");
+  // contextMenuObj.li[contextMenuObj.li.length - 1].parent(contextMenuObj.li[contextMenuObj.li.length - 2]);
+  // button = createButton(options[3].label);
+  // button.class("w-full py-1 px-3 text-left hover:bg-[#1762a3] text-white text-sm flex items-center justify-between");
+  // button.parent(contextMenuObj.li[contextMenuObj.li.length - 1]);
+  // button.mousePressed(options[3].mousePressed);
 
-  let span = createElement("span");
-  span.class("text-[#676768] text-[12px]");
-  span.html("Ctrl+C");
-  span.parent(button);
+  // let span = createElement("span");
+  // span.class("text-[#676768] text-[12px]");
+  // span.html("Ctrl+C");
+  // span.parent(button);
 
-  contextMenuObj.li.push(createElement("li"));
-  contextMenuObj.li[contextMenuObj.li.length - 1].class("w-full");
-  contextMenuObj.li[contextMenuObj.li.length - 1].parent(contextMenuObj.li[contextMenuObj.li.length - 3]);
+  // contextMenuObj.li.push(createElement("li"));
+  // contextMenuObj.li[contextMenuObj.li.length - 1].class("w-full");
+  // contextMenuObj.li[contextMenuObj.li.length - 1].parent(contextMenuObj.li[contextMenuObj.li.length - 3]);
 
-  button = createButton(options[4].label);
-  button.class("w-full py-1 px-3 text-left hover:bg-[#1762a3] text-white text-sm flex items-center justify-between");
-  button.parent(contextMenuObj.li[contextMenuObj.li.length - 1]);
-  button.mousePressed(options[4].mousePressed);
+  // button = createButton(options[4].label);
+  // button.class("w-full py-1 px-3 text-left hover:bg-[#1762a3] text-white text-sm flex items-center justify-between");
+  // button.parent(contextMenuObj.li[contextMenuObj.li.length - 1]);
+  // button.mousePressed(options[4].mousePressed);
 
-  span = createElement("span");
-  span.class("text-[#676768] text-[12px]");
-  span.html("Ctrl+V");
-  span.parent(button);
+  // span = createElement("span");
+  // span.class("text-[#676768] text-[12px]");
+  // span.html("Ctrl+V");
+  // span.parent(button);
 
-  contextMenuObj.li.push(createElement("li"));
-  contextMenuObj.li[contextMenuObj.li.length - 1].class("w-full");
-  contextMenuObj.li[contextMenuObj.li.length - 1].parent(contextMenuObj.ul);
+  // contextMenuObj.li.push(createElement("li"));
+  // contextMenuObj.li[contextMenuObj.li.length - 1].class("w-full");
+  // contextMenuObj.li[contextMenuObj.li.length - 1].parent(contextMenuObj.ul);
+  // End Separator
 
   button = createButton(options[5].label);
   button.class("w-full py-1 px-3 text-left hover:bg-[#1762a3] text-white text-sm flex items-center justify-between  pt-1 mt-1 border-t-[1px] border-t-[#36404e]");
@@ -575,7 +711,7 @@ function mousePressedOnCanvas() {
       unCheckAll();
       if (links.some((link) => link.transitionBox.containsPoint(mouseX, mouseY))) return;
       let stateID = getNewStateId();
-      states.push(new State(stateID, mouseX / scaleFactor, mouseY / scaleFactor, stateRadius, stateColor, scaleFactor));
+      states.push(new State(stateID, mouseX / scaleFactor, mouseY / scaleFactor, stateRadius, scaleFactor));
       states[states.length - 1].selected = true;
       selectedObject = { object: states[states.length - 1], index: states.length - 1 };
       return;
@@ -666,6 +802,12 @@ function mouseReleasedOnCanvas() {
           stateOnIndex = states[hoveredObject.index];
           startLink = new StartLink(stateOnIndex, currentLink.from, scaleFactor);
           startLink.selected = true;
+
+          for (let i = 0; i < states.length; i++) {
+            states[i].isStartState = false;
+          }
+
+          stateOnIndex.isStartState = true;
         }
       }
     }
@@ -763,7 +905,7 @@ function doubleClick() {
   if (!overState) {
     console.log("Double clicked on empty space");
     let stateID = getNewStateId();
-    states.push(new State(stateID, mouseX / scaleFactor, mouseY / scaleFactor, stateRadius, stateColor, scaleFactor));
+    states.push(new State(stateID, mouseX / scaleFactor, mouseY / scaleFactor, stateRadius, scaleFactor));
     states[states.length - 1].selected = true;
     selectedObject = { object: states[states.length - 1], index: states.length - 1 };
   } else {

@@ -1,5 +1,5 @@
 class TransitionBox {
-  constructor(x, y, texMap = {}, scaleFactor = 1.0, parent = null) {
+  constructor(x, y, texMap = {}, scaleFactor = 1.0, parent = null, rules = []) {
     this.x = x * scaleFactor;
     this.y = y * scaleFactor;
     this.scaleFactor = scaleFactor;
@@ -56,11 +56,15 @@ class TransitionBox {
     }
 
     // Create the first input
-    this.rules = [];
+    this.rules = rules;
     this.rulesX = this.x;
     this.rulesY = this.y;
     this.rulesWidth = 0;
     this.rulesHeight = 0;
+
+    for (let i = 0; i < this.rules.length; i++) {
+      this.rules[i].width = calculateTextWidth(-1000, -1000, this.rules[i].label, this.ruleFontSize);
+    }
 
     this.changeResultText();
   }

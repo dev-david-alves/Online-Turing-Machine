@@ -36,12 +36,16 @@
           <button id="delete" class="canvasMenuButton"><i class="fa-solid fa-trash"></i></button>
         </div>
 
-        <div class="relative">
-          <button class="w-[100px] py-1 rounded-[5px] text-white bg-[#4e5f6f] hover:bg-[#526a7c] transition-colors" id="export-button-toggle">Exportar</button>
+        <div class="flex items-center gap-1">
+          <button class="w-[100px] py-1 rounded-[5px] text-white bg-[#4e5f6f] hover:bg-[#526a7c] transition-colors" id="import-button">Importar</button>
 
-          <div class="menu-export absolute top-[45px] -left-[21px] bg-[#9caab7] p-[8px] rounded-lg flex-col gap-1 drop-shadow-lg z-[4] hidden" id="floating-export-menu">
-            <button class="w-[100px] py-1 rounded-[5px] text-white bg-[#4e5f6f] hover:bg-[#526a7c] transition-colors z-[5]" id="export-as-png">.PNG</button>
-            <button class="w-[100px] py-1 rounded-[5px] text-white bg-[#4e5f6f] hover:bg-[#526a7c] transition-colors z-[5]" id="export-as-dtm">.DMT</button>
+          <div class="relative">
+            <button class="w-[100px] py-1 rounded-[5px] text-white bg-[#4e5f6f] hover:bg-[#526a7c] transition-colors" id="export-button-toggle">Exportar</button>
+
+            <div class="menu-export absolute top-[45px] -left-[21px] bg-[#9caab7] p-[8px] rounded-lg flex-col gap-1 drop-shadow-lg z-[4] hidden" id="floating-export-menu">
+              <button class="w-[100px] py-1 rounded-[5px] text-white bg-[#4e5f6f] hover:bg-[#526a7c] transition-colors z-[5]" id="export-as-png">.PNG</button>
+              <button class="w-[100px] py-1 rounded-[5px] text-white bg-[#4e5f6f] hover:bg-[#526a7c] transition-colors z-[5]" id="export-as-dtm">.JSON</button>
+            </div>
           </div>
         </div>
       </div>

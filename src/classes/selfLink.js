@@ -1,8 +1,8 @@
 class SelfLink {
-  constructor(state, scaleFactor = 1.0, createText = false) {
+  constructor(state, scaleFactor = 1.0, createText = false, rules = [], anchorAngle = 0) {
     this.state = state;
     this.scaleFactor = scaleFactor;
-    this.anchorAngle = 0;
+    this.anchorAngle = anchorAngle;
     this.mouseOffsetAngle = 0;
     this.isMousePressed = false;
     this.selected = false;
@@ -10,11 +10,11 @@ class SelfLink {
     this.text = "";
     this.hitTargetPadding = 6 * this.scaleFactor;
 
-    this.setAnchorPoint(mouseX, mouseY);
+    if (anchorAngle === 0) this.setAnchorPoint(mouseX, mouseY);
 
     // TextBox
     this.transitionBox = null;
-    if (createText) this.transitionBox = new TransitionBox(-1000, -1000, texMap, scaleFactor, "#canvas-container");
+    if (createText) this.transitionBox = new TransitionBox(-1000, -1000, texMap, scaleFactor, "#canvas-container", rules);
   }
 
   containsPoint(x, y) {
@@ -107,6 +107,7 @@ class SelfLink {
     let stuff = this.getEndPointsAndCircle();
     push();
     // draw arc
+    strokeWeight(1 * this.scaleFactor);
     stroke(0, 0, 0);
     fill(0, 0, 0);
 

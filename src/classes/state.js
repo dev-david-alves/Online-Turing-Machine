@@ -1,70 +1,11 @@
 class State {
-  constructor(id, x, y, r, color, scaleFactor = 1.0) {
+  constructor(id, x, y, r, scaleFactor = 1.0) {
     this.id = id;
-    this.scaleFactor = scaleFactor;
     this.isStartState = false;
     this.isEndState = false;
     this.isRejectState = false;
-    this.color = color;
 
-    this.texMap = {
-      // Greek alphabet
-      "\\Alpha": "Α",
-      "\\alpha": "α",
-      "\\Beta": "Β",
-      "\\beta": "β",
-      "\\Gamma": "Γ",
-      "\\gamma": "γ",
-      "\\Delta": "Δ",
-      "\\delta": "δ",
-      "\\Epsilon": "Ε",
-      "\\epsilon": "ε",
-      "\\Zeta": "Ζ",
-      "\\zeta": "ζ",
-      "\\Eta": "Η",
-      "\\eta": "η",
-      "\\Theta": "Θ",
-      "\\theta": "θ",
-      "\\Iota": "Ι",
-      "\\iota": "ι",
-      "\\Kappa": "Κ",
-      "\\kappa": "κ",
-      "\\Lambda": "Λ",
-      "\\lambda": "λ",
-      "\\Mu": "Μ",
-      "\\mu": "μ",
-      "\\Nu": "Ν",
-      "\\nu": "ν",
-      "\\Xi": "Ξ",
-      "\\xi": "ξ",
-      "\\Omicron": "Ο",
-      "\\omicron": "ο",
-      "\\Pi": "Π",
-      "\\pi": "π",
-      "\\Rho": "Ρ",
-      "\\rho": "ρ",
-      "\\Sigma": "Σ",
-      "\\sigma": "σ",
-      "\\fsigma": "ς",
-      "\\Tau": "Τ",
-      "\\tau": "τ",
-      "\\Upsilon": "Υ",
-      "\\upsilon": "υ",
-      "\\Phi": "Φ",
-      "\\phi": "φ",
-      "\\Chi": "Χ",
-      "\\chi": "χ",
-      "\\Psi": "Ψ",
-      "\\psi": "ψ",
-      "\\Omega": "Ω",
-      "\\omega": "ω",
-
-      // Especial symbols
-      "\\Blank": "☐",
-      "\\blank": "☐",
-      "\\Branco": "☐",
-      "\\branco": "☐",
-    };
+    this.scaleFactor = scaleFactor;
 
     // Dragging
     this.dragging = false; // Is the object being dragged?
@@ -83,7 +24,7 @@ class State {
     this.w = this.r * 2;
 
     // Text input
-    this.input = new CustomInput(this.x, this.y, this.texMap, scaleFactor, "#canvas-container");
+    this.input = new CustomInput(-1000, -1000, texMap, scaleFactor, "#canvas-container");
     this.input.input.value("Q_{" + id + "}");
     this.input.textInput("Q_{" + id + "}");
   }
@@ -167,6 +108,7 @@ class State {
     if (this.selected) stroke(0, 0, 255);
 
     fill(255);
+    strokeWeight(1 * this.scaleFactor);
     ellipseMode(CENTER);
     ellipse(this.x, this.y, this.w, this.r * 2);
     if (this.isEndState) ellipse(this.x, this.y, this.w * 0.8, this.r * 1.6);

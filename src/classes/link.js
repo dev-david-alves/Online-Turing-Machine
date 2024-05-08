@@ -1,5 +1,5 @@
 class Link {
-  constructor(stateA, stateB, scaleFactor = 1.0) {
+  constructor(stateA, stateB, scaleFactor = 1.0, rules = [], parallelPart = 0.5, perpendicularPart = 0, lineAngleAdjust = 0) {
     this.stateA = stateA;
     this.stateB = stateB;
     this.rollover = false;
@@ -8,16 +8,16 @@ class Link {
     this.scaleFactor = scaleFactor;
 
     // Make anchor point relative to the locations of stateA and stateB
-    this.parallelPart = 0.5;
-    this.perpendicularPart = 0;
+    this.parallelPart = parallelPart;
+    this.perpendicularPart = perpendicularPart;
+    this.lineAngleAdjust = lineAngleAdjust;
 
     // Extra
-    this.lineAngleAdjust = 0;
     this.snapToPadding = 6 * this.scaleFactor;
     this.hitTargetPadding = 6 * this.scaleFactor;
 
     // TextBox
-    this.transitionBox = new TransitionBox(-1000, -1000, texMap, scaleFactor, "#canvas-container");
+    this.transitionBox = new TransitionBox(-1000, -1000, texMap, scaleFactor, "#canvas-container", rules);
   }
 
   det(a, b, c, d, e, f, g, h, i) {
@@ -164,10 +164,15 @@ class Link {
   }
 
   update(scaleFactor = 1.0) {
-    this.scaleFactor = scaleFactor;
     this.snapToPadding = 6 * this.scaleFactor;
     this.hitTargetPadding = 6 * this.scaleFactor;
     this.transitionBox.scaleFactor = scaleFactor;
+
+    this.parallelPart = (this.parallelPart / this.scaleFactor) * scaleFactor;
+    this.perpendicularPart = (this.perpendicularPart / this.scaleFactor) * scaleFactor;
+    this.lineAngleAdjust = (this.lineAngleAdjust / this.scaleFactor) * scaleFactor;
+
+    this.scaleFactor = scaleFactor;
 
     if (this.isMousePressed && this.selected) {
       this.setAnchorPoint(mouseX, mouseY);
@@ -202,6 +207,7 @@ class Link {
 
   draw() {
     push();
+    strokeWeight(1 * this.scaleFactor);
     stroke(0, 0, 0);
     fill(0, 0, 0);
 

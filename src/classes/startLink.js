@@ -56,6 +56,9 @@ class StartLink {
   }
 
   update(scaleFactor = 1.0) {
+    this.deltaX = (this.deltaX / this.scaleFactor) * scaleFactor;
+    this.deltaY = (this.deltaY / this.scaleFactor) * scaleFactor;
+
     this.scaleFactor = scaleFactor;
     this.snapToPadding = 6 * this.scaleFactor;
     this.hitTargetPadding = 6 * this.scaleFactor;
@@ -70,6 +73,7 @@ class StartLink {
     push();
     stroke(0, 0, 0);
     fill(0, 0, 0);
+    strokeWeight(1 * this.scaleFactor);
 
     // draw the line
     if (this.rollover) {
