@@ -20,9 +20,13 @@ let slider = null;
 let lastScaleFactor = 0.75;
 let scaleFactor = 0.75;
 
+// Context menu
+let contextMenuObj = null;
+
 // Moving canvas view
 let movingCanvasOffset = { x: 0, y: 0 };
-let mouseIsPressed = false;
+let isMouseLeftPressed = false;
+let isMouseRightPressed = false;
 
 // Start of Button functions
 let menuButtons = [];
@@ -88,6 +92,12 @@ function saveAsPNG() {
   closeExportMenu();
 }
 
+function setMenuMousePressed(index) {
+  if (mouseButton === LEFT) {
+    setSelectedMenuButton(index);
+  }
+}
+
 function setup() {
   cnv = createCanvas(700, 500);
   cnv.parent("canvas-container");
@@ -108,20 +118,18 @@ function setup() {
 
   states.push(new State(states.length, 100 / scaleFactor, 100 / scaleFactor, stateRadius, stateColor, scaleFactor));
   states.push(new State(states.length, 230 / scaleFactor, 100 / scaleFactor, stateRadius, stateColor, scaleFactor));
-  links.push(new Link(states[0], states[1], scaleFactor));
-  // links.push(new SelfLink(states[0], scaleFactor, true));
 
   // Menu buttons
   menuButtons.push(select("#select"));
-  menuButtons[0].mousePressed(() => setSelectedMenuButton(0));
+  menuButtons[0].mousePressed(() => setMenuMousePressed(0));
   menuButtons.push(select("#move"));
-  menuButtons[1].mousePressed(() => setSelectedMenuButton(1));
+  menuButtons[1].mousePressed(() => setMenuMousePressed(1));
   menuButtons.push(select("#addState"));
-  menuButtons[2].mousePressed(() => setSelectedMenuButton(2));
+  menuButtons[2].mousePressed(() => setMenuMousePressed(2));
   menuButtons.push(select("#addLink"));
-  menuButtons[3].mousePressed(() => setSelectedMenuButton(3));
+  menuButtons[3].mousePressed(() => setMenuMousePressed(3));
   menuButtons.push(select("#delete"));
-  menuButtons[4].mousePressed(() => setSelectedMenuButton(4));
+  menuButtons[4].mousePressed(() => setMenuMousePressed(4));
 
   // Activate default button
   setSelectedMenuButton(0);
@@ -136,6 +144,12 @@ function setup() {
   exportAsPNG.mousePressed(() => saveAsPNG());
   exportAsDMT = select("#export-as-dtm");
   exportAsDMT.mousePressed(() => console.log("Export as DMT"));
+
+  createContextMenu();
+
+  if (contextMenuObj.mainDiv) {
+    contextMenuObj.mainDiv.hide();
+  }
 }
 
 function reCalculateDoomPositions() {
@@ -151,7 +165,7 @@ function draw() {
   reCalculateDoomPositions();
   background(255);
 
-  if ((mouseIsPressed && keyIsPressed && keyCode === CONTROL) || mouseButton === CENTER || (getIdOfSelectedButton() === "move" && mouseIsPressed)) moveCanvas();
+  if ((isMouseLeftPressed && keyIsPressed && keyCode === CONTROL) || mouseButton === CENTER || (getIdOfSelectedButton() === "move" && isMouseLeftPressed)) moveCanvas();
 
   // Slider -------
   scaleFactor = slider.value();
@@ -229,6 +243,160 @@ function draw() {
     states[i].input.update(scaleFactor);
     drawText(states[i].x - states[i].input.textW / 2, states[i].y, states[i].input.allSubstrings, states[i].input.fontSize);
   }
+}
+
+function setInitialState() {
+  if (selectedObject && selectedObject.object instanceof State) {
+    let from = { x: selectedObject.object.x - 80 * scaleFactor, y: selectedObject.object.y };
+    startLink = new StartLink(selectedObject.object, from, scaleFactor);
+    startLink.selected = true;
+    startLink.setAnchorPoint(from.x, from.y);
+  }
+
+  contextMenuObj.mainDiv.hide();
+}
+
+function toggleFinalState() {
+  if (selectedObject && selectedObject.object instanceof State) {
+    selectedObject.object.isEndState = !selectedObject.object.isEndState;
+  }
+
+  contextMenuObj.mainDiv.hide();
+}
+
+function renameState() {
+  if (selectedObject && selectedObject.object instanceof State) {
+    selectedObject.object.input.visible = true;
+  }
+
+  contextMenuObj.mainDiv.hide();
+}
+
+function createContextMenu() {
+  contextMenuObj = {
+    mainDiv: createDiv(""),
+    ul: createElement("ul"),
+    li: [],
+  };
+
+  contextMenuObj.mainDiv.elt.addEventListener("contextmenu", (event) => event.preventDefault());
+  contextMenuObj.mainDiv.class("absolute bg-[#222831] py-2 rounded-[5px] flex flex-col gap-1 drop-shadow-md");
+  contextMenuObj.ul.class("w-full");
+  contextMenuObj.ul.parent(contextMenuObj.mainDiv);
+
+  let options = [
+    {
+      label: "Estado inicial",
+      mousePressed: () => setInitialState(),
+    },
+    {
+      label: "Definir como Final",
+      mousePressed: () => toggleFinalState(),
+    },
+    {
+      label: "Definir como Rejeição",
+      mousePressed: () => console.log("Definir como Rejeição"),
+    },
+    {
+      label: "Copiar",
+      mousePressed: () => console.log("Copiar"),
+    },
+    {
+      label: "Colar",
+      mousePressed: () => console.log("Colar"),
+    },
+    {
+      label: "Renomear Estado",
+      mousePressed: () => renameState(),
+    },
+    {
+      label: "Deletar",
+      mousePressed: () => {
+        deleteObject();
+        contextMenuObj.mainDiv.hide();
+      },
+    },
+  ];
+
+  contextMenuObj.li.push(createElement("li"));
+  contextMenuObj.li[contextMenuObj.li.length - 1].class("w-full");
+  contextMenuObj.li[contextMenuObj.li.length - 1].parent(contextMenuObj.ul);
+  let button = createButton(options[0].label);
+  button.class("w-full py-1 px-3 text-left hover:bg-[#1762a3] text-white text-sm");
+  button.parent(contextMenuObj.li[contextMenuObj.li.length - 1]);
+  button.mousePressed(options[0].mousePressed);
+
+  contextMenuObj.li.push(createElement("li"));
+  contextMenuObj.li[contextMenuObj.li.length - 1].class("w-full");
+  contextMenuObj.li[contextMenuObj.li.length - 1].parent(contextMenuObj.ul);
+  button = createButton(options[1].label);
+  button.id("finalStateButton");
+  button.class("w-full py-1 px-3 text-left hover:bg-[#1762a3] text-white text-sm");
+  button.parent(contextMenuObj.li[contextMenuObj.li.length - 1]);
+  button.mousePressed(options[1].mousePressed);
+
+  contextMenuObj.li.push(createElement("li"));
+  contextMenuObj.li[contextMenuObj.li.length - 1].class("w-full");
+  contextMenuObj.li[contextMenuObj.li.length - 1].parent(contextMenuObj.ul);
+  button = createButton(options[2].label);
+  button.class("w-full py-1 px-3 text-left hover:bg-[#1762a3] text-white text-sm");
+  button.parent(contextMenuObj.li[contextMenuObj.li.length - 1]);
+  button.mousePressed(options[2].mousePressed);
+
+  contextMenuObj.li.push(createElement("div"));
+  contextMenuObj.li[contextMenuObj.li.length - 1].class("w-full pt-1 mt-1 border-t-[1px] border-t-[#36404e]");
+  contextMenuObj.li[contextMenuObj.li.length - 1].parent(contextMenuObj.ul);
+
+  contextMenuObj.li.push(createElement("li"));
+  contextMenuObj.li[contextMenuObj.li.length - 1].class("w-full");
+  contextMenuObj.li[contextMenuObj.li.length - 1].parent(contextMenuObj.li[contextMenuObj.li.length - 2]);
+  button = createButton(options[3].label);
+  button.class("w-full py-1 px-3 text-left hover:bg-[#1762a3] text-white text-sm flex items-center justify-between");
+  button.parent(contextMenuObj.li[contextMenuObj.li.length - 1]);
+  button.mousePressed(options[3].mousePressed);
+
+  let span = createElement("span");
+  span.class("text-[#676768] text-[12px]");
+  span.html("Ctrl+C");
+  span.parent(button);
+
+  contextMenuObj.li.push(createElement("li"));
+  contextMenuObj.li[contextMenuObj.li.length - 1].class("w-full");
+  contextMenuObj.li[contextMenuObj.li.length - 1].parent(contextMenuObj.li[contextMenuObj.li.length - 3]);
+
+  button = createButton(options[4].label);
+  button.class("w-full py-1 px-3 text-left hover:bg-[#1762a3] text-white text-sm flex items-center justify-between");
+  button.parent(contextMenuObj.li[contextMenuObj.li.length - 1]);
+  button.mousePressed(options[4].mousePressed);
+
+  span = createElement("span");
+  span.class("text-[#676768] text-[12px]");
+  span.html("Ctrl+V");
+  span.parent(button);
+
+  contextMenuObj.li.push(createElement("li"));
+  contextMenuObj.li[contextMenuObj.li.length - 1].class("w-full");
+  contextMenuObj.li[contextMenuObj.li.length - 1].parent(contextMenuObj.ul);
+
+  button = createButton(options[5].label);
+  button.class("w-full py-1 px-3 text-left hover:bg-[#1762a3] text-white text-sm flex items-center justify-between  pt-1 mt-1 border-t-[1px] border-t-[#36404e]");
+  button.parent(contextMenuObj.li[contextMenuObj.li.length - 1]);
+  button.mousePressed(options[5].mousePressed);
+
+  contextMenuObj.li.push(createElement("li"));
+  contextMenuObj.li[contextMenuObj.li.length - 1].class("w-full");
+  contextMenuObj.li[contextMenuObj.li.length - 1].parent(contextMenuObj.ul);
+
+  button = createButton(options[6].label);
+  button.class("w-full py-1 px-3 text-left hover:bg-[#1762a3] text-white text-sm flex items-center justify-between  pt-1 mt-1 border-t-[1px] border-t-[#36404e]");
+  button.parent(contextMenuObj.li[contextMenuObj.li.length - 1]);
+  button.mousePressed(options[6].mousePressed);
+
+  let iElement = createElement("i");
+  iElement.class("fa-solid fa-trash text-[#676768] text-[12px]");
+  iElement.parent(button);
+
+  contextMenuObj.mainDiv.position(windowOffset.x + 100, windowOffset.y + 100);
 }
 
 function getNewStateId() {
@@ -336,56 +504,85 @@ function moveCanvas(x = mouseX, y = mouseY) {
 }
 
 function mousePressedOnCanvas() {
-  closeExportMenu();
-
-  mouseIsPressed = true;
-  if ((mouseIsPressed && keyIsPressed && keyCode === CONTROL) || mouseButton === CENTER || (getIdOfSelectedButton() === "move" && mouseIsPressed)) return;
-
-  if (!canDoCanvaActions) {
-    isMouseWithShiftPressed = false;
-    isShiftPressed = false;
-    currentLink = null;
-    return;
-  }
-  // If add state menu button is selected
-  if (getIdOfSelectedButton() === "addState" && !checkFirstSelectedObject(mouseX, mouseY, false)) {
-    unCheckAll();
-    if (links.some((link) => link.transitionBox.containsPoint(mouseX, mouseY))) return;
-    let stateID = getNewStateId();
-    states.push(new State(stateID, mouseX / scaleFactor, mouseY / scaleFactor, stateRadius, stateColor, scaleFactor));
-    states[states.length - 1].selected = true;
-    selectedObject = { object: states[states.length - 1], index: states.length - 1 };
-    return;
-  }
-
-  isMouseWithShiftPressed = mouseButton === LEFT && (isShiftPressed || getIdOfSelectedButton() === "addLink");
-  if (isShiftPressed || getIdOfSelectedButton() === "addLink") return;
-
-  selectedObject = checkFirstSelectedObject();
-
-  if (selectedObject) {
-    selectedObject.object.selected = true;
-
-    if (selectedObject.object instanceof State) {
-      selectedObject.object.mousePressed();
-    } else if (selectedObject.object instanceof Link || selectedObject.object instanceof SelfLink) {
-      selectedObject.object.mousePressed();
-    } else if (selectedObject.object instanceof StartLink) {
-      startLink.mousePressed();
+  // Click outside context menu
+  if (contextMenuObj.mainDiv) {
+    if (
+      mouseX < contextMenuObj.mainDiv.position().x ||
+      mouseX > contextMenuObj.mainDiv.position().x + contextMenuObj.mainDiv.width ||
+      mouseY < contextMenuObj.mainDiv.position().y ||
+      mouseY > contextMenuObj.mainDiv.position().y + contextMenuObj.mainDiv.height
+    ) {
+      contextMenuObj.mainDiv.hide();
     }
   }
 
-  // Delete button
-  if (getIdOfSelectedButton() === "delete") deleteObject();
+  closeExportMenu();
+  isMouseLeftPressed = mouseButton === LEFT;
+  isMouseRightPressed = mouseButton === RIGHT;
 
-  for (let i = 0; i < links.length; i++) {
-    links[i].transitionBox.mousePressed();
+  if (isMouseLeftPressed) {
+    if ((isMouseLeftPressed && keyIsPressed && keyCode === CONTROL) || mouseButton === CENTER || (getIdOfSelectedButton() === "move" && isMouseLeftPressed)) return;
+
+    if (!canDoCanvaActions) {
+      isMouseWithShiftPressed = false;
+      isShiftPressed = false;
+      currentLink = null;
+      return;
+    }
+    // If add state menu button is selected
+    if (getIdOfSelectedButton() === "addState" && !checkFirstSelectedObject(mouseX, mouseY, false)) {
+      unCheckAll();
+      if (links.some((link) => link.transitionBox.containsPoint(mouseX, mouseY))) return;
+      let stateID = getNewStateId();
+      states.push(new State(stateID, mouseX / scaleFactor, mouseY / scaleFactor, stateRadius, stateColor, scaleFactor));
+      states[states.length - 1].selected = true;
+      selectedObject = { object: states[states.length - 1], index: states.length - 1 };
+      return;
+    }
+
+    isMouseWithShiftPressed = isMouseLeftPressed && (isShiftPressed || getIdOfSelectedButton() === "addLink");
+    if (isShiftPressed || getIdOfSelectedButton() === "addLink") return;
+
+    selectedObject = checkFirstSelectedObject();
+
+    if (selectedObject) {
+      selectedObject.object.selected = true;
+
+      if (selectedObject.object instanceof State) {
+        selectedObject.object.mousePressed();
+      } else if (selectedObject.object instanceof Link || selectedObject.object instanceof SelfLink) {
+        selectedObject.object.mousePressed();
+      } else if (selectedObject.object instanceof StartLink) {
+        startLink.mousePressed();
+      }
+    }
+
+    // Delete button
+    if (getIdOfSelectedButton() === "delete") deleteObject();
+
+    for (let i = 0; i < links.length; i++) {
+      links[i].transitionBox.mousePressed();
+    }
+  } else {
+    selectedObject = checkFirstSelectedObject();
+    if (selectedObject && selectedObject.object instanceof State) {
+      contextMenuObj.mainDiv.position(windowOffset.x + mouseX, windowOffset.y + mouseY);
+
+      if (selectedObject.object.isEndState) {
+        select("#finalStateButton").html("Definir como Não Final");
+      } else {
+        select("#finalStateButton").html("Definir como Final");
+      }
+
+      contextMenuObj.mainDiv.show();
+    }
   }
 }
 
 function mouseReleasedOnCanvas() {
   mouseButton = 0;
-  mouseIsPressed = false;
+  isMouseLeftPressed = false;
+  isMouseRightPressed = false;
   movingCanvasOffset.x = 0;
   movingCanvasOffset.y = 0;
 
@@ -484,6 +681,10 @@ function keyPressed() {
   if (keyCode === SHIFT) isShiftPressed = true;
   if (keyCode === DELETE) {
     deleteObject();
+  }
+
+  for (let i = 0; i < states.length; i++) {
+    states[i].keyPressed();
   }
 
   for (let i = 0; i < links.length; i++) {

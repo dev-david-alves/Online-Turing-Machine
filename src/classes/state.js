@@ -2,7 +2,9 @@ class State {
   constructor(id, x, y, r, color, scaleFactor = 1.0) {
     this.id = id;
     this.scaleFactor = scaleFactor;
+    this.isStartState = false;
     this.isEndState = false;
+    this.isRejectState = false;
     this.color = color;
 
     this.texMap = {
@@ -134,8 +136,11 @@ class State {
     this.input.x = this.x - this.input.w / 2;
     this.input.y = this.y - (this.r + this.input.h + 5 * this.scaleFactor);
 
-    this.input.visible = this.selected && !isMouseWithShiftPressed && !mouseIsPressed;
-    if (this.selected && document.activeElement !== this.input.input.elt) {
+    if (isMouseWithShiftPressed || isMouseLeftPressed || isMouseRightPressed) {
+      this.input.visible = false;
+    }
+
+    if (this.input.visible && document.activeElement !== this.input.input.elt) {
       this.input.input.elt.focus();
     }
 
@@ -146,6 +151,12 @@ class State {
     if (this.dragging) {
       this.x = this.offsetX + mouseX;
       this.y = this.offsetY + mouseY;
+    }
+  }
+
+  keyPressed() {
+    if (keyCode === ENTER) {
+      this.input.visible = false;
     }
   }
 
