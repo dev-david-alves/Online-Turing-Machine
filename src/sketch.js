@@ -15,6 +15,14 @@ let isMouseWithShiftPressed = false;
 let texMap = null;
 let currentLink = null;
 
+// Selecting objects
+let selectedArea = {
+  x1: null,
+  y1: null,
+  x2: null,
+  y2: null,
+};
+
 // Scaling
 let slider = null;
 let lastScaleFactor = 0.75;
@@ -54,10 +62,6 @@ function getIdOfSelectedButton() {
 
 // Window offset
 let windowOffset = { x: 0, y: 0 };
-
-function preload() {
-  texMap = loadJSON("../utils/texMap.json");
-}
 
 // Export functions
 
@@ -156,6 +160,10 @@ function reCalculateDoomPositions() {
   windowOffset = cnv.position();
 }
 
+function preload() {
+  texMap = loadJSON("../files/texMap.json");
+}
+
 function draw() {
   // Check if mouse outside canvas
   if (mouseX < 0 || mouseX > width || mouseY < 0 || mouseY > height) {
@@ -243,6 +251,23 @@ function draw() {
     states[i].input.update(scaleFactor);
     drawText(states[i].x - states[i].input.textW / 2, states[i].y, states[i].input.allSubstrings, states[i].input.fontSize);
   }
+
+  // Selecting area
+
+  // if (selectedArea.x1 && selectedArea.y1) {
+  //   selectedArea.x2 = mouseX - selectedArea.x1;
+  //   selectedArea.y2 = mouseY - selectedArea.y1;
+  // }
+
+  // if (selectedArea.x1 && selectedArea.y1 && selectedArea.x2 && selectedArea.y2) {
+  //   push();
+  //   fill(0, 0, 255, 25);
+  //   stroke(0, 0, 255, 50);
+  //   strokeWeight(2);
+  //   rect(selectedArea.x1, selectedArea.y1, selectedArea.x2, selectedArea.y2);
+  //   pop();
+  // }
+  // ---------------
 }
 
 function setInitialState() {
@@ -497,6 +522,14 @@ function deleteObject() {
   }
 }
 
+function selectObjectsInsideArea() {
+  for (let i = 0; i < states.length; i++) {
+    if (states[i].x > selectedArea.x1 && states[i].x < selectedArea.x1 + selectedArea.x2 && states[i].y > selectedArea.y1 && states[i].y < selectedArea.y1 + selectedArea.y2) {
+      states[i].selected = true;
+    }
+  }
+}
+
 function moveCanvas(x = mouseX, y = mouseY) {
   let ratioFactor = 3;
   movingCanvasOffset.x = (movingCanvasOffset.x - (x - pmouseX)) / ratioFactor;
@@ -521,6 +554,14 @@ function mousePressedOnCanvas() {
   isMouseRightPressed = mouseButton === RIGHT;
 
   if (isMouseLeftPressed) {
+    selectedObject = checkFirstSelectedObject();
+    if (!isShiftPressed && !selectedObject && getIdOfSelectedButton() === "select") {
+      if (!selectedArea.x1 && !selectedArea.y1) {
+        selectedArea.x1 = mouseX;
+        selectedArea.y1 = mouseY;
+      }
+    }
+
     if ((isMouseLeftPressed && keyIsPressed && keyCode === CONTROL) || mouseButton === CENTER || (getIdOfSelectedButton() === "move" && isMouseLeftPressed)) return;
 
     if (!canDoCanvaActions) {
@@ -585,6 +626,12 @@ function mouseReleasedOnCanvas() {
   isMouseRightPressed = false;
   movingCanvasOffset.x = 0;
   movingCanvasOffset.y = 0;
+
+  selectObjectsInsideArea();
+  selectedArea.x1 = null;
+  selectedArea.y1 = null;
+  selectedArea.x2 = null;
+  selectedArea.y2 = null;
 
   if (currentLink instanceof TemporaryLink) {
     if (currentLink.from && currentLink.to) {
