@@ -12,7 +12,7 @@ let startLink = null;
 let isShiftPressed = false;
 let isMouseWithShiftPressed = false;
 
-let texMap = null;
+let texMap = {};
 let currentLink = null;
 
 // Selecting objects
@@ -201,10 +201,6 @@ function handleInputFile(file) {
 
 // Main functions
 
-function preload() {
-  texMap = loadJSON("../files/texMap.json");
-}
-
 function setup() {
   cnv = createCanvas(700, 500);
   cnv.parent("canvas-container");
@@ -212,6 +208,8 @@ function setup() {
   cnv.doubleClicked(doubleClick);
   cnv.mousePressed(mousePressedOnCanvas);
   cnv.mouseReleased(mouseReleasedOnCanvas);
+
+  texMap = getTexMap();
 
   // Resize canvas
   let canvasContainer = select("#canvas-container");
