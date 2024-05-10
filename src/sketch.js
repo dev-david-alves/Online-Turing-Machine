@@ -1,4 +1,5 @@
 let cnv = null;
+let cnvIsFocused = "outside";
 let canDoCanvaActions = true;
 let states = [];
 let stateColor = { r: 0, g: 0, b: 255 };
@@ -40,6 +41,14 @@ let isMouseRightPressed = false;
 let menuButtons = [];
 
 function setSelectedMenuButton(index) {
+  if (index === -1) {
+    menuButtons.forEach((btn) => (btn.hasClass("canvasMenuButtonSelected") ? btn.removeClass("canvasMenuButtonSelected") : null));
+    menuButtons[4].removeClass("canvasMenuButtonDelete");
+    unCheckAll();
+
+    return;
+  }
+
   if (menuButtons[index].elt.id === "delete") {
     menuButtons.forEach((btn) => (btn.hasClass("canvasMenuButtonSelected") ? btn.removeClass("canvasMenuButtonSelected") : null));
     menuButtons[index].addClass("canvasMenuButtonDelete");
@@ -50,7 +59,6 @@ function setSelectedMenuButton(index) {
   }
 
   unCheckAll();
-
   closeExportMenu();
 }
 
@@ -62,6 +70,7 @@ function getIdOfSelectedButton() {
 
 function setMenuMousePressed(index) {
   if (mouseButton === LEFT) {
+    cnvIsFocused = "menu";
     setSelectedMenuButton(index);
   }
 }
@@ -84,6 +93,9 @@ function closeExportMenu() {
 }
 
 function toggleExportMenu() {
+  cnvIsFocused = "export-menu";
+  if (!getIdOfSelectedButton()) setSelectedMenuButton(0);
+
   let floatingMenu = select("#floating-export-menu");
   // if hidden, show it
   if (floatingMenu.hasClass("hidden")) {
@@ -99,9 +111,11 @@ function exportAsPNG() {
   img.save("state-machine.png");
 
   closeExportMenu();
+
+  cnvIsFocused = "menu";
 }
 
-function exportAsJSON() {
+function createJSONExportObj() {
   let dmt = {
     scaleFactor: scaleFactor,
     states: [],
@@ -148,9 +162,16 @@ function exportAsJSON() {
     };
   }
 
-  saveJSON(dmt, "state-machine.json");
+  return dmt;
+}
 
+function exportAsJSON() {
+  let dmt = createJSONExportObj();
+
+  saveJSON(dmt, "state-machine.json");
   closeExportMenu();
+
+  cnvIsFocused = "menu";
 }
 
 // Import file
@@ -194,13 +215,14 @@ function handleInputFile(file) {
         startLink.selected = false;
       }
     };
-
     reader.readAsText(file.file);
   }
 }
 
-// Main functions
+// History
+let history = []; // Up to 10 saves;
 
+// Main functions
 function setup() {
   cnv = createCanvas(700, 500);
   cnv.parent("canvas-container");
@@ -237,10 +259,13 @@ function setup() {
   menuButtons[4].mousePressed(() => setMenuMousePressed(4));
 
   // Activate default button
-  setSelectedMenuButton(0);
+  // setSelectedMenuButton(0);
+  // cnvIsFocused = "menu";
 
   // Create slider
   slider = select("#scalingCanvas");
+  slider.input(() => (cnvIsFocused = "menu"));
+  slider.mousePressed(() => (cnvIsFocused = "menu"));
 
   // Export button
   exportButton = select("#export-button-toggle");
@@ -252,7 +277,10 @@ function setup() {
 
   // Import button
   importButton = select("#import-button");
-  importButton.mousePressed(() => inputFile.elt.click());
+  importButton.mousePressed(() => {
+    cnvIsFocused = "menu";
+    inputFile.elt.click();
+  });
 
   createContextMenu();
 
@@ -265,6 +293,9 @@ function setup() {
   inputFile.attribute("accept", ".json");
   inputFile.hide();
   inputFile.position(-1000, -1000);
+
+  // First save on history
+  history.push(createJSONExportObj());
 }
 
 function reCalculateDoomPositions() {
@@ -272,6 +303,15 @@ function reCalculateDoomPositions() {
 }
 
 function draw() {
+  if (cnvIsFocused === "outside") {
+    cnv.style("opacity", "0.9");
+    cnv.style("border", "none");
+    cnv.style("box-shadow", "none");
+  } else {
+    cnv.style("box-shadow", "0px 0px 3px 3px rgba(23, 98, 163, 1)");
+    cnv.style("opacity", "1");
+  }
+
   // Check if mouse outside canvas
   if (mouseX < 0 || mouseX > width || mouseY < 0 || mouseY > height) {
     mouseReleasedOnCanvas();
@@ -392,6 +432,7 @@ function setInitialState(index = null, props = null) {
       }
 
       selectedObject.object.isStartState = true;
+      cnvIsFocused = "export-menu";
     }
   } else {
     let from = { x: states[index].x - 80 * scaleFactor, y: states[index].y };
@@ -414,6 +455,8 @@ function setInitialState(index = null, props = null) {
 }
 
 function toggleFinalState() {
+  cnvIsFocused = "export-menu";
+
   if (selectedObject && selectedObject.object instanceof State) {
     selectedObject.object.isEndState = !selectedObject.object.isEndState;
   }
@@ -422,6 +465,8 @@ function toggleFinalState() {
 }
 
 function renameState() {
+  cnvIsFocused = "export-menu";
+
   if (selectedObject && selectedObject.object instanceof State) {
     selectedObject.object.input.visible = true;
   }
@@ -469,6 +514,7 @@ function createContextMenu() {
     {
       label: "Deletar",
       mousePressed: () => {
+        cnvIsFocused = "export-menu";
         deleteObject();
         contextMenuObj.mainDiv.hide();
       },
@@ -492,13 +538,13 @@ function createContextMenu() {
   button.parent(contextMenuObj.li[contextMenuObj.li.length - 1]);
   button.mousePressed(options[1].mousePressed);
 
-  contextMenuObj.li.push(createElement("li"));
-  contextMenuObj.li[contextMenuObj.li.length - 1].class("w-full");
-  contextMenuObj.li[contextMenuObj.li.length - 1].parent(contextMenuObj.ul);
-  button = createButton(options[2].label);
-  button.class("w-full py-1 px-3 text-left hover:bg-[#1762a3] text-white text-sm");
-  button.parent(contextMenuObj.li[contextMenuObj.li.length - 1]);
-  button.mousePressed(options[2].mousePressed);
+  // contextMenuObj.li.push(createElement("li"));
+  // contextMenuObj.li[contextMenuObj.li.length - 1].class("w-full");
+  // contextMenuObj.li[contextMenuObj.li.length - 1].parent(contextMenuObj.ul);
+  // button = createButton(options[2].label);
+  // button.class("w-full py-1 px-3 text-left hover:bg-[#1762a3] text-white text-sm");
+  // button.parent(contextMenuObj.li[contextMenuObj.li.length - 1]);
+  // button.mousePressed(options[2].mousePressed);
 
   // Separator
   // contextMenuObj.li.push(createElement("div"));
@@ -665,12 +711,14 @@ function selectObjectsInsideArea() {
 }
 
 function moveCanvas(x = mouseX, y = mouseY) {
+  if (cnvIsFocused === "outside") return;
+
   let ratioFactor = 3;
   movingCanvasOffset.x = (movingCanvasOffset.x - (x - pmouseX)) / ratioFactor;
   movingCanvasOffset.y = (movingCanvasOffset.y - (y - pmouseY)) / ratioFactor;
 }
 
-function mousePressedOnCanvas() {
+function closeContextMenuWhenClickngOutside() {
   // Click outside context menu
   if (contextMenuObj.mainDiv) {
     if (
@@ -682,6 +730,12 @@ function mousePressedOnCanvas() {
       contextMenuObj.mainDiv.hide();
     }
   }
+}
+
+function mousePressedOnCanvas() {
+  if (cnvIsFocused === "outside") return;
+
+  closeContextMenuWhenClickngOutside();
 
   closeExportMenu();
   isMouseLeftPressed = mouseButton === LEFT;
@@ -754,6 +808,40 @@ function mousePressedOnCanvas() {
   }
 }
 
+function mousePressed() {
+  if (mouseButton === RIGHT) mouseClicked();
+}
+
+function mouseClicked() {
+  if ((mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) || cnvIsFocused === "menu" || cnvIsFocused === "export-menu") {
+    // Click happened inside the canvas
+    if (!getIdOfSelectedButton() && cnvIsFocused !== "export-menu") setSelectedMenuButton(0);
+
+    cnvIsFocused = "canvas";
+    cnv.elt.focus();
+  } else {
+    // Click happened outside the canvas
+    cnvIsFocused = "outside";
+    mouseReleasedOnCanvas();
+    selectedArea.x1 = null;
+    selectedArea.y1 = null;
+    selectedArea.x2 = null;
+    selectedArea.y2 = null;
+    selectObjectsInsideArea();
+    selectedObject = null;
+    unCheckAll();
+    unHoverAll();
+    setSelectedMenuButton(-1);
+    closeExportMenu();
+    closeContextMenuWhenClickngOutside();
+
+    // Hide all states inputs
+    for (let i = 0; i < states.length; i++) {
+      states[i].input.visible = false;
+    }
+  }
+}
+
 function mouseReleasedOnCanvas() {
   mouseButton = 0;
   isMouseLeftPressed = false;
@@ -772,6 +860,17 @@ function mouseReleasedOnCanvas() {
       if (lastSelectedState) {
         // Check if already exists a link between the two states
         let hoveredObject = checkFirstSelectedObject();
+
+        if (!(lastSelectedState instanceof State) || !(hoveredObject && hoveredObject.object instanceof State)) {
+          selectedObject = null;
+          lastSelectedState = null;
+          currentLink = null;
+          hoveredObject = null;
+          isMouseWithShiftPressed = false;
+          isMouseLeftPressed = false;
+
+          return;
+        }
 
         if (hoveredObject && !links.some((link) => link instanceof Link && link.stateA.id === lastSelectedState.id && link.stateB.id === states[hoveredObject.index].id)) {
           let from = lastSelectedState;
@@ -796,7 +895,7 @@ function mouseReleasedOnCanvas() {
         }
       } else {
         let hoveredObject = checkFirstSelectedObject();
-        if (hoveredObject) {
+        if (hoveredObject && hoveredObject.object instanceof State) {
           stateOnIndex = states[hoveredObject.index];
           startLink = new StartLink(stateOnIndex, currentLink.from, scaleFactor);
           startLink.selected = true;
@@ -818,7 +917,7 @@ function mouseReleasedOnCanvas() {
       links[links.length - 1].transitionBox.selected = true;
     } else {
       console.log("Link already exists");
-      let link = links.find((link) => link.state.id === lastSelectedState.id);
+      let link = links.find((link) => link instanceof SelfLink && link.state.id === lastSelectedState.id);
       if (link) {
         link.selected = true;
         link.transitionBox.selected = true;
@@ -844,6 +943,8 @@ function mouseReleasedOnCanvas() {
 }
 
 function mouseWheel(event) {
+  if (cnvIsFocused === "outside") return;
+
   if (event.delta > 0) {
     scaleFactor = max(scaleFactor - 0.25, 0.5);
     slider.value(scaleFactor);
@@ -854,11 +955,15 @@ function mouseWheel(event) {
 }
 
 function keyPressed() {
+  if (cnvIsFocused === "outside") return;
+
   if (
     (keyCode === 49 || keyCode === 50 || keyCode === 51 || keyCode === 52 || keyCode === 53) &&
     !isShiftPressed &&
     !(selectedObject && selectedObject.object instanceof State) &&
-    !(selectedObject && selectedObject.object instanceof Link)
+    !(selectedObject && selectedObject.object instanceof Link) &&
+    !(selectedObject && selectedObject.object instanceof SelfLink) &&
+    !links.some((link) => link.transitionBox.selected)
   ) {
     let index = keyCode - 49;
     setSelectedMenuButton(index);

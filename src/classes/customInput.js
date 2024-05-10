@@ -12,6 +12,7 @@ class CustomInput {
     this.textW = 0;
 
     this.input = createInput("");
+    this.input.position(this.x + windowOffset.x, this.y + windowOffset.y);
     this.input.style("position", "absolute");
     if (parent) this.input.parent(parent);
     // this.input.addClass("canvas-input");
