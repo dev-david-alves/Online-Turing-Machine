@@ -4,8 +4,8 @@ class Link {
     this.stateB = stateB;
     this.rollover = false;
     this.selected = false;
-    this.isMousePressed = false;
     this.scaleFactor = scaleFactor;
+    this.dragging = false;
 
     // Make anchor point relative to the locations of stateA and stateB
     this.parallelPart = parallelPart;
@@ -151,12 +151,18 @@ class Link {
     return false;
   }
 
-  mousePressed() {
-    this.isMousePressed = true;
+  mouseDragged() {
+    if (this.selected) {
+      this.dragging = true;
+      console.log("Dragging link");
+    }
   }
 
   mouseReleased() {
-    this.isMousePressed = false;
+    if (this.dragging) {
+      this.dragging = false;
+      createHistory();
+    }
   }
 
   doubleClick() {
@@ -174,7 +180,7 @@ class Link {
 
     this.scaleFactor = scaleFactor;
 
-    if (this.isMousePressed && this.selected) {
+    if (this.selected && this.dragging) {
       this.setAnchorPoint(mouseX, mouseY);
     }
 

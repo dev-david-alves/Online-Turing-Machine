@@ -60,6 +60,8 @@ function setSelectedMenuButton(index) {
 
   unCheckAll();
   closeExportMenu();
+
+  closeFloatingCanvasMenus();
 }
 
 function getIdOfSelectedButton() {
@@ -96,6 +98,8 @@ function toggleExportMenu() {
   cnvIsFocused = "export-menu";
   if (!getIdOfSelectedButton()) setSelectedMenuButton(0);
 
+  closeFloatingCanvasMenus();
+
   let floatingMenu = select("#floating-export-menu");
   // if hidden, show it
   if (floatingMenu.hasClass("hidden")) {
@@ -113,6 +117,87 @@ function exportAsPNG() {
   closeExportMenu();
 
   cnvIsFocused = "menu";
+}
+
+function compareJSONObjects(obj1, obj2) {
+  console.log("A");
+  if (obj1.scaleFactor !== obj2.scaleFactor) return false;
+  console.log("B");
+  if (obj1.states.length !== obj2.states.length || obj1.links.length !== obj2.links.length) return false;
+
+  console.log("C");
+  for (let i = 0; i < obj1.states.length; i++) {
+    if (
+      obj1.states[i].id !== obj2.states[i].id ||
+      obj1.states[i].x !== obj2.states[i].x ||
+      obj1.states[i].y !== obj2.states[i].y ||
+      obj1.states[i].isStartState !== obj2.states[i].isStartState ||
+      obj1.states[i].isEndState !== obj2.states[i].isEndState ||
+      obj1.states[i].isRejectState !== obj2.states[i].isRejectState ||
+      obj1.states[i].label !== obj2.states[i].label
+    )
+      return false;
+  }
+
+  for (let i = 0; i < obj1.links.length; i++) {
+    console.log("D");
+    if (obj1.links[i].isSelfLink !== obj2.links[i].isSelfLink) return false;
+
+    if (!obj1.links[i].isSelfLink) {
+      console.log("E");
+      if (obj1.links[i].rules.length !== obj2.links[i].rules.length) return false;
+
+      console.log("F");
+      let comparedRules = obj1.links[i].rules.every((rule, index) => JSON.stringify(rule.label) === JSON.stringify(obj2.links[i].rules[index].label));
+
+      console.log("G", comparedRules);
+      if (obj1.links[i].stateA !== obj2.links[i].stateA || obj1.links[i].stateB !== obj2.links[i].stateB || !comparedRules) return false;
+
+      console.log("H");
+      if (obj1.links[i].hasCircle !== obj2.links[i].hasCircle) return false;
+
+      if (obj1.links[i].hasCircle) {
+        console.log("I");
+        if (
+          obj1.links[i].startX !== obj2.links[i].startX ||
+          obj1.links[i].startY !== obj2.links[i].startY ||
+          obj1.links[i].endX !== obj2.links[i].endX ||
+          obj1.links[i].endY !== obj2.links[i].endY ||
+          obj1.links[i].circleX !== obj2.links[i].circleX ||
+          obj1.links[i].circleY !== obj2.links[i].circleY ||
+          obj1.links[i].circleR !== obj2.links[i].circleR ||
+          obj1.links[i].startAngle !== obj2.links[i].startAngle ||
+          obj1.links[i].endAngle !== obj2.links[i].endAngle
+        )
+          return false;
+      } else {
+        console.log("J");
+        if (obj1.links[i].startX !== obj2.links[i].startX || obj1.links[i].startY !== obj2.links[i].startY || obj1.links[i].endX !== obj2.links[i].endX || obj1.links[i].endY !== obj2.links[i].endY)
+          return false;
+      }
+    } else {
+      console.log("K");
+      if (obj1.links[i].rules.length !== obj2.links[i].rules.length) return false;
+
+      console.log("L");
+      let comparedRules = obj1.links[i].rules.every((rule, index) => JSON.stringify(rule.label) === JSON.stringify(obj2.links[i].rules[index].label));
+
+      console.log("M", comparedRules);
+      if (obj1.links[i].state !== obj2.links[i].state || !comparedRules || obj1.links[i].anchorAngle !== obj2.links[i].anchorAngle) return false;
+    }
+  }
+
+  console.log("N");
+  if ((obj1.initialStateLink && !obj2.initialStateLink) || (!obj1.initialStateLink && obj2.initialStateLink)) return false;
+
+  console.log("O");
+  if (obj1.initialStateLink) {
+    if (obj1.initialStateLink.state !== obj2.initialStateLink.state || obj1.initialStateLink.deltaX !== obj2.initialStateLink.deltaX || obj1.initialStateLink.deltaY !== obj2.initialStateLink.deltaY)
+      return false;
+  }
+
+  console.log("P");
+  return true;
 }
 
 function createJSONExportObj() {
@@ -137,16 +222,30 @@ function createJSONExportObj() {
 
   for (let i = 0; i < links.length; i++) {
     if (links[i] instanceof Link) {
+      let stuff = links[i].getEndPointsAndCircle();
+
       dmt.links.push({
+        isSelfLink: false,
         stateA: links[i].stateA.id,
         stateB: links[i].stateB.id,
         rules: links[i].transitionBox.rules,
         parallelPart: links[i].parallelPart,
         perpendicularPart: links[i].perpendicularPart,
         lineAngleAdjust: links[i].lineAngleAdjust,
+        hasCircle: stuff.hasCircle,
+        startX: stuff.startX / scaleFactor,
+        startY: stuff.startY / scaleFactor,
+        endX: stuff.endX / scaleFactor,
+        endY: stuff.endY / scaleFactor,
+        circleX: stuff.circleX / scaleFactor,
+        circleY: stuff.circleY / scaleFactor,
+        circleR: stuff.circleR / scaleFactor,
+        startAngle: stuff.startAngle,
+        endAngle: stuff.endAngle,
       });
     } else if (links[i] instanceof SelfLink) {
       dmt.links.push({
+        isSelfLink: true,
         state: links[i].state.id,
         rules: links[i].transitionBox.rules,
         anchorAngle: links[i].anchorAngle,
@@ -178,49 +277,72 @@ function exportAsJSON() {
 let inputFile = null;
 let importButton = null;
 
+function createCanvasStatesFromOBJ(obj) {
+  scaleFactor = obj.scaleFactor;
+  if (slider) slider.value(scaleFactor);
+  states = [];
+  links = [];
+  startLink = null;
+
+  for (let i = 0; i < obj.states.length; i++) {
+    let state = obj.states[i];
+    states.push(new State(state.id, state.x, state.y, stateRadius, scaleFactor));
+    states[states.length - 1].isStartState = state.isStartState;
+    states[states.length - 1].isEndState = state.isEndState;
+    states[states.length - 1].isRejectState = state.isRejectState;
+    states[states.length - 1].input.input.value(state.label);
+    states[states.length - 1].input.textInput(state.label);
+  }
+
+  for (let i = 0; i < obj.links.length; i++) {
+    let link = obj.links[i];
+    if (Number.isInteger(link.stateA) && Number.isInteger(link.stateB)) {
+      let stateA = states.find((state) => state.id === link.stateA);
+      let stateB = states.find((state) => state.id === link.stateB);
+      links.push(new Link(stateA, stateB, scaleFactor, link.rules, link.parallelPart, link.perpendicularPart, link.lineAngleAdjust));
+    } else if (Number.isInteger(link.state)) {
+      let state = states.find((state) => state.id === link.state);
+      links.push(new SelfLink(state, scaleFactor, true, link.rules, link.anchorAngle));
+    }
+  }
+
+  if (obj.initialStateLink) {
+    setInitialState(obj.initialStateLink.state, { deltaX: obj.initialStateLink.deltaX, deltaY: obj.initialStateLink.deltaY });
+    startLink.selected = false;
+  }
+
+  return true;
+}
+
 function handleInputFile(file) {
   if (file.type === "application" && file.subtype === "json") {
     let reader = new FileReader();
     reader.onload = (event) => {
       let result = JSON.parse(event.target.result);
 
-      scaleFactor = result.scaleFactor;
-      states = [];
-      links = [];
-      startLink = null;
-
-      for (let i = 0; i < result.states.length; i++) {
-        let state = result.states[i];
-        states.push(new State(state.id, state.x, state.y, stateRadius, scaleFactor));
-        states[states.length - 1].isStartState = state.isStartState;
-        states[states.length - 1].isEndState = state.isEndState;
-        states[states.length - 1].isRejectState = state.isRejectState;
-        states[states.length - 1].input.input.value(state.label);
-      }
-
-      for (let i = 0; i < result.links.length; i++) {
-        let link = result.links[i];
-        if (Number.isInteger(link.stateA) && Number.isInteger(link.stateB)) {
-          let stateA = states.find((state) => state.id === link.stateA);
-          let stateB = states.find((state) => state.id === link.stateB);
-          links.push(new Link(stateA, stateB, scaleFactor, link.rules, link.parallelPart, link.perpendicularPart, link.lineAngleAdjust));
-        } else if (Number.isInteger(link.state)) {
-          let state = states.find((state) => state.id === link.state);
-          links.push(new SelfLink(state, scaleFactor, true, link.rules, link.anchorAngle));
-        }
-      }
-
-      if (result.initialStateLink) {
-        setInitialState(result.initialStateLink.state, { deltaX: result.initialStateLink.deltaX, deltaY: result.initialStateLink.deltaY });
-        startLink.selected = false;
+      if (createCanvasStatesFromOBJ(result)) {
+        createHistory();
       }
     };
     reader.readAsText(file.file);
   }
+
+  inputFile.value("");
 }
 
 // History
 let history = []; // Up to 10 saves;
+let historyIndex = 0;
+const maxHistory = 10;
+
+function closeFloatingCanvasMenus() {
+  if (contextMenuObj) contextMenuObj.mainDiv.hide();
+
+  if (states.some((state) => state.input.visible)) {
+    createHistory();
+    states.forEach((state) => (state.input.visible = false));
+  }
+}
 
 // Main functions
 function setup() {
@@ -259,13 +381,16 @@ function setup() {
   menuButtons[4].mousePressed(() => setMenuMousePressed(4));
 
   // Activate default button
-  // setSelectedMenuButton(0);
-  // cnvIsFocused = "menu";
+  setSelectedMenuButton(0);
+  cnvIsFocused = "canvas";
 
   // Create slider
   slider = select("#scalingCanvas");
   slider.input(() => (cnvIsFocused = "menu"));
-  slider.mousePressed(() => (cnvIsFocused = "menu"));
+  slider.mousePressed(() => {
+    cnvIsFocused = "menu";
+    closeFloatingCanvasMenus();
+  });
 
   // Export button
   exportButton = select("#export-button-toggle");
@@ -279,6 +404,8 @@ function setup() {
   importButton = select("#import-button");
   importButton.mousePressed(() => {
     cnvIsFocused = "menu";
+    closeFloatingCanvasMenus();
+
     inputFile.elt.click();
   });
 
@@ -345,6 +472,11 @@ function draw() {
             currentLink.from = { x: mouseX, y: mouseY };
           }
         }
+      }
+    } else {
+      if (currentLink instanceof SelfLink) {
+        currentLink = new TemporaryLink(scaleFactor);
+        currentLink.from = lastSelectedState.closestPointOnCircle(mouseX, mouseY);
       }
     }
 
@@ -489,11 +621,20 @@ function createContextMenu() {
   let options = [
     {
       label: "Estado inicial",
-      mousePressed: () => setInitialState(),
+      mousePressed: () => {
+        if (selectedObject) {
+          let index = states.findIndex((state) => state.id === selectedObject.object.id);
+          setInitialState(index);
+          createHistory();
+        }
+      },
     },
     {
       label: "Definir como Final",
-      mousePressed: () => toggleFinalState(),
+      mousePressed: () => {
+        toggleFinalState();
+        createHistory();
+      },
     },
     {
       label: "Definir como Rejeição",
@@ -699,6 +840,8 @@ function deleteObject() {
     }
 
     selectedObject = null;
+
+    createHistory();
   }
 }
 
@@ -732,6 +875,10 @@ function closeContextMenuWhenClickngOutside() {
   }
 }
 
+function checkAnyStateInputVisible() {
+  return states.some((state) => state.input.visible);
+}
+
 function mousePressedOnCanvas() {
   if (cnvIsFocused === "outside") return;
 
@@ -760,12 +907,16 @@ function mousePressedOnCanvas() {
     }
     // If add state menu button is selected
     if (getIdOfSelectedButton() === "addState" && !checkFirstSelectedObject(mouseX, mouseY, false)) {
+      if (checkAnyStateInputVisible()) createHistory();
+
       unCheckAll();
       if (links.some((link) => link.transitionBox.containsPoint(mouseX, mouseY))) return;
       let stateID = getNewStateId();
       states.push(new State(stateID, mouseX / scaleFactor, mouseY / scaleFactor, stateRadius, scaleFactor));
       states[states.length - 1].selected = true;
       selectedObject = { object: states[states.length - 1], index: states.length - 1 };
+
+      createHistory();
       return;
     }
 
@@ -776,18 +927,14 @@ function mousePressedOnCanvas() {
 
     if (selectedObject) {
       selectedObject.object.selected = true;
-
-      if (selectedObject.object instanceof State) {
-        selectedObject.object.mousePressed();
-      } else if (selectedObject.object instanceof Link || selectedObject.object instanceof SelfLink) {
-        selectedObject.object.mousePressed();
-      } else if (selectedObject.object instanceof StartLink) {
-        startLink.mousePressed();
-      }
     }
 
     // Delete button
-    if (getIdOfSelectedButton() === "delete") deleteObject();
+    if (getIdOfSelectedButton() === "delete") {
+      if (checkAnyStateInputVisible()) createHistory();
+
+      deleteObject();
+    }
 
     for (let i = 0; i < links.length; i++) {
       links[i].transitionBox.mousePressed();
@@ -795,6 +942,7 @@ function mousePressedOnCanvas() {
   } else {
     selectedObject = checkFirstSelectedObject();
     if (selectedObject && selectedObject.object instanceof State) {
+      selectedObject.object.selected = true;
       contextMenuObj.mainDiv.position(windowOffset.x + mouseX, windowOffset.y + mouseY);
 
       if (selectedObject.object.isEndState) {
@@ -809,10 +957,6 @@ function mousePressedOnCanvas() {
 }
 
 function mousePressed() {
-  if (mouseButton === RIGHT) mouseClicked();
-}
-
-function mouseClicked() {
   if ((mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) || cnvIsFocused === "menu" || cnvIsFocused === "export-menu") {
     // Click happened inside the canvas
     if (!getIdOfSelectedButton() && cnvIsFocused !== "export-menu") setSelectedMenuButton(0);
@@ -836,9 +980,42 @@ function mouseClicked() {
     closeContextMenuWhenClickngOutside();
 
     // Hide all states inputs
-    for (let i = 0; i < states.length; i++) {
-      states[i].input.visible = false;
+    closeFloatingCanvasMenus();
+
+    // Unselect all transition boxes
+    for (let i = 0; i < links.length; i++) {
+      links[i].transitionBox.selected = false;
+      links[i].transitionBox.selectedRuleIndex = -1;
     }
+  }
+}
+
+function compareStatesOfHistory(index = -1) {
+  let realIndex = index === -1 ? historyIndex : index;
+  let currentState = structuredClone(createJSONExportObj());
+  let stateOnIndex = structuredClone(history[realIndex]);
+
+  return { isEqual: compareJSONObjects(currentState, stateOnIndex), currentState: currentState };
+}
+
+function createHistory() {
+  let { isEqual, currentState } = compareStatesOfHistory();
+
+  if (!isEqual) {
+    // Remove all history after current index
+    history = history.slice(0, historyIndex + 1);
+
+    // Check if history is full
+    if (history.length >= maxHistory) {
+      history.shift();
+      historyIndex--;
+    }
+
+    history.push(currentState);
+    historyIndex++;
+    console.log("History Length: ", history.length);
+  } else {
+    console.log("States are equal");
   }
 }
 
@@ -884,6 +1061,17 @@ function mouseReleasedOnCanvas() {
             links.push(new Link(from, to, scaleFactor));
             links[links.length - 1].selected = true;
             links[links.length - 1].transitionBox.selected = true;
+
+            // Extra: if already exists a link to -> from
+            if (links.some((link) => link.stateA.id === to.id && link.stateB.id === from.id)) {
+              let link = links.find((link) => link.stateA.id === to.id && link.stateB.id === from.id);
+              if (link) {
+                if (link.perpendicularPart === 0) {
+                  link.perpendicularPart = 10;
+                  links[links.length - 1].perpendicularPart = 10;
+                }
+              }
+            }
           }
         } else {
           console.log("Link already exists");
@@ -905,6 +1093,8 @@ function mouseReleasedOnCanvas() {
           }
 
           stateOnIndex.isStartState = true;
+
+          createHistory();
         }
       }
     }
@@ -982,6 +1172,26 @@ function keyPressed() {
   for (let i = 0; i < links.length; i++) {
     links[i].transitionBox.keyPressed();
   }
+
+  // Check ctrl + z
+  if (keyIsDown(CONTROL) && (key == "z" || key == "Z")) {
+    let newIndex = max(historyIndex - 1, 0);
+
+    if (newIndex !== historyIndex) {
+      historyIndex = newIndex;
+      createCanvasStatesFromOBJ(history[historyIndex]);
+    }
+  }
+
+  // Check ctrl + y
+  if (keyIsDown(CONTROL) && (key == "y" || key == "Y")) {
+    let newIndex = min(historyIndex + 1, history.length - 1);
+
+    if (newIndex !== historyIndex) {
+      historyIndex = newIndex;
+      createCanvasStatesFromOBJ(history[historyIndex]);
+    }
+  }
 }
 
 function keyReleased() {
@@ -1011,10 +1221,30 @@ function doubleClick() {
     states.push(new State(stateID, mouseX / scaleFactor, mouseY / scaleFactor, stateRadius, scaleFactor));
     states[states.length - 1].selected = true;
     selectedObject = { object: states[states.length - 1], index: states.length - 1 };
+
+    createHistory();
   } else {
     if (overState.object instanceof State) {
       console.log("Double clicked on state");
       overState.object.isEndState = !overState.object.isEndState;
+
+      createHistory();
     }
   }
+}
+
+function mouseDragged() {
+  if (cnvIsFocused === "outside") return;
+
+  for (let i = 0; i < states.length; i++) {
+    states[i].mouseDragged();
+  }
+
+  for (let i = 0; i < links.length; i++) {
+    links[i].mouseDragged();
+  }
+
+  if (startLink) startLink.mouseDragged();
+
+  return false;
 }

@@ -86,6 +86,7 @@ class TransitionBox {
   createBox() {
     this.mainDiv = createDiv();
     this.mainDiv.parent(this.inputParent);
+    this.mainDiv.position(this.x + windowOffset.x, this.y + windowOffset.y);
     this.mainDiv.class("flex flex-col gap-[2px] items-center justify-center absolute z-[100]");
     this.boxDiv = createDiv();
     this.boxDiv.parent(this.mainDiv);
@@ -153,13 +154,26 @@ class TransitionBox {
     return -1;
   }
 
+  ruleAlreadyExists(labelA) {
+    for (let i = 0; i < this.rules.length; i++) {
+      let labelB = this.rules[i].label;
+
+      if (JSON.stringify(labelA) === JSON.stringify(labelB)) return true;
+    }
+
+    return false;
+  }
+
   confirmRule() {
     if (this.selectedRuleIndex !== -1) {
       let { allReadSubstrings, allWriteSubstrings, direction } = this.changeResultText();
 
       // concat all arrays
       let rule = allReadSubstrings.concat([" ", "→", " "], allWriteSubstrings, [", "], [direction]);
-      this.rules[this.selectedRuleIndex] = { label: rule, width: calculateTextWidth(-1000, -1000, rule, this.ruleFontSize) };
+
+      if (!this.ruleAlreadyExists(rule)) {
+        this.rules[this.selectedRuleIndex] = { label: rule, width: calculateTextWidth(-1000, -1000, rule, this.ruleFontSize) };
+      }
 
       this.readInput.value("");
       this.writeInput.value("");
@@ -173,7 +187,10 @@ class TransitionBox {
 
       // concat all arrays
       let rule = allReadSubstrings.concat([" ", "→", " "], allWriteSubstrings, [", "], [direction]);
-      this.rules.push({ label: rule, width: calculateTextWidth(-1000, -1000, rule, this.ruleFontSize) });
+
+      if (!this.ruleAlreadyExists(rule)) {
+        this.rules.push({ label: rule, width: calculateTextWidth(-1000, -1000, rule, this.ruleFontSize) });
+      }
 
       this.readInput.value("");
       this.writeInput.value("");
@@ -183,6 +200,8 @@ class TransitionBox {
 
       this.selected = false;
     }
+
+    createHistory();
   }
 
   remove() {
@@ -194,6 +213,8 @@ class TransitionBox {
     if (this.selectedRuleIndex !== -1) {
       this.rules.splice(this.selectedRuleIndex, 1);
       this.selectedRuleIndex = -1;
+
+      createHistory();
     }
   }
 

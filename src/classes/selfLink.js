@@ -4,7 +4,6 @@ class SelfLink {
     this.scaleFactor = scaleFactor;
     this.anchorAngle = anchorAngle;
     this.mouseOffsetAngle = 0;
-    this.isMousePressed = false;
     this.selected = false;
     this.rollover = false;
     this.text = "";
@@ -61,12 +60,18 @@ class SelfLink {
     };
   }
 
-  mousePressed() {
-    this.isMousePressed = true;
+  mouseDragged() {
+    if (this.selected) {
+      this.dragging = true;
+      console.log("Dragging self link");
+    }
   }
 
   mouseReleased() {
-    this.isMousePressed = false;
+    if (this.dragging) {
+      this.dragging = false;
+      createHistory();
+    }
   }
 
   doubleClick() {
@@ -77,7 +82,7 @@ class SelfLink {
     this.scaleFactor = scaleFactor;
     this.hitTargetPadding = 6 * this.scaleFactor;
 
-    if (this.isMousePressed && this.selected) {
+    if (this.selected && this.dragging) {
       this.setAnchorPoint(mouseX, mouseY);
     }
 

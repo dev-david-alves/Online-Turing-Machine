@@ -6,9 +6,10 @@ class StartLink {
     this.deltaY = 0;
     this.snapToPadding = 6 * this.scaleFactor;
     this.hitTargetPadding = 6 * this.scaleFactor;
-    this.isMousePressed = false;
-    this.selected = false;
+
+    this.dragging = false;
     this.rollover = false;
+    this.selected = false;
     this.text = "";
 
     if (start) this.setAnchorPoint(start.x, start.y);
@@ -46,13 +47,18 @@ class StartLink {
     };
   }
 
-  mousePressed() {
-    this.isMousePressed = true;
-    this.selected = this.containsPoint(mouseX, mouseY);
+  mouseDragged() {
+    if (this.selected) {
+      this.dragging = true;
+      console.log("Dragging start link");
+    }
   }
 
   mouseReleased() {
-    this.isMousePressed = false;
+    if (this.dragging) {
+      this.dragging = false;
+      createHistory();
+    }
   }
 
   update(scaleFactor = 1.0) {
@@ -63,7 +69,7 @@ class StartLink {
     this.snapToPadding = 6 * this.scaleFactor;
     this.hitTargetPadding = 6 * this.scaleFactor;
 
-    if (this.isMousePressed && this.selected) {
+    if (this.selected && this.dragging) {
       this.setAnchorPoint(mouseX, mouseY);
     }
   }
