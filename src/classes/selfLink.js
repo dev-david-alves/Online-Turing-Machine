@@ -1,19 +1,20 @@
 class SelfLink {
-  constructor(state, scaleFactor = 1.0, createText = false, rules = [], anchorAngle = 0) {
+  constructor(state, createTransitionBox = false, rules = [], anchorAngle = 0) {
     this.state = state;
-    this.scaleFactor = scaleFactor;
+    this.scaleFactor = globalScaleFactor;
     this.anchorAngle = anchorAngle;
     this.mouseOffsetAngle = 0;
+    this.hitTargetPadding = 6;
+
+    // Status
+    this.hovering = false;
     this.selected = false;
-    this.rollover = false;
-    this.text = "";
-    this.hitTargetPadding = 6 * this.scaleFactor;
 
     if (anchorAngle === 0) this.setAnchorPoint(mouseX, mouseY);
 
-    // TextBox
+    // Transition box
     this.transitionBox = null;
-    if (createText) this.transitionBox = new TransitionBox(-1000, -1000, texMap, scaleFactor, "#canvas-container", rules);
+    if (createTransitionBox) this.transitionBox = new TransitionBox(-1000, -1000, "#canvas-container", rules);
   }
 
   containsPoint(x, y) {
@@ -22,7 +23,7 @@ class SelfLink {
     let dy = y - stuff.circleY;
     let distance = sqrt(dx * dx + dy * dy) - stuff.circleR;
 
-    return abs(distance) < this.hitTargetPadding;
+    return abs(distance) < this.hitTargetPadding * this.scaleFactor;
   }
 
   setAnchorPoint(x, y) {
@@ -30,6 +31,7 @@ class SelfLink {
     // snap to 90 degrees
     let snap = round(this.anchorAngle / (PI / 2)) * (PI / 2);
     if (abs(this.anchorAngle - snap) < 0.1) this.anchorAngle = snap;
+
     // keep in the range -pi to pi so our containsPoint() function always works
     if (this.anchorAngle < -PI) this.anchorAngle += 2 * PI;
     if (this.anchorAngle > PI) this.anchorAngle -= 2 * PI;
@@ -75,20 +77,16 @@ class SelfLink {
   }
 
   doubleClick() {
-    if (this.rollover) this.transitionBox.selected = true;
+    if (this.hovering) this.transitionBox.selected = true;
   }
 
   update(scaleFactor = 1.0) {
     this.scaleFactor = scaleFactor;
-    this.hitTargetPadding = 6 * this.scaleFactor;
 
-    if (this.selected && this.dragging) {
-      this.setAnchorPoint(mouseX, mouseY);
-    }
-
-    let stuff = this.getEndPointsAndCircle();
+    if (this.selected && this.dragging) this.setAnchorPoint(mouseX, mouseY);
 
     // update the box
+    let stuff = this.getEndPointsAndCircle();
     if (stuff.hasCircle) {
       let startAngle = stuff.startAngle;
       let endAngle = stuff.endAngle;
@@ -111,25 +109,27 @@ class SelfLink {
   draw() {
     let stuff = this.getEndPointsAndCircle();
     push();
-    // draw arc
-    strokeWeight(1 * this.scaleFactor);
     stroke(0, 0, 0);
     fill(0, 0, 0);
+    strokeWeight(1 * this.scaleFactor);
 
-    if (this.rollover) {
-      stroke(100, 100, 200);
-      fill(100, 100, 200);
+    if (this.hovering) {
+      stroke(17, 82, 140);
+      fill(17, 82, 140);
     }
 
     if (this.selected) {
-      stroke(0, 0, 255);
-      fill(0, 0, 255);
+      strokeWeight(2 * this.scaleFactor);
+      stroke(23, 98, 163);
+      fill(23, 98, 163);
     }
 
+    // draw arc
     push();
     noFill();
     arc(stuff.circleX, stuff.circleY, stuff.circleR * 2, stuff.circleR * 2, stuff.startAngle, stuff.endAngle);
     pop();
+
     // draw the head of the arrow
     drawArrow(stuff.endX, stuff.endY, stuff.endAngle + PI * 0.4);
     pop();

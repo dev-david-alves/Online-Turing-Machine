@@ -2,7 +2,6 @@ let cnv = null;
 let cnvIsFocused = "outside";
 let canDoCanvaActions = true;
 let states = [];
-let stateColor = { r: 0, g: 0, b: 255 };
 let stateRadius = 25;
 let lastSelectedState = null;
 let selectedObject = null;
@@ -26,11 +25,122 @@ let selectedArea = {
 
 // Scaling
 let slider = null;
-let lastScaleFactor = 1.0;
-let scaleFactor = 1.0;
+let globalScaleFactor = 1.0;
 
 // Context menu
 let contextMenuObj = null;
+
+// Creating HTML Elements
+function createTopMenu() {
+  let topMenu = createDiv("");
+  topMenu.id("top-menu");
+  topMenu.class("w-full flex justify-between items-end");
+
+  let leftMenu = createDiv("");
+  leftMenu.id("left-menu");
+  leftMenu.class("flex items-center gap-1");
+  leftMenu.parent(topMenu);
+
+  let rightMenu = createDiv("");
+  rightMenu.id("right-menu");
+  rightMenu.class("flex items-center gap-1");
+  rightMenu.parent(topMenu);
+
+  // Left menu buttons
+  const leftMenuButtons = [
+    { id: "select", icon: "fa-solid fa-arrow-pointer", mousePressed: () => setMenuMousePressed("select") },
+    { id: "move", icon: "fa-solid fa-arrows-up-down-left-right", mousePressed: () => setMenuMousePressed("move") },
+    { id: "addState", icon: "fa-solid fa-circle-plus", mousePressed: () => setMenuMousePressed("addState") },
+    { id: "addLink", icon: "fa-solid fa-arrow-right", mousePressed: () => setMenuMousePressed("addLink") },
+    { id: "delete", icon: "fa-solid fa-trash", mousePressed: () => setMenuMousePressed("delete") },
+  ];
+
+  leftMenuButtons.forEach((btn) => {
+    let button = createButton("");
+    button.id(btn.id);
+    button.class("w-[40px] h-[40px] rounded-[5px] text-white bg-[#4e5f6f] hover:bg-[#526a7c] transition-colors");
+    button.mousePressed(btn.mousePressed);
+    button.parent(leftMenu);
+
+    let icon = createElement("i");
+    icon.class(btn.icon);
+    icon.parent(button);
+  });
+
+  // Right imput file hidden
+  inputFile = createFileInput(handleInputFile);
+  inputFile.attribute("accept", ".json");
+  inputFile.position(-1000, -1000);
+  inputFile.hide();
+
+  // Right menu buttons
+  let importButton = createButton("Importar");
+  importButton.class("w-[100px] py-1 rounded-[5px] text-white bg-[#4e5f6f] hover:bg-[#526a7c] transition-colors");
+  importButton.id("import-button");
+  importButton.mousePressed(() => {
+    cnvIsFocused = "menu";
+    closeFloatingCanvasMenus();
+    inputFile.elt.click();
+  });
+  importButton.parent(rightMenu);
+
+  let exportMenuWrapper = createDiv("");
+  exportMenuWrapper.class("relative");
+  exportMenuWrapper.parent(rightMenu);
+
+  let exportButton = createButton("Exportar");
+  exportButton.class("w-[100px] py-1 rounded-[5px] text-white bg-[#4e5f6f] hover:bg-[#526a7c] transition-colors");
+  exportButton.id("export-button-toggle");
+  exportButton.mousePressed(() => toggleExportMenu());
+  exportButton.parent(exportMenuWrapper);
+
+  let floatingExportMenu = createDiv("");
+  floatingExportMenu.class("menu-export absolute top-[45px] -left-[21px] bg-[#9caab7] p-[8px] rounded-lg flex-col gap-1 drop-shadow-lg z-[4] hidden");
+  floatingExportMenu.id("floating-export-menu");
+  floatingExportMenu.parent(exportMenuWrapper);
+
+  let exportAsPNGButton = createButton(".PNG");
+  exportAsPNGButton.class("w-[100px] py-1 rounded-[5px] text-white bg-[#4e5f6f] hover:bg-[#526a7c] transition-colors z-[5]");
+  exportAsPNGButton.id("export-as-png");
+  exportAsPNGButton.mousePressed(() => exportAsPNG());
+  exportAsPNGButton.parent(floatingExportMenu);
+
+  let exportAsJSONButton = createButton(".JSON");
+  exportAsJSONButton.class("w-[100px] py-1 rounded-[5px] text-white bg-[#4e5f6f] hover:bg-[#526a7c] transition-colors z-[5]");
+  exportAsJSONButton.id("export-as-dtm");
+  exportAsJSONButton.mousePressed(() => exportAsJSON());
+  exportAsJSONButton.parent(floatingExportMenu);
+
+  return topMenu;
+}
+
+function createBottomMenu() {
+  let bottomMenu = createDiv("");
+  bottomMenu.id("bottom-menu");
+  bottomMenu.class("w-full flex items-center justify-end gap-1");
+
+  let span1 = createElement("span");
+  span1.class("text-white");
+  span1.html("0.5");
+  span1.parent(bottomMenu);
+
+  let input = createInput("1");
+  input.id("scalingCanvas");
+  input.attribute("type", "range");
+  input.attribute("min", "0.5");
+  input.attribute("max", "2");
+  input.attribute("step", "0.25");
+  input.attribute("value", "1");
+  input.class("w-[15%] min-w-[75px]");
+  input.parent(bottomMenu);
+
+  let span2 = createElement("span");
+  span2.class("text-white");
+  span2.html("2.0");
+  span2.parent(bottomMenu);
+
+  return bottomMenu;
+}
 
 // Moving canvas view
 let movingCanvasOffset = { x: 0, y: 0 };
@@ -38,47 +148,43 @@ let isMouseLeftPressed = false;
 let isMouseRightPressed = false;
 
 // Start of Button functions
-let menuButtons = [];
+let topMenu = null;
+let selectedTopMenuButton = null;
 
-function setSelectedMenuButton(index) {
-  if (index === -1) {
-    menuButtons.forEach((btn) => (btn.hasClass("canvasMenuButtonSelected") ? btn.removeClass("canvasMenuButtonSelected") : null));
-    menuButtons[4].removeClass("canvasMenuButtonDelete");
-    unCheckAll();
+function setSelectedMenuButton(buttonId = null) {
+  selectedTopMenuButton = buttonId;
+  let leftMenuButtons = selectAll("#left-menu button");
 
-    return;
-  }
+  if (leftMenuButtons) {
+    if (buttonId) {
+      let selectedButton = select(`#${buttonId}`);
+      if (buttonId === "delete") {
+        selectedButton.class("w-[40px] h-[40px] rounded-[5px] text-white bg-red-600 hover:bg-red-700 transition-colors");
+      } else {
+        selectedButton.class("w-[40px] h-[40px] rounded-[5px] text-white bg-[var(--selected-color)] hover:bg-[--selected-hover-color] transition-colors");
+      }
+    }
 
-  if (menuButtons[index].elt.id === "delete") {
-    menuButtons.forEach((btn) => (btn.hasClass("canvasMenuButtonSelected") ? btn.removeClass("canvasMenuButtonSelected") : null));
-    menuButtons[index].addClass("canvasMenuButtonDelete");
-  } else {
-    menuButtons[4].removeClass("canvasMenuButtonDelete");
-    menuButtons.forEach((btn) => (btn.hasClass("canvasMenuButtonSelected") ? btn.removeClass("canvasMenuButtonSelected") : null));
-    menuButtons[index].addClass("canvasMenuButtonSelected");
+    leftMenuButtons.forEach((btn) => {
+      if (btn.elt.id !== buttonId) btn.class("w-[40px] h-[40px] rounded-[5px] text-white bg-[#4e5f6f] hover:bg-[#526a7c] transition-colors");
+    });
   }
 
   unCheckAll();
   closeExportMenu();
-
   closeFloatingCanvasMenus();
 }
 
-function getIdOfSelectedButton() {
-  let selectedButton = menuButtons.find((btn) => btn.hasClass("canvasMenuButtonSelected") || btn.hasClass("canvasMenuButtonDelete"));
-  if (selectedButton) return selectedButton.elt.id;
-  return null;
-}
-
-function setMenuMousePressed(index) {
+function setMenuMousePressed(buttonId = null) {
   if (mouseButton === LEFT) {
     cnvIsFocused = "menu";
-    setSelectedMenuButton(index);
+    setSelectedMenuButton(buttonId);
   }
 }
 
 // Window offset
 let windowOffset = { x: 0, y: 0 };
+let globalWindowOffset = { x: 0, y: 0 };
 
 // Export functions
 let exportButton = null;
@@ -96,7 +202,7 @@ function closeExportMenu() {
 
 function toggleExportMenu() {
   cnvIsFocused = "export-menu";
-  if (!getIdOfSelectedButton()) setSelectedMenuButton(0);
+  if (!selectedTopMenuButton) setSelectedMenuButton("select");
 
   closeFloatingCanvasMenus();
 
@@ -121,7 +227,7 @@ function exportAsPNG() {
 
 function compareJSONObjects(obj1, obj2) {
   console.log("A");
-  if (obj1.scaleFactor !== obj2.scaleFactor) return false;
+  if (obj1.globalScaleFactor !== obj2.globalScaleFactor) return false;
   console.log("B");
   if (obj1.states.length !== obj2.states.length || obj1.links.length !== obj2.links.length) return false;
 
@@ -202,7 +308,7 @@ function compareJSONObjects(obj1, obj2) {
 
 function createJSONExportObj() {
   let dmt = {
-    scaleFactor: scaleFactor,
+    globalScaleFactor: globalScaleFactor,
     states: [],
     links: [],
     initialStateLink: null,
@@ -211,8 +317,8 @@ function createJSONExportObj() {
   for (let i = 0; i < states.length; i++) {
     dmt.states.push({
       id: states[i].id,
-      x: states[i].x / scaleFactor,
-      y: states[i].y / scaleFactor,
+      x: states[i].x / globalScaleFactor,
+      y: states[i].y / globalScaleFactor,
       isStartState: states[i].isStartState,
       isEndState: states[i].isEndState,
       isRejectState: states[i].isRejectState,
@@ -233,13 +339,13 @@ function createJSONExportObj() {
         perpendicularPart: links[i].perpendicularPart,
         lineAngleAdjust: links[i].lineAngleAdjust,
         hasCircle: stuff.hasCircle,
-        startX: stuff.startX / scaleFactor,
-        startY: stuff.startY / scaleFactor,
-        endX: stuff.endX / scaleFactor,
-        endY: stuff.endY / scaleFactor,
-        circleX: stuff.circleX / scaleFactor,
-        circleY: stuff.circleY / scaleFactor,
-        circleR: stuff.circleR / scaleFactor,
+        startX: stuff.startX / globalScaleFactor,
+        startY: stuff.startY / globalScaleFactor,
+        endX: stuff.endX / globalScaleFactor,
+        endY: stuff.endY / globalScaleFactor,
+        circleX: stuff.circleX / globalScaleFactor,
+        circleY: stuff.circleY / globalScaleFactor,
+        circleR: stuff.circleR / globalScaleFactor,
         startAngle: stuff.startAngle,
         endAngle: stuff.endAngle,
       });
@@ -278,15 +384,15 @@ let inputFile = null;
 let importButton = null;
 
 function createCanvasStatesFromOBJ(obj) {
-  scaleFactor = obj.scaleFactor;
-  if (slider) slider.value(scaleFactor);
+  globalScaleFactor = obj.globalScaleFactor;
+  if (slider) slider.value(globalScaleFactor);
   states = [];
   links = [];
   startLink = null;
 
   for (let i = 0; i < obj.states.length; i++) {
     let state = obj.states[i];
-    states.push(new State(state.id, state.x, state.y, stateRadius, scaleFactor));
+    states.push(new State(state.id, state.x, state.y, stateRadius, globalScaleFactor));
     states[states.length - 1].isStartState = state.isStartState;
     states[states.length - 1].isEndState = state.isEndState;
     states[states.length - 1].isRejectState = state.isRejectState;
@@ -299,10 +405,10 @@ function createCanvasStatesFromOBJ(obj) {
     if (Number.isInteger(link.stateA) && Number.isInteger(link.stateB)) {
       let stateA = states.find((state) => state.id === link.stateA);
       let stateB = states.find((state) => state.id === link.stateB);
-      links.push(new Link(stateA, stateB, scaleFactor, link.rules, link.parallelPart, link.perpendicularPart, link.lineAngleAdjust));
+      links.push(new Link(stateA, stateB, link.rules, link.parallelPart, link.perpendicularPart, link.lineAngleAdjust));
     } else if (Number.isInteger(link.state)) {
       let state = states.find((state) => state.id === link.state);
-      links.push(new SelfLink(state, scaleFactor, true, link.rules, link.anchorAngle));
+      links.push(new SelfLink(state, true, link.rules, link.anchorAngle));
     }
   }
 
@@ -346,68 +452,52 @@ function closeFloatingCanvasMenus() {
 
 // Main functions
 function setup() {
-  cnv = createCanvas(700, 500);
-  cnv.parent("canvas-container");
-  cnv.elt.addEventListener("contextmenu", (event) => event.preventDefault());
-  cnv.doubleClicked(doubleClick);
-  cnv.mousePressed(mousePressedOnCanvas);
-  cnv.mouseReleased(mouseReleasedOnCanvas);
-
+  // Import tex map
   texMap = getTexMap();
 
+  // Create playground container
+  let playgroundContainer = createDiv("");
+  playgroundContainer.id("playground-container");
+  playgroundContainer.class("flex flex-col gap-[6px]");
+
+  // Create main html elements
+  topMenu = createTopMenu();
+  topMenu.parent(playgroundContainer);
+
+  let canvasContainer = createDiv("");
+  canvasContainer.id("canvas-container");
+  canvasContainer.parent(playgroundContainer);
+
+  // Create canvas
+  cnv = createCanvas(700, 500);
+  cnv.style("border-radius", "5px");
+  cnv.parent("canvas-container");
+  cnv.elt.addEventListener("contextmenu", (event) => event.preventDefault());
+  cnv.mousePressed(mousePressedOnCanvas);
+  cnv.mouseReleased(mouseReleasedOnCanvas);
+  cnv.doubleClicked(doubleClick);
+
+  // Create bottom menu
+  let bottomMenu = createBottomMenu();
+  bottomMenu.parent(playgroundContainer);
+
   // Resize canvas
-  let canvasContainer = select("#canvas-container");
-  let canvasWidth = canvasContainer.width;
-  let canvasHeight = canvasContainer.height;
+  let canvasWidth = canvasContainer.elt.offsetWidth;
+  let canvasHeight = canvasContainer.elt.offsetHeight;
   resizeCanvas(canvasWidth - 40, canvasHeight - 100);
-  // End of resize canvas
 
   // Set window offset
-  windowOffset = cnv.position();
+  globalWindowOffset = cnv.position();
 
-  states.push(new State(states.length, 150 / scaleFactor, 200 / scaleFactor, stateRadius, scaleFactor));
-  states.push(new State(states.length, 450 / scaleFactor, 200 / scaleFactor, stateRadius, scaleFactor));
-
-  // Menu buttons
-  menuButtons.push(select("#select"));
-  menuButtons[0].mousePressed(() => setMenuMousePressed(0));
-  menuButtons.push(select("#move"));
-  menuButtons[1].mousePressed(() => setMenuMousePressed(1));
-  menuButtons.push(select("#addState"));
-  menuButtons[2].mousePressed(() => setMenuMousePressed(2));
-  menuButtons.push(select("#addLink"));
-  menuButtons[3].mousePressed(() => setMenuMousePressed(3));
-  menuButtons.push(select("#delete"));
-  menuButtons[4].mousePressed(() => setMenuMousePressed(4));
+  states.push(new State(states.length, 150 / globalScaleFactor, 200 / globalScaleFactor, stateRadius, globalScaleFactor));
+  states.push(new State(states.length, 450 / globalScaleFactor, 200 / globalScaleFactor, stateRadius, globalScaleFactor));
 
   // Activate default button
-  setSelectedMenuButton(0);
+  setSelectedMenuButton("select");
   cnvIsFocused = "canvas";
 
   // Create slider
   slider = select("#scalingCanvas");
-  slider.input(() => (cnvIsFocused = "menu"));
-  slider.mousePressed(() => {
-    cnvIsFocused = "menu";
-    closeFloatingCanvasMenus();
-  });
-
-  // Export button
-  exportButton = select("#export-button-toggle");
-  exportButton.mousePressed(() => toggleExportMenu());
-  exportAsPNGButton = select("#export-as-png");
-  exportAsPNGButton.mousePressed(() => exportAsPNG());
-  exportAsDMT = select("#export-as-dtm");
-  exportAsDMT.mousePressed(() => exportAsJSON());
-
-  // Import button
-  importButton = select("#import-button");
-  importButton.mousePressed(() => {
-    cnvIsFocused = "menu";
-    closeFloatingCanvasMenus();
-
-    inputFile.elt.click();
-  });
 
   createContextMenu();
 
@@ -415,18 +505,13 @@ function setup() {
     contextMenuObj.mainDiv.hide();
   }
 
-  // Input type file
-  inputFile = createFileInput(handleInputFile);
-  inputFile.attribute("accept", ".json");
-  inputFile.hide();
-  inputFile.position(-1000, -1000);
-
   // First save on history
   history.push(createJSONExportObj());
 }
 
 function reCalculateDoomPositions() {
   windowOffset = cnv.position();
+  globalWindowOffset = cnv.position();
 }
 
 function draw() {
@@ -447,10 +532,10 @@ function draw() {
   reCalculateDoomPositions();
   background(255);
 
-  if ((isMouseLeftPressed && keyIsPressed && keyCode === CONTROL) || mouseButton === CENTER || (getIdOfSelectedButton() === "move" && isMouseLeftPressed)) moveCanvas();
+  if ((isMouseLeftPressed && keyIsPressed && keyCode === CONTROL) || mouseButton === CENTER || (selectedTopMenuButton === "move" && isMouseLeftPressed)) moveCanvas();
 
   // Slider -------
-  scaleFactor = slider.value();
+  globalScaleFactor = slider.value();
   // --------------
 
   let hoveredObject = checkFirstSelectedObject((x = mouseX), (y = mouseY), (uncheckObjects = false));
@@ -458,24 +543,24 @@ function draw() {
   if (isMouseWithShiftPressed) {
     if ((hoveredObject && hoveredObject.object instanceof State) || !hoveredObject) {
       if (hoveredObject && !(currentLink instanceof TemporaryLink && lastSelectedState !== states[hoveredObject.index])) {
-        currentLink = new SelfLink(states[hoveredObject.index], scaleFactor);
+        currentLink = new SelfLink(states[hoveredObject.index]);
         lastSelectedState = states[hoveredObject.index];
       } else {
         if (lastSelectedState) {
           if (currentLink instanceof SelfLink && !currentLink.from) {
-            currentLink = new TemporaryLink(scaleFactor);
+            currentLink = new TemporaryLink(globalScaleFactor);
             currentLink.from = lastSelectedState.closestPointOnCircle(mouseX, mouseY);
           }
         } else {
           if (!currentLink || !currentLink.from) {
-            currentLink = new TemporaryLink(scaleFactor);
+            currentLink = new TemporaryLink(globalScaleFactor);
             currentLink.from = { x: mouseX, y: mouseY };
           }
         }
       }
     } else {
       if (currentLink instanceof SelfLink) {
-        currentLink = new TemporaryLink(scaleFactor);
+        currentLink = new TemporaryLink(globalScaleFactor);
         currentLink.from = lastSelectedState.closestPointOnCircle(mouseX, mouseY);
       }
     }
@@ -504,31 +589,29 @@ function draw() {
   // ----------
 
   unHoverAll();
-  if (hoveredObject) hoveredObject.object.rollover = hoveredObject.object.containsPoint(mouseX, mouseY);
+  if (hoveredObject) hoveredObject.object.hovering = hoveredObject.object.containsPoint(mouseX, mouseY);
 
   for (let i = 0; i < links.length; i++) {
-    links[i].update(scaleFactor);
+    links[i].update(globalScaleFactor);
     links[i].draw();
-    links[i].transitionBox.update(scaleFactor);
+    links[i].transitionBox.update(globalScaleFactor);
     links[i].transitionBox.draw();
   }
 
   if (startLink) {
-    startLink.update(scaleFactor);
+    startLink.update(globalScaleFactor);
     startLink.draw();
   }
 
   if (currentLink) {
-    currentLink.scaleFactor = scaleFactor;
+    currentLink.globalScaleFactor = globalScaleFactor;
     currentLink.draw();
   }
 
   stateRepulse();
   for (let i = 0; i < states.length; i++) {
-    states[i].update(scaleFactor);
+    states[i].update(globalScaleFactor);
     states[i].draw();
-    states[i].input.update(scaleFactor);
-    drawText(states[i].x - states[i].input.textW / 2, states[i].y, states[i].input.allSubstrings, states[i].input.fontSize);
   }
 
   // Selecting area
@@ -554,8 +637,8 @@ function draw() {
 function setInitialState(index = null, props = null) {
   if (index === null) {
     if (selectedObject && selectedObject.object instanceof State) {
-      let from = { x: selectedObject.object.x - 80 * scaleFactor, y: selectedObject.object.y };
-      startLink = new StartLink(selectedObject.object, from, scaleFactor);
+      let from = { x: selectedObject.object.x - 80 * globalScaleFactor, y: selectedObject.object.y };
+      startLink = new StartLink(selectedObject.object, from, globalScaleFactor);
       startLink.selected = true;
       startLink.setAnchorPoint(from.x, from.y);
 
@@ -567,12 +650,12 @@ function setInitialState(index = null, props = null) {
       cnvIsFocused = "export-menu";
     }
   } else {
-    let from = { x: states[index].x - 80 * scaleFactor, y: states[index].y };
+    let from = { x: states[index].x - 80 * globalScaleFactor, y: states[index].y };
     if (props) {
       from = { x: states[index].x + props.deltaX, y: states[index].y + props.deltaY };
     }
 
-    startLink = new StartLink(states[index], from, scaleFactor, props);
+    startLink = new StartLink(states[index], from, globalScaleFactor, props);
     startLink.selected = true;
     startLink.setAnchorPoint(from.x, from.y);
 
@@ -755,13 +838,13 @@ function getNewStateId() {
 }
 
 function stateRepulse(repulseFactor = 30.0) {
-  repulseFactor *= scaleFactor;
+  repulseFactor *= globalScaleFactor;
 
   for (let i = 0; i < states.length; i++) {
     for (let j = 0; j < states.length - 1; j++) {
       if (i == j) continue;
       let distance = dist(states[i].x, states[i].y, states[j].x, states[j].y);
-      if (distance < stateRadius * 2 * scaleFactor + repulseFactor) {
+      if (distance < stateRadius * 2 * globalScaleFactor + repulseFactor) {
         let angle = atan2(states[j].y - states[i].y, states[j].x - states[i].x);
         let pushX = cos(angle) * repulseFactor;
         let pushY = sin(angle) * repulseFactor;
@@ -775,12 +858,12 @@ function stateRepulse(repulseFactor = 30.0) {
 }
 
 function unHoverAll() {
-  states.forEach((state) => (state.rollover = false));
+  states.forEach((state) => (state.hovering = false));
   links.forEach((link) => {
-    link.rollover = false;
-    link.transitionBox.rollover = false;
+    link.hovering = false;
+    link.transitionBox.hovering = false;
   });
-  if (startLink) startLink.rollover = false;
+  if (startLink) startLink.hovering = false;
 }
 
 function unCheckAll() {
@@ -889,15 +972,17 @@ function mousePressedOnCanvas() {
   isMouseRightPressed = mouseButton === RIGHT;
 
   if (isMouseLeftPressed) {
+    states.forEach((state) => state.mousePressed());
+
     selectedObject = checkFirstSelectedObject();
-    if (!isShiftPressed && !selectedObject && getIdOfSelectedButton() === "select") {
+    if (!isShiftPressed && !selectedObject && selectedTopMenuButton === "select") {
       if (!selectedArea.x1 && !selectedArea.y1) {
         selectedArea.x1 = mouseX;
         selectedArea.y1 = mouseY;
       }
     }
 
-    if ((isMouseLeftPressed && keyIsPressed && keyCode === CONTROL) || mouseButton === CENTER || (getIdOfSelectedButton() === "move" && isMouseLeftPressed)) return;
+    if ((isMouseLeftPressed && keyIsPressed && keyCode === CONTROL) || mouseButton === CENTER || (selectedTopMenuButton === "move" && isMouseLeftPressed)) return;
 
     if (!canDoCanvaActions) {
       isMouseWithShiftPressed = false;
@@ -906,13 +991,13 @@ function mousePressedOnCanvas() {
       return;
     }
     // If add state menu button is selected
-    if (getIdOfSelectedButton() === "addState" && !checkFirstSelectedObject(mouseX, mouseY, false)) {
+    if (selectedTopMenuButton === "addState" && !checkFirstSelectedObject(mouseX, mouseY, false)) {
       if (checkAnyStateInputVisible()) createHistory();
 
       unCheckAll();
       if (links.some((link) => link.transitionBox.containsPoint(mouseX, mouseY))) return;
       let stateID = getNewStateId();
-      states.push(new State(stateID, mouseX / scaleFactor, mouseY / scaleFactor, stateRadius, scaleFactor));
+      states.push(new State(stateID, mouseX / globalScaleFactor, mouseY / globalScaleFactor, stateRadius, globalScaleFactor));
       states[states.length - 1].selected = true;
       selectedObject = { object: states[states.length - 1], index: states.length - 1 };
 
@@ -920,8 +1005,8 @@ function mousePressedOnCanvas() {
       return;
     }
 
-    isMouseWithShiftPressed = isMouseLeftPressed && (isShiftPressed || getIdOfSelectedButton() === "addLink");
-    if (isShiftPressed || getIdOfSelectedButton() === "addLink") return;
+    isMouseWithShiftPressed = isMouseLeftPressed && (isShiftPressed || selectedTopMenuButton === "addLink");
+    if (isShiftPressed || selectedTopMenuButton === "addLink") return;
 
     selectedObject = checkFirstSelectedObject();
 
@@ -930,7 +1015,7 @@ function mousePressedOnCanvas() {
     }
 
     // Delete button
-    if (getIdOfSelectedButton() === "delete") {
+    if (selectedTopMenuButton === "delete") {
       if (checkAnyStateInputVisible()) createHistory();
 
       deleteObject();
@@ -959,7 +1044,7 @@ function mousePressedOnCanvas() {
 function mousePressed() {
   if ((mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) || cnvIsFocused === "menu" || cnvIsFocused === "export-menu") {
     // Click happened inside the canvas
-    if (!getIdOfSelectedButton() && cnvIsFocused !== "export-menu") setSelectedMenuButton(0);
+    if (!selectedTopMenuButton && cnvIsFocused !== "export-menu") setSelectedMenuButton("select");
 
     cnvIsFocused = "canvas";
     cnv.elt.focus();
@@ -975,7 +1060,7 @@ function mousePressed() {
     selectedObject = null;
     unCheckAll();
     unHoverAll();
-    setSelectedMenuButton(-1);
+    setSelectedMenuButton(null);
     closeExportMenu();
     closeContextMenuWhenClickngOutside();
 
@@ -1058,7 +1143,7 @@ function mouseReleasedOnCanvas() {
           }
 
           if (from && to) {
-            links.push(new Link(from, to, scaleFactor));
+            links.push(new Link(from, to));
             links[links.length - 1].selected = true;
             links[links.length - 1].transitionBox.selected = true;
 
@@ -1085,7 +1170,7 @@ function mouseReleasedOnCanvas() {
         let hoveredObject = checkFirstSelectedObject();
         if (hoveredObject && hoveredObject.object instanceof State) {
           stateOnIndex = states[hoveredObject.index];
-          startLink = new StartLink(stateOnIndex, currentLink.from, scaleFactor);
+          startLink = new StartLink(stateOnIndex, currentLink.from, globalScaleFactor);
           startLink.selected = true;
 
           for (let i = 0; i < states.length; i++) {
@@ -1102,7 +1187,7 @@ function mouseReleasedOnCanvas() {
     // Check if already exists a link to itself
     unCheckAll();
     if (!links.some((link) => link instanceof SelfLink && link.state.id === lastSelectedState.id)) {
-      links.push(new SelfLink(currentLink.state, scaleFactor, true));
+      links.push(new SelfLink(currentLink.state, true));
       links[links.length - 1].selected = true;
       links[links.length - 1].transitionBox.selected = true;
     } else {
@@ -1136,11 +1221,11 @@ function mouseWheel(event) {
   if (cnvIsFocused === "outside") return;
 
   if (event.delta > 0) {
-    scaleFactor = max(scaleFactor - 0.25, 0.5);
-    slider.value(scaleFactor);
+    globalScaleFactor = max(globalScaleFactor - 0.25, 0.5);
+    slider.value(globalScaleFactor);
   } else {
-    scaleFactor = min(scaleFactor + 0.25, 2.0);
-    slider.value(scaleFactor);
+    globalScaleFactor = min(globalScaleFactor + 0.25, 2.0);
+    slider.value(globalScaleFactor);
   }
 }
 
@@ -1156,7 +1241,8 @@ function keyPressed() {
     !links.some((link) => link.transitionBox.selected)
   ) {
     let index = keyCode - 49;
-    setSelectedMenuButton(index);
+    let buttons = ["select", "addState", "addLink", "move", "delete"];
+    setSelectedMenuButton(buttons[index]);
     return;
   }
 
@@ -1218,7 +1304,7 @@ function doubleClick() {
   if (!overState) {
     console.log("Double clicked on empty space");
     let stateID = getNewStateId();
-    states.push(new State(stateID, mouseX / scaleFactor, mouseY / scaleFactor, stateRadius, scaleFactor));
+    states.push(new State(stateID, mouseX / globalScaleFactor, mouseY / globalScaleFactor, stateRadius, globalScaleFactor));
     states[states.length - 1].selected = true;
     selectedObject = { object: states[states.length - 1], index: states.length - 1 };
 
@@ -1234,11 +1320,7 @@ function doubleClick() {
 }
 
 function mouseDragged() {
-  if (cnvIsFocused === "outside") return;
-
-  for (let i = 0; i < states.length; i++) {
-    states[i].mouseDragged();
-  }
+  // if (cnvIsFocused === "outside") return;
 
   for (let i = 0; i < links.length; i++) {
     links[i].mouseDragged();

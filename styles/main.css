@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Variables */
+:root {
+  --selected-color: rgb(23, 98, 163);
+  --selected-hover-color: rgb(17, 82, 140);
+}
+
 * {
   box-sizing: border-box;
   padding: 0;
@@ -17,4 +23,17 @@ body {
   justify-content: center;
   align-items: center;
   overflow: hidden;
+}
+
+.menu-export::after {
+  content: " ";
+  width: 15px;
+  height: 15px;
+  border-radius: 3px;
+  background-color: #9caab7;
+  transform: rotateZ(45deg);
+  position: absolute;
+  top: -7px;
+  right: 12px;
+  z-index: 3;
 }

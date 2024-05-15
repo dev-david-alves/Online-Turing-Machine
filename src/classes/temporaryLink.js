@@ -1,8 +1,7 @@
 class TemporaryLink {
-  constructor(scaleFactor = 1.0) {
+  constructor() {
     this.from = null;
     this.to = null;
-    this.scaleFactor = scaleFactor;
   }
 
   draw() {
@@ -11,7 +10,7 @@ class TemporaryLink {
     push();
     fill(0);
     stroke(0);
-    strokeWeight(this.scaleFactor);
+    strokeWeight(globalScaleFactor);
     line(this.from.x, this.from.y, this.to.x, this.to.y);
 
     // draw the head of the arrow

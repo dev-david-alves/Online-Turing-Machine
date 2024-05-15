@@ -3,12 +3,12 @@ function drawArrow(x, y, angle) {
   let dy = Math.sin(angle);
 
   push();
-  strokeWeight(scaleFactor);
+  strokeWeight(globalScaleFactor);
 
   beginShape();
   vertex(x, y);
-  vertex(x - 8 * scaleFactor * dx + 5 * scaleFactor * dy, y - 8 * scaleFactor * dy - 5 * scaleFactor * dx);
-  vertex(x - 8 * scaleFactor * dx - 5 * scaleFactor * dy, y - 8 * scaleFactor * dy + 5 * scaleFactor * dx);
+  vertex(x - 8 * globalScaleFactor * dx + 5 * globalScaleFactor * dy, y - 8 * globalScaleFactor * dy - 5 * globalScaleFactor * dx);
+  vertex(x - 8 * globalScaleFactor * dx - 5 * globalScaleFactor * dy, y - 8 * globalScaleFactor * dy + 5 * globalScaleFactor * dx);
   endShape(CLOSE);
   pop();
 }

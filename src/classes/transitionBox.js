@@ -1,24 +1,29 @@
 class TransitionBox {
-  constructor(x, y, texMap = {}, scaleFactor = 1.0, parent = null, rules = []) {
-    this.x = x * scaleFactor;
-    this.y = y * scaleFactor;
-    this.scaleFactor = scaleFactor;
+  constructor(x, y, parent = null, rules = []) {
+    this.parent = parent;
+    this.scaleFactor = globalScaleFactor;
+
+    // Position
+    this.x = x * this.scaleFactor;
+    this.y = y * this.scaleFactor;
+
+    // Dimensions
     this.w = 0;
     this.h = 0;
-    this.rollover = false;
+
+    // Status variables
+    this.hovering = false;
     this.selected = false;
-    this.selectedRuleIndex = -1;
     this.hoveredRuleIndex = -1;
-    this.texMap = texMap;
+    this.selectedRuleIndex = -1;
 
-    this.visible = false;
-    this.inputParent = parent;
-    this.marginBox = 5 * this.scaleFactor;
-    this.offsetBoxY = 18 * this.scaleFactor;
-    this.ruleFontSize = 12 * this.scaleFactor;
+    // Constants
+    this.offsetBoxYConstant = 18;
+    this.offsetBoxY = this.offsetBoxYConstant * this.scaleFactor;
+    this.ruleFontSizeConstant = 12;
+    this.ruleFontSize = this.ruleFontSizeConstant * this.scaleFactor;
 
-    // Transition box
-
+    // Transition box elements
     this.directionButtonPressed = "left";
 
     this.mainDiv = null;
@@ -33,29 +38,14 @@ class TransitionBox {
     this.labelSpan = null;
 
     this.createBox();
-
-    if (this.leftButton && this.rightButton) {
-      this.switchButtons("left");
-      this.leftButton.mousePressed(() => {
-        this.switchButtons("left");
-      });
-
-      this.rightButton.mousePressed(() => {
-        this.switchButtons("right");
-      });
-    }
+    if (this.leftButton && this.rightButton) this.switchButtons("left");
 
     if (this.readInput && this.writeInput) {
-      this.readInput.input(() => {
-        this.changeResultText();
-      });
-
-      this.writeInput.input(() => {
-        this.changeResultText();
-      });
+      this.readInput.input(() => this.changeResultText());
+      this.writeInput.input(() => this.changeResultText());
     }
 
-    // Create the first input
+    // Rules information
     this.rules = rules;
     this.rulesX = this.x;
     this.rulesY = this.y;
@@ -85,7 +75,7 @@ class TransitionBox {
 
   createBox() {
     this.mainDiv = createDiv();
-    this.mainDiv.parent(this.inputParent);
+    this.mainDiv.parent(this.parent);
     this.mainDiv.position(this.x + windowOffset.x, this.y + windowOffset.y);
     this.mainDiv.class("flex flex-col gap-[2px] items-center justify-center absolute z-[100]");
     this.boxDiv = createDiv();
@@ -102,7 +92,7 @@ class TransitionBox {
     this.readInput.attribute("placeholder", "Lê");
     this.writeInput = createInput();
     this.writeInput.parent(this.inputDiv);
-    this.writeInput.class("px-2 py-1 rounded-[3px] focus:outline-none w-[80px] bg-transparent border-2 border-[#1762a3] text-white"); //focus:ring focus:ring-1 focus:border-[rgb(23, 98, 163)]
+    this.writeInput.class("px-2 py-1 rounded-[3px] focus:outline-none w-[80px] bg-transparent border-2 border-[#1762a3] text-white");
     this.writeInput.attribute("placeholder", "Escreve");
 
     // Buttons
@@ -114,13 +104,16 @@ class TransitionBox {
     this.directionButtonDiv.class("flex items-center gap-1");
     this.leftButton = createButton("E");
     this.leftButton.parent(this.directionButtonDiv);
-    this.leftButton.class("transition-box-button");
+    this.leftButton.class("w-[35px] h-[35px] text-md text-white font-semibold border-2 border-[#1762a3] rounded-[5px] bg-transparent transition-colors");
     this.leftButton.id("leftButton");
+    this.leftButton.mousePressed(() => this.switchButtons("left"));
 
     this.rightButton = createButton("D");
     this.rightButton.parent(this.directionButtonDiv);
-    this.rightButton.class("transition-box-button");
+
+    this.rightButton.class("w-[35px] h-[35px] text-md text-white font-semibold border-2 border-[#1762a3] rounded-[5px] bg-transparent transition-colors");
     this.rightButton.id("rightButton");
+    this.rightButton.mousePressed(() => this.switchButtons("right"));
 
     this.confirmButton = createButton("<i class='fa-solid fa-check'></i>");
     this.confirmButton.parent(this.buttonDiv);
@@ -137,7 +130,6 @@ class TransitionBox {
   }
 
   containsPoint(x = mouseX, y = mouseY) {
-    // this.rulesX - this.rulesWidth / 2, this.rulesY, this.rulesWidth, this.rulesHeight + this.offsetBoxY / 2
     return x > this.rulesX - this.rulesWidth / 2 && x < this.rulesX + this.rulesWidth / 2 && y > this.rulesY && y < this.rulesY + this.rulesHeight + this.offsetBoxY / 2;
   }
 
@@ -146,9 +138,7 @@ class TransitionBox {
       let yy = this.rulesY + i * this.offsetBoxY + this.offsetBoxY * 0.8;
       let xx = this.rulesX;
 
-      if (x > xx - this.rules[i].width / 2 && x < xx + this.rules[i].width / 2 && y > yy - this.offsetBoxY / 2 && y < yy + this.offsetBoxY / 2) {
-        return i;
-      }
+      if (x > xx - this.rules[i].width / 2 && x < xx + this.rules[i].width / 2 && y > yy - this.offsetBoxY / 2 && y < yy + this.offsetBoxY / 2) return i;
     }
 
     return -1;
@@ -168,7 +158,7 @@ class TransitionBox {
     if (this.selectedRuleIndex !== -1) {
       let { allReadSubstrings, allWriteSubstrings, direction } = this.changeResultText();
 
-      // concat all arrays
+      // Concat all arrays
       let rule = allReadSubstrings.concat([" ", "→", " "], allWriteSubstrings, [", "], [direction]);
 
       if (!this.ruleAlreadyExists(rule)) {
@@ -180,12 +170,11 @@ class TransitionBox {
       this.switchButtons("left");
 
       this.selectedRuleIndex = -1;
-
       this.selected = false;
     } else {
       let { allReadSubstrings, allWriteSubstrings, direction } = this.changeResultText();
 
-      // concat all arrays
+      // Concat all arrays
       let rule = allReadSubstrings.concat([" ", "→", " "], allWriteSubstrings, [", "], [direction]);
 
       if (!this.ruleAlreadyExists(rule)) {
@@ -197,15 +186,14 @@ class TransitionBox {
       this.switchButtons("left");
 
       this.selectedRuleIndex = -1;
-
       this.selected = false;
     }
 
     createHistory();
   }
 
+  // Remove all elements
   remove() {
-    // remove all elements
     this.mainDiv.remove();
   }
 
@@ -220,14 +208,11 @@ class TransitionBox {
 
   keyPressed() {
     if (keyCode === ENTER) {
-      if (!this.visible) return;
-
       this.confirmRule();
     } else if (keyCode === BACKSPACE) {
-      if (!this.visible) return;
-
       this.checkReadAndWriteInput();
     } else if (keyCode === DELETE) {
+      if (this.selected) return;
       this.removeRule();
     }
   }
@@ -254,12 +239,13 @@ class TransitionBox {
   mousePressed() {
     this.selectedRuleIndex = this.ruleContainsPoint();
 
-    if (this.selectedRuleIndex !== -1 && getIdOfSelectedButton() === "delete") {
+    if (this.selectedRuleIndex !== -1 && selectedTopMenuButton === "delete") {
       this.removeRule();
     }
   }
 
   doubleClick() {
+    if (selectedTopMenuButton !== "select" && selectedTopMenuButton !== "addLink") return;
     this.selectedRuleIndex = this.ruleContainsPoint();
     this.selected = this.selectedRuleIndex !== -1;
     this.getRule();
@@ -276,17 +262,17 @@ class TransitionBox {
     this.readInput.style("border-color", "red");
     this.writeInput.style("border-color", "red");
 
-    let readIsValid = this.readInput.value().length === 0 || this.readInput.value().match(regex) || this.texMap[readValue];
-    let writeIsValid = this.writeInput.value().length === 0 || this.writeInput.value().match(regex) || this.texMap[writeValue];
+    let readIsValid = this.readInput.value().length === 0 || this.readInput.value().match(regex) || texMap[readValue];
+    let writeIsValid = this.writeInput.value().length === 0 || this.writeInput.value().match(regex) || texMap[writeValue];
 
     if (readIsValid) {
       this.readInput.style("border-color", "#1762a3");
-      if (this.texMap[readValue]) this.readInput.value(this.texMap[readValue]);
+      if (texMap[readValue]) this.readInput.value(texMap[readValue]);
     }
 
     if (writeIsValid) {
       this.writeInput.style("border-color", "#1762a3");
-      if (this.texMap[writeValue]) this.writeInput.value(this.texMap[writeValue]);
+      if (texMap[writeValue]) this.writeInput.value(texMap[writeValue]);
     }
 
     return { readIsValid, writeIsValid };
@@ -297,14 +283,14 @@ class TransitionBox {
 
     let allReadSubstrings = [];
     if (readIsValid && this.readInput.value().trim().length > 0) {
-      allReadSubstrings = transformInputText(this.readInput.value(), this.texMap);
+      allReadSubstrings = transformInputText(this.readInput.value(), texMap);
     } else {
       allReadSubstrings = ["☐"];
     }
 
     let allWriteSubstrings = [];
     if (writeIsValid && this.writeInput.value().trim().length > 0) {
-      allWriteSubstrings = transformInputText(this.writeInput.value(), this.texMap);
+      allWriteSubstrings = transformInputText(this.writeInput.value(), texMap);
     } else {
       allWriteSubstrings = ["☐"];
     }
@@ -315,18 +301,16 @@ class TransitionBox {
     return { allReadSubstrings, allWriteSubstrings, direction };
   }
 
-  update(scaleFactor = 1.0) {
+  update() {
     if (!this.mainDiv) return;
 
-    if (this.scaleFactor != scaleFactor) {
-      this.x = (this.x / this.scaleFactor) * scaleFactor;
-      this.y = (this.y / this.scaleFactor) * scaleFactor;
-      this.scaleFactor = scaleFactor;
+    if (this.scaleFactor != globalScaleFactor) {
+      this.x = (this.x / this.scaleFactor) * globalScaleFactor;
+      this.y = (this.y / this.scaleFactor) * globalScaleFactor;
+      this.offsetBoxY = this.offsetBoxYConstant * globalScaleFactor;
+      this.ruleFontSize = this.ruleFontSizeConstant * globalScaleFactor;
+      this.scaleFactor = globalScaleFactor;
     }
-
-    this.marginBox = 5 * scaleFactor;
-    this.offsetBoxY = 18 * scaleFactor;
-    this.ruleFontSize = 12 * scaleFactor;
 
     for (let i = 0; i < this.rules.length; i++) {
       this.rules[i].width = calculateTextWidth(-1000, -1000, this.rules[i].label, this.ruleFontSize);
@@ -335,10 +319,9 @@ class TransitionBox {
     this.rulesHeight = this.rules.length * this.offsetBoxY;
     this.rulesWidth = this.getTheLargestWidth();
 
-    this.rollover = this.containsPoint(mouseX, mouseY);
-    this.visible = this.selected && !isMouseWithShiftPressed;
+    this.hovering = this.containsPoint(mouseX, mouseY);
 
-    if (this.visible) this.mainDiv.elt.style.visibility = "visible";
+    if (this.selected) this.mainDiv.elt.style.visibility = "visible";
     else this.mainDiv.elt.style.visibility = "hidden";
 
     if (!this.selected) {
@@ -353,22 +336,15 @@ class TransitionBox {
   }
 
   draw() {
-    // Draw a rectangle around the rule
-    // push();
-    // noFill();
-    // stroke(255, 0, 0);
-    // strokeWeight(1);
-    // rect(this.rulesX - this.rulesWidth / 2, this.rulesY, this.rulesWidth, this.rulesHeight + this.offsetBoxY / 2);
-    // pop();
-
     // Draw the rules
     for (let i = 0; i < this.rules.length; i++) {
       let yy = this.rulesY + i * this.offsetBoxY + this.offsetBoxY * 0.8;
       let xx = this.rulesX - this.rules[i].width / 2;
 
       push();
-      if (this.ruleContainsPoint(mouseX, mouseY) === i || this.selectedRuleIndex === i) fill(0, 0, 255);
-      else fill(23, 42, 43);
+      fill(23, 42, 43);
+      if (this.ruleContainsPoint(mouseX, mouseY) === i) fill(17, 82, 140);
+      if (this.selectedRuleIndex === i) fill(23, 98, 163);
 
       drawText(xx, yy, this.rules[i].label, this.ruleFontSize);
       pop();

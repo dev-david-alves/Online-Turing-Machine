@@ -1,10 +1,14 @@
 class Link {
-  constructor(stateA, stateB, scaleFactor = 1.0, rules = [], parallelPart = 0.5, perpendicularPart = 0, lineAngleAdjust = 0) {
+  constructor(stateA, stateB, rules = [], parallelPart = 0.5, perpendicularPart = 0, lineAngleAdjust = 0) {
     this.stateA = stateA;
     this.stateB = stateB;
-    this.rollover = false;
+    this.scaleFactor = globalScaleFactor;
+    this.snapToPadding = 6;
+    this.hitTargetPadding = 6;
+
+    // Status
+    this.hovering = false;
     this.selected = false;
-    this.scaleFactor = scaleFactor;
     this.dragging = false;
 
     // Make anchor point relative to the locations of stateA and stateB
@@ -12,12 +16,8 @@ class Link {
     this.perpendicularPart = perpendicularPart;
     this.lineAngleAdjust = lineAngleAdjust;
 
-    // Extra
-    this.snapToPadding = 6 * this.scaleFactor;
-    this.hitTargetPadding = 6 * this.scaleFactor;
-
-    // TextBox
-    this.transitionBox = new TransitionBox(-1000, -1000, texMap, scaleFactor, "#canvas-container", rules);
+    // Transition box
+    this.transitionBox = new TransitionBox(-1000, -1000, "#canvas-container", rules);
   }
 
   det(a, b, c, d, e, f, g, h, i) {
@@ -57,7 +57,7 @@ class Link {
     this.perpendicularPart = (dx * (y - this.stateA.y) - dy * (x - this.stateA.x)) / scale;
 
     // Snap to a straight line
-    if (this.parallelPart > 0 && this.parallelPart < 1 && abs(this.perpendicularPart) < this.snapToPadding) {
+    if (this.parallelPart > 0 && this.parallelPart < 1 && abs(this.perpendicularPart) < this.snapToPadding * this.scaleFactor) {
       this.lineAngleAdjust = (this.perpendicularPart < 0) * PI;
       this.perpendicularPart = 0;
     }
@@ -115,7 +115,7 @@ class Link {
       let dy = y - stuff.circleY;
       let distance = sqrt(dx * dx + dy * dy) - stuff.circleR;
 
-      if (abs(distance) < this.hitTargetPadding) {
+      if (abs(distance) < this.hitTargetPadding * this.scaleFactor) {
         let angle = atan2(dy, dx);
         let startAngle = stuff.startAngle;
         let endAngle = stuff.endAngle;
@@ -145,7 +145,7 @@ class Link {
       let percent = (dx * (x - stuff.startX) + dy * (y - stuff.startY)) / (length * length);
       let distance = (dx * (y - stuff.startY) - dy * (x - stuff.startX)) / length;
 
-      return percent > 0 && percent < 1 && abs(distance) < this.hitTargetPadding;
+      return percent > 0 && percent < 1 && abs(distance) < this.hitTargetPadding * this.scaleFactor;
     }
 
     return false;
@@ -166,27 +166,21 @@ class Link {
   }
 
   doubleClick() {
-    if (this.rollover) this.transitionBox.selected = true;
+    if (this.hovering) this.transitionBox.selected = true;
   }
 
-  update(scaleFactor = 1.0) {
-    this.snapToPadding = 6 * this.scaleFactor;
-    this.hitTargetPadding = 6 * this.scaleFactor;
-    this.transitionBox.scaleFactor = scaleFactor;
-
-    this.parallelPart = (this.parallelPart / this.scaleFactor) * scaleFactor;
-    this.perpendicularPart = (this.perpendicularPart / this.scaleFactor) * scaleFactor;
-    this.lineAngleAdjust = (this.lineAngleAdjust / this.scaleFactor) * scaleFactor;
-
-    this.scaleFactor = scaleFactor;
-
-    if (this.selected && this.dragging) {
-      this.setAnchorPoint(mouseX, mouseY);
+  update() {
+    if (this.scaleFactor !== globalScaleFactor) {
+      this.parallelPart = (this.parallelPart / this.scaleFactor) * globalScaleFactor;
+      this.perpendicularPart = (this.perpendicularPart / this.scaleFactor) * globalScaleFactor;
+      this.lineAngleAdjust = (this.lineAngleAdjust / this.scaleFactor) * globalScaleFactor;
+      this.scaleFactor = globalScaleFactor;
     }
 
-    let stuff = this.getEndPointsAndCircle();
+    if (this.selected && this.dragging) this.setAnchorPoint(mouseX, mouseY);
 
     // update the box
+    let stuff = this.getEndPointsAndCircle();
     if (stuff.hasCircle) {
       let startAngle = stuff.startAngle;
       let endAngle = stuff.endAngle;
@@ -213,28 +207,28 @@ class Link {
 
   draw() {
     push();
-    strokeWeight(1 * this.scaleFactor);
     stroke(0, 0, 0);
     fill(0, 0, 0);
+    strokeWeight(1 * this.scaleFactor);
 
-    if (this.rollover) {
-      stroke(100, 100, 200);
-      fill(100, 100, 200);
+    if (this.hovering) {
+      stroke(17, 82, 140);
+      fill(17, 82, 140);
     }
 
     if (this.selected) {
-      stroke(0, 0, 255);
-      fill(0, 0, 255);
+      strokeWeight(2 * this.scaleFactor);
+      stroke(23, 98, 163);
+      fill(23, 98, 163);
     }
 
     let stuff = this.getEndPointsAndCircle();
 
     if (stuff.hasCircle) {
       let circleW = max(dist(this.stateA.x, this.stateA.y, this.stateB.x, this.stateB.y), stuff.circleR * 2);
-
-      // Draw arc
       push();
       noFill();
+      // Draw arc
       if (stuff.isReversed) {
         arc(stuff.circleX, stuff.circleY, circleW, stuff.circleR * 2, stuff.endAngle, stuff.startAngle);
       } else {

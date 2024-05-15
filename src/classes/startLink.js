@@ -1,16 +1,16 @@
 class StartLink {
-  constructor(state, start, scaleFactor = 1.0) {
+  constructor(state, start) {
     this.state = state;
-    this.scaleFactor = scaleFactor;
+    this.scaleFactor = globalScaleFactor;
     this.deltaX = 0;
     this.deltaY = 0;
-    this.snapToPadding = 6 * this.scaleFactor;
-    this.hitTargetPadding = 6 * this.scaleFactor;
+    this.snapToPadding = 6;
+    this.hitTargetPadding = 6;
 
+    // Status variables
     this.dragging = false;
-    this.rollover = false;
+    this.hovering = false;
     this.selected = false;
-    this.text = "";
 
     if (start) this.setAnchorPoint(start.x, start.y);
   }
@@ -23,15 +23,15 @@ class StartLink {
     let percent = (dx * (x - stuff.startX) + dy * (y - stuff.startY)) / (length * length);
     let distance = (dx * (y - stuff.startY) - dy * (x - stuff.startX)) / length;
 
-    return percent > 0 && percent < 1 && abs(distance) < this.hitTargetPadding;
+    return percent > 0 && percent < 1 && abs(distance) < this.hitTargetPadding * this.scaleFactor;
   }
 
   setAnchorPoint(x, y) {
     this.deltaX = x - this.state.x;
     this.deltaY = y - this.state.y;
 
-    if (abs(this.deltaX) < this.snapToPadding) this.deltaX = 0;
-    if (abs(this.deltaY) < this.snapToPadding) this.deltaY = 0;
+    if (abs(this.deltaX) < this.snapToPadding * this.scaleFactor) this.deltaX = 0;
+    if (abs(this.deltaY) < this.snapToPadding * this.scaleFactor) this.deltaY = 0;
   }
 
   getEndPoints() {
@@ -48,7 +48,7 @@ class StartLink {
   }
 
   mouseDragged() {
-    if (this.selected) {
+    if (this.hovering && selectedTopMenuButton === "select") {
       this.dragging = true;
       console.log("Dragging start link");
     }
@@ -64,10 +64,7 @@ class StartLink {
   update(scaleFactor = 1.0) {
     this.deltaX = (this.deltaX / this.scaleFactor) * scaleFactor;
     this.deltaY = (this.deltaY / this.scaleFactor) * scaleFactor;
-
     this.scaleFactor = scaleFactor;
-    this.snapToPadding = 6 * this.scaleFactor;
-    this.hitTargetPadding = 6 * this.scaleFactor;
 
     if (this.selected && this.dragging) {
       this.setAnchorPoint(mouseX, mouseY);
@@ -76,20 +73,22 @@ class StartLink {
 
   draw() {
     let stuff = this.getEndPoints();
+
     push();
     stroke(0, 0, 0);
     fill(0, 0, 0);
     strokeWeight(1 * this.scaleFactor);
 
     // draw the line
-    if (this.rollover) {
-      stroke(100, 100, 200);
-      fill(100, 100, 200);
+    if (this.hovering) {
+      stroke(17, 82, 140);
+      fill(17, 82, 140);
     }
 
     if (this.selected) {
-      stroke(0, 0, 255);
-      fill(0, 0, 255);
+      strokeWeight(2 * this.scaleFactor);
+      stroke(23, 98, 163);
+      fill(23, 98, 163);
     }
 
     line(stuff.startX, stuff.startY, stuff.endX, stuff.endY);
