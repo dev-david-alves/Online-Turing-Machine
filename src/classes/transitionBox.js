@@ -76,7 +76,7 @@ class TransitionBox {
   createBox() {
     this.mainDiv = createDiv();
     this.mainDiv.parent(this.parent);
-    this.mainDiv.position(this.x + windowOffset.x, this.y + windowOffset.y);
+    this.mainDiv.position(this.x + globalWindowOffset.x, this.y + globalWindowOffset.y);
     this.mainDiv.class("flex flex-col gap-[2px] items-center justify-center absolute z-[100]");
     this.boxDiv = createDiv();
     this.boxDiv.parent(this.mainDiv);
@@ -130,7 +130,9 @@ class TransitionBox {
   }
 
   containsPoint(x = mouseX, y = mouseY) {
-    return x > this.rulesX - this.rulesWidth / 2 && x < this.rulesX + this.rulesWidth / 2 && y > this.rulesY && y < this.rulesY + this.rulesHeight + this.offsetBoxY / 2;
+    if (!this.mainDiv) return false;
+
+    return x > this.x && x < this.x + this.w && y > this.y && y < this.y + this.h;
   }
 
   ruleContainsPoint(x = mouseX, y = mouseY) {
@@ -285,18 +287,19 @@ class TransitionBox {
     if (readIsValid && this.readInput.value().trim().length > 0) {
       allReadSubstrings = transformInputText(this.readInput.value(), texMap);
     } else {
-      allReadSubstrings = ["☐"];
+      allReadSubstrings = [texMap["\\blank"]];
     }
 
     let allWriteSubstrings = [];
     if (writeIsValid && this.writeInput.value().trim().length > 0) {
       allWriteSubstrings = transformInputText(this.writeInput.value(), texMap);
     } else {
-      allWriteSubstrings = ["☐"];
+      allWriteSubstrings = [texMap["\\blank"]];
     }
 
     let direction = this.directionButtonPressed === "left" ? "E" : "D";
     this.labelSpan.html(allReadSubstrings[0] + " → " + allWriteSubstrings[0] + ", " + direction);
+    this.labelSpan.style("font-family", "cmunbi");
 
     return { allReadSubstrings, allWriteSubstrings, direction };
   }
@@ -330,7 +333,7 @@ class TransitionBox {
       this.switchButtons("left");
     }
 
-    this.mainDiv.position(this.x + windowOffset.x, this.y + windowOffset.y);
+    this.mainDiv.position(this.x + globalWindowOffset.x, this.y + globalWindowOffset.y);
     this.w = this.mainDiv.elt.offsetWidth;
     this.h = this.mainDiv.elt.offsetHeight;
   }

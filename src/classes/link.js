@@ -152,6 +152,8 @@ class Link {
   }
 
   mouseDragged() {
+    if (selectedTopMenuButton === "addLink") return;
+
     if (this.selected) {
       this.dragging = true;
       console.log("Dragging link");

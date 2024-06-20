@@ -1,34 +1,32 @@
+// General Properties
 let cnv = null;
 let cnvIsFocused = "outside";
-let canDoCanvaActions = true;
+let globalWindowOffset = { x: 0, y: 0 };
+let texMap = {};
+
+// Current status
+let isCanvasMoving = false;
+
+// States
 let states = [];
 let stateRadius = 25;
 let lastSelectedState = null;
 let selectedObject = null;
 
+// Links
 let links = [];
 let startLink = null;
-
-let isShiftPressed = false;
-let isMouseWithShiftPressed = false;
-
-let texMap = {};
 let currentLink = null;
 
-// Selecting objects
-let selectedArea = {
-  x1: null,
-  y1: null,
-  x2: null,
-  y2: null,
-};
-
 // Scaling
-let slider = null;
+let scalingCanvasSlider = null;
 let globalScaleFactor = 1.0;
 
+// Moving canvas view
+let movingCanvasOffset = { x: 0, y: 0 };
+
 // Context menu
-let contextMenuObj = null;
+let contextMenu = null;
 
 // Creating HTML Elements
 function createTopMenu() {
@@ -125,7 +123,7 @@ function createBottomMenu() {
   span1.parent(bottomMenu);
 
   let input = createInput("1");
-  input.id("scalingCanvas");
+  input.id("scalingCanvasSlider");
   input.attribute("type", "range");
   input.attribute("min", "0.5");
   input.attribute("max", "2");
@@ -133,6 +131,11 @@ function createBottomMenu() {
   input.attribute("value", "1");
   input.class("w-[15%] min-w-[75px]");
   input.parent(bottomMenu);
+  input.input(() => {
+    cnvIsFocused = "canvas";
+    globalScaleFactor = input.value();
+    if (!selectedTopMenuButton) setSelectedMenuButton("select");
+  });
 
   let span2 = createElement("span");
   span2.class("text-white");
@@ -142,12 +145,72 @@ function createBottomMenu() {
   return bottomMenu;
 }
 
-// Moving canvas view
-let movingCanvasOffset = { x: 0, y: 0 };
-let isMouseLeftPressed = false;
-let isMouseRightPressed = false;
+function createContextMenu() {
+  let mainDiv = createDiv("");
+  mainDiv.id("context-menu");
+  mainDiv.hide();
+  mainDiv.parent("playground-container");
+  mainDiv.elt.addEventListener("contextmenu", (event) => event.preventDefault());
+  mainDiv.class("absolute bg-[#222831] py-2 rounded-[5px] flex flex-col gap-1 drop-shadow-md");
+  mainDiv.position(globalWindowOffset.x + 100, globalWindowOffset.y + 100);
 
-// Start of Button functions
+  let options = [
+    {
+      label: "Estado inicial",
+      id: "set-initial-state",
+      class: "w-full py-1 px-3 text-left hover:bg-[#1762a3] text-white text-sm",
+      mousePressed: () => {
+        if (selectedObject) {
+          let index = states.findIndex((state) => state.id === selectedObject.object.id);
+          setInitialState(index);
+          createHistory();
+        }
+      },
+    },
+    {
+      label: "Definir como Final",
+      id: "set-final-state",
+      class: "w-full py-1 px-3 text-left hover:bg-[#1762a3] text-white text-sm",
+      mousePressed: () => {
+        toggleFinalState();
+        createHistory();
+      },
+    },
+    {
+      label: "Renomear Estado",
+      id: "rename-state",
+      class: "w-full py-1 px-3 text-left hover:bg-[#1762a3] text-white text-sm flex items-center justify-between  pt-1 mt-1 border-t-[1px] border-t-[#36404e]",
+      mousePressed: () => renameState(),
+    },
+    {
+      label: "Deletar",
+      id: "delete-state",
+      class: "w-full py-1 px-3 text-left hover:bg-[#1762a3] text-white text-sm flex items-center justify-between  pt-1 mt-1 border-t-[1px] border-t-[#36404e]",
+      mousePressed: () => {
+        cnvIsFocused = "export-menu";
+        deleteObject();
+        contextMenu.hide();
+      },
+    },
+  ];
+
+  options.forEach((option) => {
+    let button = createButton(option.label);
+    button.id(option.id);
+    button.class(option.class);
+    button.mousePressed(option.mousePressed);
+    button.parent(mainDiv);
+  });
+
+  let deleteButton = select("#delete-state");
+  let iElement = createElement("i");
+  iElement.class("fa-solid fa-trash text-[#676768] text-[12px]");
+  iElement.parent(deleteButton);
+
+  return mainDiv;
+}
+
+// Top (Left) Menu Button functions
 let topMenu = null;
 let selectedTopMenuButton = null;
 
@@ -170,7 +233,7 @@ function setSelectedMenuButton(buttonId = null) {
     });
   }
 
-  unCheckAll();
+  unSelectAllObjects();
   closeExportMenu();
   closeFloatingCanvasMenus();
 }
@@ -182,9 +245,15 @@ function setMenuMousePressed(buttonId = null) {
   }
 }
 
-// Window offset
-let windowOffset = { x: 0, y: 0 };
-let globalWindowOffset = { x: 0, y: 0 };
+// Extra Menu functions
+function closeFloatingCanvasMenus() {
+  if (contextMenu) contextMenu.hide();
+
+  if (states.some((state) => state.input.visible)) {
+    createHistory();
+    states.forEach((state) => (state.input.visible = false));
+  }
+}
 
 // Export functions
 let exportButton = null;
@@ -225,13 +294,20 @@ function exportAsPNG() {
   cnvIsFocused = "menu";
 }
 
+function exportAsJSON() {
+  let dmt = createJSONExportObj();
+
+  saveJSON(dmt, "state-machine.json");
+  closeExportMenu();
+
+  cnvIsFocused = "menu";
+}
+
+// JSON functions
 function compareJSONObjects(obj1, obj2) {
-  console.log("A");
   if (obj1.globalScaleFactor !== obj2.globalScaleFactor) return false;
-  console.log("B");
   if (obj1.states.length !== obj2.states.length || obj1.links.length !== obj2.links.length) return false;
 
-  console.log("C");
   for (let i = 0; i < obj1.states.length; i++) {
     if (
       obj1.states[i].id !== obj2.states[i].id ||
@@ -246,24 +322,18 @@ function compareJSONObjects(obj1, obj2) {
   }
 
   for (let i = 0; i < obj1.links.length; i++) {
-    console.log("D");
     if (obj1.links[i].isSelfLink !== obj2.links[i].isSelfLink) return false;
 
     if (!obj1.links[i].isSelfLink) {
-      console.log("E");
       if (obj1.links[i].rules.length !== obj2.links[i].rules.length) return false;
 
-      console.log("F");
       let comparedRules = obj1.links[i].rules.every((rule, index) => JSON.stringify(rule.label) === JSON.stringify(obj2.links[i].rules[index].label));
 
-      console.log("G", comparedRules);
       if (obj1.links[i].stateA !== obj2.links[i].stateA || obj1.links[i].stateB !== obj2.links[i].stateB || !comparedRules) return false;
 
-      console.log("H");
       if (obj1.links[i].hasCircle !== obj2.links[i].hasCircle) return false;
 
       if (obj1.links[i].hasCircle) {
-        console.log("I");
         if (
           obj1.links[i].startX !== obj2.links[i].startX ||
           obj1.links[i].startY !== obj2.links[i].startY ||
@@ -277,32 +347,25 @@ function compareJSONObjects(obj1, obj2) {
         )
           return false;
       } else {
-        console.log("J");
         if (obj1.links[i].startX !== obj2.links[i].startX || obj1.links[i].startY !== obj2.links[i].startY || obj1.links[i].endX !== obj2.links[i].endX || obj1.links[i].endY !== obj2.links[i].endY)
           return false;
       }
     } else {
-      console.log("K");
       if (obj1.links[i].rules.length !== obj2.links[i].rules.length) return false;
 
-      console.log("L");
       let comparedRules = obj1.links[i].rules.every((rule, index) => JSON.stringify(rule.label) === JSON.stringify(obj2.links[i].rules[index].label));
 
-      console.log("M", comparedRules);
       if (obj1.links[i].state !== obj2.links[i].state || !comparedRules || obj1.links[i].anchorAngle !== obj2.links[i].anchorAngle) return false;
     }
   }
 
-  console.log("N");
   if ((obj1.initialStateLink && !obj2.initialStateLink) || (!obj1.initialStateLink && obj2.initialStateLink)) return false;
 
-  console.log("O");
   if (obj1.initialStateLink) {
     if (obj1.initialStateLink.state !== obj2.initialStateLink.state || obj1.initialStateLink.deltaX !== obj2.initialStateLink.deltaX || obj1.initialStateLink.deltaY !== obj2.initialStateLink.deltaY)
       return false;
   }
 
-  console.log("P");
   return true;
 }
 
@@ -370,29 +433,21 @@ function createJSONExportObj() {
   return dmt;
 }
 
-function exportAsJSON() {
-  let dmt = createJSONExportObj();
-
-  saveJSON(dmt, "state-machine.json");
-  closeExportMenu();
-
-  cnvIsFocused = "menu";
-}
-
 // Import file
 let inputFile = null;
 let importButton = null;
 
 function createCanvasStatesFromOBJ(obj) {
   globalScaleFactor = obj.globalScaleFactor;
-  if (slider) slider.value(globalScaleFactor);
+  if (scalingCanvasSlider) scalingCanvasSlider.value(globalScaleFactor);
+
   states = [];
   links = [];
   startLink = null;
 
   for (let i = 0; i < obj.states.length; i++) {
     let state = obj.states[i];
-    states.push(new State(state.id, state.x, state.y, stateRadius, globalScaleFactor));
+    states.push(new State(state.id, state.x, state.y, stateRadius));
     states[states.length - 1].isStartState = state.isStartState;
     states[states.length - 1].isEndState = state.isEndState;
     states[states.length - 1].isRejectState = state.isRejectState;
@@ -436,18 +491,64 @@ function handleInputFile(file) {
   inputFile.value("");
 }
 
-// History
-let history = []; // Up to 10 saves;
-let historyIndex = 0;
-const maxHistory = 10;
-
-function closeFloatingCanvasMenus() {
-  if (contextMenuObj) contextMenuObj.mainDiv.hide();
-
-  if (states.some((state) => state.input.visible)) {
-    createHistory();
-    states.forEach((state) => (state.input.visible = false));
+// Context menu functions
+function closeContextMenuWhenClickngOutside() {
+  // Click outside context menu
+  if (contextMenu) {
+    if (mouseX < contextMenu.position().x || mouseX > contextMenu.position().x + contextMenu.width || mouseY < contextMenu.position().y || mouseY > contextMenu.position().y + contextMenu.height) {
+      contextMenu.hide();
+    }
   }
+}
+
+// History functions
+let history = [];
+let currentHistoryIndex = 0; // Current index of history
+const maxHistory = 10; // Up to 10 saves
+
+function compareStatesOfHistory(index = -1) {
+  let realIndex = index === -1 ? currentHistoryIndex : index;
+  let currentState = structuredClone(createJSONExportObj());
+  let stateOnIndex = structuredClone(history[realIndex]);
+
+  return { isEqual: compareJSONObjects(currentState, stateOnIndex), currentState: currentState };
+}
+
+function createHistory() {
+  let { isEqual, currentState } = compareStatesOfHistory();
+
+  if (!isEqual) {
+    // Remove all history after current index
+    history = history.slice(0, currentHistoryIndex + 1);
+
+    // Check if history is full
+    if (history.length >= maxHistory) {
+      history.shift();
+      currentHistoryIndex--;
+    }
+
+    history.push(currentState);
+    currentHistoryIndex++;
+  }
+}
+
+// Other functions
+function reCalculateCanvasPositions() {
+  // Resize canvas
+  let canvasContainer = select("#canvas-container");
+  let canvasWidth = canvasContainer.elt.offsetWidth;
+  let canvasHeight = canvasContainer.elt.offsetHeight;
+  resizeCanvas(canvasWidth, canvasHeight);
+
+  // Set window offset
+  globalWindowOffset = cnv.position();
+}
+
+// Load files
+let mathFont = null;
+
+function preload() {
+  mathFont = loadFont("../fonts/cmunbi.ttf");
 }
 
 // Main functions
@@ -469,52 +570,45 @@ function setup() {
   canvasContainer.parent(playgroundContainer);
 
   // Create canvas
-  cnv = createCanvas(700, 500);
+  cnv = createCanvas(600, 400);
   cnv.style("border-radius", "5px");
   cnv.parent("canvas-container");
   cnv.elt.addEventListener("contextmenu", (event) => event.preventDefault());
   cnv.mousePressed(mousePressedOnCanvas);
   cnv.mouseReleased(mouseReleasedOnCanvas);
-  cnv.doubleClicked(doubleClick);
+  cnv.mouseMoved(mouseDraggedOnCanvas);
+  cnv.doubleClicked(doubleClickOnCanvas);
 
   // Create bottom menu
   let bottomMenu = createBottomMenu();
   bottomMenu.parent(playgroundContainer);
 
-  // Resize canvas
-  let canvasWidth = canvasContainer.elt.offsetWidth;
-  let canvasHeight = canvasContainer.elt.offsetHeight;
-  resizeCanvas(canvasWidth - 40, canvasHeight - 100);
+  // Set canvas initial position and size
+  reCalculateCanvasPositions();
 
-  // Set window offset
-  globalWindowOffset = cnv.position();
+  // Just for testing
+  states.push(new State(states.length, 150 / globalScaleFactor, 200 / globalScaleFactor, stateRadius));
+  states.push(new State(states.length, 450 / globalScaleFactor, 200 / globalScaleFactor, stateRadius));
 
-  states.push(new State(states.length, 150 / globalScaleFactor, 200 / globalScaleFactor, stateRadius, globalScaleFactor));
-  states.push(new State(states.length, 450 / globalScaleFactor, 200 / globalScaleFactor, stateRadius, globalScaleFactor));
-
-  // Activate default button
-  setSelectedMenuButton("select");
+  // Activate default button when starting
+  setSelectedMenuButton("addLink");
   cnvIsFocused = "canvas";
 
   // Create slider
-  slider = select("#scalingCanvas");
-
-  createContextMenu();
-
-  if (contextMenuObj.mainDiv) {
-    contextMenuObj.mainDiv.hide();
-  }
+  scalingCanvasSlider = select("#scalingCanvasSlider");
+  contextMenu = createContextMenu();
 
   // First save on history
   history.push(createJSONExportObj());
 }
 
-function reCalculateDoomPositions() {
-  windowOffset = cnv.position();
-  globalWindowOffset = cnv.position();
-}
-
 function draw() {
+  // Set properties
+  reCalculateCanvasPositions();
+  globalScaleFactor = scalingCanvasSlider.value();
+  background(255);
+
+  // Check if canvas is focused
   if (cnvIsFocused === "outside") {
     cnv.style("opacity", "0.9");
     cnv.style("border", "none");
@@ -524,23 +618,59 @@ function draw() {
     cnv.style("opacity", "1");
   }
 
-  // Check if mouse outside canvas
-  if (mouseX < 0 || mouseX > width || mouseY < 0 || mouseY > height) {
-    mouseReleasedOnCanvas();
+  // Move canvas
+  if (mouseIsPressed && ((keyIsDown(CONTROL) && mouseButton === LEFT) || mouseButton === CENTER || selectedTopMenuButton === "move")) {
+    moveCanvas();
   }
 
-  reCalculateDoomPositions();
-  background(255);
+  // Call Create link Function to low the delay
+  createLink();
 
-  if ((isMouseLeftPressed && keyIsPressed && keyCode === CONTROL) || mouseButton === CENTER || (selectedTopMenuButton === "move" && isMouseLeftPressed)) moveCanvas();
+  // Remove links that has no rules
+  for (let i = 0; i < links.length; i++) {
+    if (!links[i].transitionBox.selected && links[i].transitionBox.rules.length === 0) {
+      links[i].transitionBox.remove();
+      links.splice(i, 1);
+      i--;
+    }
+  }
 
-  // Slider -------
-  globalScaleFactor = slider.value();
-  // --------------
+  // Set objects hovering
+  unHoverAllObjects();
+  let hoveredObject = getFirstSelectedObject(mouseX, mouseY, false);
+  if (hoveredObject) hoveredObject.object.hovering = hoveredObject.object.containsPoint(mouseX, mouseY);
 
-  let hoveredObject = checkFirstSelectedObject((x = mouseX), (y = mouseY), (uncheckObjects = false));
+  // Draw objects in order to create "layers"
+  for (let i = 0; i < links.length; i++) {
+    links[i].update(globalScaleFactor);
+    links[i].draw();
+    links[i].transitionBox.update(globalScaleFactor);
+    links[i].transitionBox.draw();
+  }
 
-  if (isMouseWithShiftPressed) {
+  if (startLink) {
+    startLink.update(globalScaleFactor);
+    startLink.draw();
+  }
+
+  for (let i = 0; i < states.length; i++) {
+    states[i].update(globalScaleFactor);
+    states[i].draw();
+  }
+
+  if (currentLink) currentLink.draw();
+
+  // To prevent states from overlapping
+  stateRepulse();
+}
+
+// Action functions
+function createLink() {
+  if ((selectedTopMenuButton !== "select" && selectedTopMenuButton !== "addLink") || links.some((link) => link.transitionBox.selected)) return;
+
+  if (mouseIsPressed && mouseButton === LEFT && (keyIsDown(SHIFT) || selectedTopMenuButton === "addLink")) {
+    let hoveredObject = getFirstSelectedObject(mouseX, mouseY, false);
+
     if ((hoveredObject && hoveredObject.object instanceof State) || !hoveredObject) {
       if (hoveredObject && !(currentLink instanceof TemporaryLink && lastSelectedState !== states[hoveredObject.index])) {
         currentLink = new SelfLink(states[hoveredObject.index]);
@@ -548,19 +678,19 @@ function draw() {
       } else {
         if (lastSelectedState) {
           if (currentLink instanceof SelfLink && !currentLink.from) {
-            currentLink = new TemporaryLink(globalScaleFactor);
+            currentLink = new TemporaryLink();
             currentLink.from = lastSelectedState.closestPointOnCircle(mouseX, mouseY);
           }
         } else {
           if (!currentLink || !currentLink.from) {
-            currentLink = new TemporaryLink(globalScaleFactor);
+            currentLink = new TemporaryLink();
             currentLink.from = { x: mouseX, y: mouseY };
           }
         }
       }
     } else {
       if (currentLink instanceof SelfLink) {
-        currentLink = new TemporaryLink(globalScaleFactor);
+        currentLink = new TemporaryLink();
         currentLink.from = lastSelectedState.closestPointOnCircle(mouseX, mouseY);
       }
     }
@@ -577,70 +707,15 @@ function draw() {
       }
     }
   }
-
-  // Remove links that has no rules
-  for (let i = 0; i < links.length; i++) {
-    if (!links[i].transitionBox.selected && links[i].transitionBox.rules.length === 0) {
-      links[i].transitionBox.remove();
-      links.splice(i, 1);
-      i--;
-    }
-  }
-  // ----------
-
-  unHoverAll();
-  if (hoveredObject) hoveredObject.object.hovering = hoveredObject.object.containsPoint(mouseX, mouseY);
-
-  for (let i = 0; i < links.length; i++) {
-    links[i].update(globalScaleFactor);
-    links[i].draw();
-    links[i].transitionBox.update(globalScaleFactor);
-    links[i].transitionBox.draw();
-  }
-
-  if (startLink) {
-    startLink.update(globalScaleFactor);
-    startLink.draw();
-  }
-
-  if (currentLink) {
-    currentLink.globalScaleFactor = globalScaleFactor;
-    currentLink.draw();
-  }
-
-  stateRepulse();
-  for (let i = 0; i < states.length; i++) {
-    states[i].update(globalScaleFactor);
-    states[i].draw();
-  }
-
-  // Selecting area
-
-  // if (selectedArea.x1 && selectedArea.y1) {
-  //   selectedArea.x2 = mouseX - selectedArea.x1;
-  //   selectedArea.y2 = mouseY - selectedArea.y1;
-  // }
-
-  // if (selectedArea.x1 && selectedArea.y1 && selectedArea.x2 && selectedArea.y2) {
-  //   push();
-  //   fill(0, 0, 255, 25);
-  //   stroke(0, 0, 255, 50);
-  //   strokeWeight(2);
-  //   rect(selectedArea.x1, selectedArea.y1, selectedArea.x2, selectedArea.y2);
-  //   pop();
-  // }
-  // ---------------
 }
 
-// End of main functions
-
 function setInitialState(index = null, props = null) {
+  let linkSize = 80 * globalScaleFactor;
   if (index === null) {
     if (selectedObject && selectedObject.object instanceof State) {
-      let from = { x: selectedObject.object.x - 80 * globalScaleFactor, y: selectedObject.object.y };
-      startLink = new StartLink(selectedObject.object, from, globalScaleFactor);
+      let start = { x: selectedObject.object.x - linkSize, y: selectedObject.object.y };
+      startLink = new StartLink(selectedObject.object, start);
       startLink.selected = true;
-      startLink.setAnchorPoint(from.x, from.y);
 
       for (let i = 0; i < states.length; i++) {
         selectedObject.object.isStartState = false;
@@ -650,14 +725,13 @@ function setInitialState(index = null, props = null) {
       cnvIsFocused = "export-menu";
     }
   } else {
-    let from = { x: states[index].x - 80 * globalScaleFactor, y: states[index].y };
+    let start = { x: states[index].x - linkSize, y: states[index].y };
     if (props) {
-      from = { x: states[index].x + props.deltaX, y: states[index].y + props.deltaY };
+      start = { x: states[index].x + props.deltaX, y: states[index].y + props.deltaY };
     }
 
-    startLink = new StartLink(states[index], from, globalScaleFactor, props);
+    startLink = new StartLink(states[index], start);
     startLink.selected = true;
-    startLink.setAnchorPoint(from.x, from.y);
 
     for (let i = 0; i < states.length; i++) {
       states[i].isStartState = false;
@@ -666,7 +740,7 @@ function setInitialState(index = null, props = null) {
     states[index].isStartState = true;
   }
 
-  contextMenuObj.mainDiv.hide();
+  contextMenu.hide();
 }
 
 function toggleFinalState() {
@@ -676,7 +750,7 @@ function toggleFinalState() {
     selectedObject.object.isEndState = !selectedObject.object.isEndState;
   }
 
-  contextMenuObj.mainDiv.hide();
+  contextMenu.hide();
 }
 
 function renameState() {
@@ -686,215 +760,12 @@ function renameState() {
     selectedObject.object.input.visible = true;
   }
 
-  contextMenuObj.mainDiv.hide();
-}
-
-function createContextMenu() {
-  contextMenuObj = {
-    mainDiv: createDiv(""),
-    ul: createElement("ul"),
-    li: [],
-  };
-
-  contextMenuObj.mainDiv.elt.addEventListener("contextmenu", (event) => event.preventDefault());
-  contextMenuObj.mainDiv.class("absolute bg-[#222831] py-2 rounded-[5px] flex flex-col gap-1 drop-shadow-md");
-  contextMenuObj.ul.class("w-full");
-  contextMenuObj.ul.parent(contextMenuObj.mainDiv);
-
-  let options = [
-    {
-      label: "Estado inicial",
-      mousePressed: () => {
-        if (selectedObject) {
-          let index = states.findIndex((state) => state.id === selectedObject.object.id);
-          setInitialState(index);
-          createHistory();
-        }
-      },
-    },
-    {
-      label: "Definir como Final",
-      mousePressed: () => {
-        toggleFinalState();
-        createHistory();
-      },
-    },
-    {
-      label: "Definir como Rejeição",
-      mousePressed: () => console.log("Definir como Rejeição"),
-    },
-    {
-      label: "Copiar",
-      mousePressed: () => console.log("Copiar"),
-    },
-    {
-      label: "Colar",
-      mousePressed: () => console.log("Colar"),
-    },
-    {
-      label: "Renomear Estado",
-      mousePressed: () => renameState(),
-    },
-    {
-      label: "Deletar",
-      mousePressed: () => {
-        cnvIsFocused = "export-menu";
-        deleteObject();
-        contextMenuObj.mainDiv.hide();
-      },
-    },
-  ];
-
-  contextMenuObj.li.push(createElement("li"));
-  contextMenuObj.li[contextMenuObj.li.length - 1].class("w-full");
-  contextMenuObj.li[contextMenuObj.li.length - 1].parent(contextMenuObj.ul);
-  let button = createButton(options[0].label);
-  button.class("w-full py-1 px-3 text-left hover:bg-[#1762a3] text-white text-sm");
-  button.parent(contextMenuObj.li[contextMenuObj.li.length - 1]);
-  button.mousePressed(options[0].mousePressed);
-
-  contextMenuObj.li.push(createElement("li"));
-  contextMenuObj.li[contextMenuObj.li.length - 1].class("w-full");
-  contextMenuObj.li[contextMenuObj.li.length - 1].parent(contextMenuObj.ul);
-  button = createButton(options[1].label);
-  button.id("finalStateButton");
-  button.class("w-full py-1 px-3 text-left hover:bg-[#1762a3] text-white text-sm");
-  button.parent(contextMenuObj.li[contextMenuObj.li.length - 1]);
-  button.mousePressed(options[1].mousePressed);
-
-  // contextMenuObj.li.push(createElement("li"));
-  // contextMenuObj.li[contextMenuObj.li.length - 1].class("w-full");
-  // contextMenuObj.li[contextMenuObj.li.length - 1].parent(contextMenuObj.ul);
-  // button = createButton(options[2].label);
-  // button.class("w-full py-1 px-3 text-left hover:bg-[#1762a3] text-white text-sm");
-  // button.parent(contextMenuObj.li[contextMenuObj.li.length - 1]);
-  // button.mousePressed(options[2].mousePressed);
-
-  // Separator
-  // contextMenuObj.li.push(createElement("div"));
-  // contextMenuObj.li[contextMenuObj.li.length - 1].class("w-full pt-1 mt-1 border-t-[1px] border-t-[#36404e]");
-  // contextMenuObj.li[contextMenuObj.li.length - 1].parent(contextMenuObj.ul);
-
-  // contextMenuObj.li.push(createElement("li"));
-  // contextMenuObj.li[contextMenuObj.li.length - 1].class("w-full");
-  // contextMenuObj.li[contextMenuObj.li.length - 1].parent(contextMenuObj.li[contextMenuObj.li.length - 2]);
-  // button = createButton(options[3].label);
-  // button.class("w-full py-1 px-3 text-left hover:bg-[#1762a3] text-white text-sm flex items-center justify-between");
-  // button.parent(contextMenuObj.li[contextMenuObj.li.length - 1]);
-  // button.mousePressed(options[3].mousePressed);
-
-  // let span = createElement("span");
-  // span.class("text-[#676768] text-[12px]");
-  // span.html("Ctrl+C");
-  // span.parent(button);
-
-  // contextMenuObj.li.push(createElement("li"));
-  // contextMenuObj.li[contextMenuObj.li.length - 1].class("w-full");
-  // contextMenuObj.li[contextMenuObj.li.length - 1].parent(contextMenuObj.li[contextMenuObj.li.length - 3]);
-
-  // button = createButton(options[4].label);
-  // button.class("w-full py-1 px-3 text-left hover:bg-[#1762a3] text-white text-sm flex items-center justify-between");
-  // button.parent(contextMenuObj.li[contextMenuObj.li.length - 1]);
-  // button.mousePressed(options[4].mousePressed);
-
-  // span = createElement("span");
-  // span.class("text-[#676768] text-[12px]");
-  // span.html("Ctrl+V");
-  // span.parent(button);
-
-  // contextMenuObj.li.push(createElement("li"));
-  // contextMenuObj.li[contextMenuObj.li.length - 1].class("w-full");
-  // contextMenuObj.li[contextMenuObj.li.length - 1].parent(contextMenuObj.ul);
-  // End Separator
-
-  button = createButton(options[5].label);
-  button.class("w-full py-1 px-3 text-left hover:bg-[#1762a3] text-white text-sm flex items-center justify-between  pt-1 mt-1 border-t-[1px] border-t-[#36404e]");
-  button.parent(contextMenuObj.li[contextMenuObj.li.length - 1]);
-  button.mousePressed(options[5].mousePressed);
-
-  contextMenuObj.li.push(createElement("li"));
-  contextMenuObj.li[contextMenuObj.li.length - 1].class("w-full");
-  contextMenuObj.li[contextMenuObj.li.length - 1].parent(contextMenuObj.ul);
-
-  button = createButton(options[6].label);
-  button.class("w-full py-1 px-3 text-left hover:bg-[#1762a3] text-white text-sm flex items-center justify-between  pt-1 mt-1 border-t-[1px] border-t-[#36404e]");
-  button.parent(contextMenuObj.li[contextMenuObj.li.length - 1]);
-  button.mousePressed(options[6].mousePressed);
-
-  let iElement = createElement("i");
-  iElement.class("fa-solid fa-trash text-[#676768] text-[12px]");
-  iElement.parent(button);
-
-  contextMenuObj.mainDiv.position(windowOffset.x + 100, windowOffset.y + 100);
-}
-
-function getNewStateId() {
-  let maxId = 0;
-  for (let i = 0; i < states.length; i++) {
-    if (states[i].id > maxId) maxId = states[i].id;
-  }
-
-  return maxId + 1;
-}
-
-function stateRepulse(repulseFactor = 30.0) {
-  repulseFactor *= globalScaleFactor;
-
-  for (let i = 0; i < states.length; i++) {
-    for (let j = 0; j < states.length - 1; j++) {
-      if (i == j) continue;
-      let distance = dist(states[i].x, states[i].y, states[j].x, states[j].y);
-      if (distance < stateRadius * 2 * globalScaleFactor + repulseFactor) {
-        let angle = atan2(states[j].y - states[i].y, states[j].x - states[i].x);
-        let pushX = cos(angle) * repulseFactor;
-        let pushY = sin(angle) * repulseFactor;
-        states[i].x -= pushX;
-        states[i].y -= pushY;
-        states[j].x += pushX;
-        states[j].y += pushY;
-      }
-    }
-  }
-}
-
-function unHoverAll() {
-  states.forEach((state) => (state.hovering = false));
-  links.forEach((link) => {
-    link.hovering = false;
-    link.transitionBox.hovering = false;
-  });
-  if (startLink) startLink.hovering = false;
-}
-
-function unCheckAll() {
-  states.forEach((state) => (state.selected = false));
-  links.forEach((link) => {
-    link.selected = false;
-    link.transitionBox.selected = false;
-  });
-  if (startLink) startLink.selected = false;
-}
-
-function checkFirstSelectedObject(x = mouseX, y = mouseY, uncheckObjects = true) {
-  if (uncheckObjects) unCheckAll();
-
-  for (let i = states.length - 1; i >= 0; i--) {
-    if (states[i].containsPoint(x, y)) return { object: states[i], index: i };
-  }
-
-  if (startLink && startLink.containsPoint(x, y)) return { object: startLink, index: -1 };
-
-  for (let i = links.length - 1; i >= 0; i--) {
-    if (links[i].containsPoint(x, y)) return { object: links[i], index: i };
-  }
-
-  return null;
+  contextMenu.hide();
 }
 
 function deleteObject() {
   if (selectedObject) {
     if (selectedObject.object instanceof State) {
-      // Need to continue later
       for (let i = 0; i < links.length; i++) {
         if (links[i] instanceof Link) {
           if (links[i].stateA.id === selectedObject.object.id || links[i].stateB.id === selectedObject.object.id) {
@@ -923,37 +794,35 @@ function deleteObject() {
     }
 
     selectedObject = null;
-
     createHistory();
   }
 }
 
-function selectObjectsInsideArea() {
+function getNewStateId() {
+  let maxId = 0;
   for (let i = 0; i < states.length; i++) {
-    if (states[i].x > selectedArea.x1 && states[i].x < selectedArea.x1 + selectedArea.x2 && states[i].y > selectedArea.y1 && states[i].y < selectedArea.y1 + selectedArea.y2) {
-      states[i].selected = true;
-    }
+    if (states[i].id > maxId) maxId = states[i].id;
   }
+
+  return maxId + 1;
 }
 
-function moveCanvas(x = mouseX, y = mouseY) {
-  if (cnvIsFocused === "outside") return;
+function stateRepulse(repulseFactor = 2 * stateRadius + 2) {
+  repulseFactor *= globalScaleFactor;
 
-  let ratioFactor = 3;
-  movingCanvasOffset.x = (movingCanvasOffset.x - (x - pmouseX)) / ratioFactor;
-  movingCanvasOffset.y = (movingCanvasOffset.y - (y - pmouseY)) / ratioFactor;
-}
-
-function closeContextMenuWhenClickngOutside() {
-  // Click outside context menu
-  if (contextMenuObj.mainDiv) {
-    if (
-      mouseX < contextMenuObj.mainDiv.position().x ||
-      mouseX > contextMenuObj.mainDiv.position().x + contextMenuObj.mainDiv.width ||
-      mouseY < contextMenuObj.mainDiv.position().y ||
-      mouseY > contextMenuObj.mainDiv.position().y + contextMenuObj.mainDiv.height
-    ) {
-      contextMenuObj.mainDiv.hide();
+  for (let i = 0; i < states.length; i++) {
+    for (let j = 0; j < states.length - 1; j++) {
+      if (i == j) continue;
+      let distance = dist(states[i].x, states[i].y, states[j].x, states[j].y);
+      if (distance < repulseFactor) {
+        let angle = atan2(states[j].y - states[i].y, states[j].x - states[i].x);
+        let pushX = cos(angle) * 5;
+        let pushY = sin(angle) * 5;
+        states[i].x -= pushX;
+        states[i].y -= pushY;
+        states[j].x += pushX;
+        states[j].y += pushY;
+      }
     }
   }
 }
@@ -962,42 +831,72 @@ function checkAnyStateInputVisible() {
   return states.some((state) => state.input.visible);
 }
 
+function unHoverAllObjects() {
+  states.forEach((state) => (state.hovering = false));
+  links.forEach((link) => {
+    link.hovering = false;
+    link.transitionBox.hovering = false;
+  });
+  if (startLink) startLink.hovering = false;
+}
+
+function unSelectAllObjects() {
+  states.forEach((state) => (state.selected = false));
+  links.forEach((link) => {
+    link.selected = false;
+    link.transitionBox.selected = false;
+  });
+  if (startLink) startLink.selected = false;
+}
+
+function getFirstSelectedObject(x = mouseX, y = mouseY, uncheckObjects = true) {
+  if (uncheckObjects) unSelectAllObjects();
+
+  for (let i = states.length - 1; i >= 0; i--) {
+    if (states[i].containsPoint(x, y)) return { object: states[i], index: i };
+  }
+
+  if (startLink && startLink.containsPoint(x, y)) return { object: startLink, index: -1 };
+
+  for (let i = links.length - 1; i >= 0; i--) {
+    if (links[i].containsPoint(x, y)) return { object: links[i], index: i };
+  }
+
+  return null;
+}
+
+function moveCanvas(x = mouseX, y = mouseY) {
+  if (cnvIsFocused === "outside") return;
+
+  const ratioFactor = 3;
+  movingCanvasOffset.x = (movingCanvasOffset.x - (x - pmouseX)) / ratioFactor;
+  movingCanvasOffset.y = (movingCanvasOffset.y - (y - pmouseY)) / ratioFactor;
+}
+
+// Mouse Canvas functions
 function mousePressedOnCanvas() {
   if (cnvIsFocused === "outside") return;
 
+  closeExportMenu();
   closeContextMenuWhenClickngOutside();
 
-  closeExportMenu();
-  isMouseLeftPressed = mouseButton === LEFT;
-  isMouseRightPressed = mouseButton === RIGHT;
+  if (mouseButton === CENTER || keyIsDown(SHIFT) || keyIsDown(CONTROL) || selectedTopMenuButton === "move") return;
 
-  if (isMouseLeftPressed) {
-    states.forEach((state) => state.mousePressed());
+  selectedObject = getFirstSelectedObject();
+  if (selectedObject) selectedObject.object.selected = true;
 
-    selectedObject = checkFirstSelectedObject();
-    if (!isShiftPressed && !selectedObject && selectedTopMenuButton === "select") {
-      if (!selectedArea.x1 && !selectedArea.y1) {
-        selectedArea.x1 = mouseX;
-        selectedArea.y1 = mouseY;
-      }
-    }
-
-    if ((isMouseLeftPressed && keyIsPressed && keyCode === CONTROL) || mouseButton === CENTER || (selectedTopMenuButton === "move" && isMouseLeftPressed)) return;
-
-    if (!canDoCanvaActions) {
-      isMouseWithShiftPressed = false;
-      isShiftPressed = false;
-      currentLink = null;
-      return;
-    }
-    // If add state menu button is selected
-    if (selectedTopMenuButton === "addState" && !checkFirstSelectedObject(mouseX, mouseY, false)) {
+  if (mouseButton === LEFT) {
+    // Add State on Click Canvas
+    if (selectedTopMenuButton === "addState" && !selectedObject) {
       if (checkAnyStateInputVisible()) createHistory();
+      unSelectAllObjects();
 
-      unCheckAll();
+      // Check if mouse is over a link transition box
       if (links.some((link) => link.transitionBox.containsPoint(mouseX, mouseY))) return;
+
+      // Create new state
       let stateID = getNewStateId();
-      states.push(new State(stateID, mouseX / globalScaleFactor, mouseY / globalScaleFactor, stateRadius, globalScaleFactor));
+      states.push(new State(stateID, mouseX / globalScaleFactor, mouseY / globalScaleFactor, stateRadius));
       states[states.length - 1].selected = true;
       selectedObject = { object: states[states.length - 1], index: states.length - 1 };
 
@@ -1005,42 +904,171 @@ function mousePressedOnCanvas() {
       return;
     }
 
-    isMouseWithShiftPressed = isMouseLeftPressed && (isShiftPressed || selectedTopMenuButton === "addLink");
-    if (isShiftPressed || selectedTopMenuButton === "addLink") return;
-
-    selectedObject = checkFirstSelectedObject();
-
-    if (selectedObject) {
-      selectedObject.object.selected = true;
-    }
-
-    // Delete button
+    // Delete Object on Click Canvas
     if (selectedTopMenuButton === "delete") {
       if (checkAnyStateInputVisible()) createHistory();
 
       deleteObject();
     }
 
-    for (let i = 0; i < links.length; i++) {
-      links[i].transitionBox.mousePressed();
-    }
-  } else {
-    selectedObject = checkFirstSelectedObject();
+    states.forEach((state) => {
+      state.mousePressed();
+    });
+
+    links.forEach((link) => {
+      link.transitionBox.mousePressed();
+    });
+  } else if (mouseButton === RIGHT) {
     if (selectedObject && selectedObject.object instanceof State) {
-      selectedObject.object.selected = true;
-      contextMenuObj.mainDiv.position(windowOffset.x + mouseX, windowOffset.y + mouseY);
+      contextMenu.position(globalWindowOffset.x + selectedObject.object.x, globalWindowOffset.y + selectedObject.object.y);
 
       if (selectedObject.object.isEndState) {
-        select("#finalStateButton").html("Definir como Não Final");
+        select("#set-final-state").html("Definir como Não Final");
       } else {
-        select("#finalStateButton").html("Definir como Final");
+        select("#set-final-state").html("Definir como Final");
       }
 
-      contextMenuObj.mainDiv.show();
+      contextMenu.show();
     }
   }
+
+  return false;
 }
 
+function mouseReleasedOnCanvas() {
+  movingCanvasOffset.x = 0;
+  movingCanvasOffset.y = 0;
+
+  if (currentLink instanceof TemporaryLink) {
+    if (currentLink.from && currentLink.to) {
+      let hoveredObject = getFirstSelectedObject();
+
+      if (hoveredObject && hoveredObject.object instanceof State) {
+        // Check if the link is coming from another state
+        if (lastSelectedState && lastSelectedState instanceof State) {
+          let from = lastSelectedState;
+          let to = hoveredObject.object.id !== lastSelectedState.id ? hoveredObject.object : null;
+
+          if (from && to && !links.some((link) => link instanceof Link && link.stateA.id === from.id && link.stateB.id === to.id)) {
+            links.push(new Link(from, to));
+            links[links.length - 1].transitionBox.selected = true;
+
+            // Extra: if already exists a link to -> from, turn links curved
+            if (links.some((link) => link instanceof Link && link.stateA.id === to.id && link.stateB.id === from.id)) {
+              let link = links.find((link) => link instanceof Link && link.stateA.id === to.id && link.stateB.id === from.id);
+              if (link) {
+                if (link.perpendicularPart === 0) {
+                  link.perpendicularPart = 10;
+                  links[links.length - 1].perpendicularPart = 10;
+                }
+              }
+            }
+          } else {
+            let link = links.find((link) => link instanceof Link && link.stateA.id === from.id && link.stateB.id === to.id);
+            if (link) {
+              link.transitionBox.selected = true;
+              console.log("Link already exists");
+            }
+          }
+        } else {
+          startLink = new StartLink(hoveredObject.object, currentLink.from);
+          startLink.selected = true;
+
+          for (let i = 0; i < states.length; i++) states[i].isStartState = false;
+          hoveredObject.object.isStartState = true;
+
+          createHistory();
+        }
+      } else {
+        hoveredObject = null;
+        selectedObject = null;
+        lastSelectedState = null;
+        currentLink = null;
+      }
+    }
+  } else if (currentLink instanceof SelfLink) {
+    unSelectAllObjects();
+
+    // Check if already exists a link to itself
+    if (!links.some((link) => link instanceof SelfLink && link.state.id === lastSelectedState.id)) {
+      links.push(new SelfLink(currentLink.state, true));
+      links[links.length - 1].transitionBox.selected = true;
+    } else {
+      let link = links.find((link) => link instanceof SelfLink && link.state.id === lastSelectedState.id);
+      if (link) {
+        console.log("SelfLink already exists");
+        link.transitionBox.selected = true;
+      }
+    }
+  }
+
+  currentLink = null;
+  lastSelectedState = null;
+
+  if (startLink) startLink.mouseReleased();
+
+  links.forEach((link) => {
+    link.mouseReleased();
+  });
+
+  states.forEach((state) => {
+    state.mouseReleased();
+  });
+
+  return false;
+}
+
+function mouseDraggedOnCanvas() {
+  if (!mouseIsPressed || mouseButton !== LEFT || cnvIsFocused === "outside") return false;
+
+  links.forEach((link) => {
+    link.mouseDragged();
+  });
+
+  if (startLink) startLink.mouseDragged();
+
+  return false;
+}
+
+function doubleClickOnCanvas() {
+  let hoveredObject = getFirstSelectedObject(mouseX, mouseY, false);
+
+  links.forEach((link) => {
+    link.transitionBox.doubleClick();
+    link.doubleClick();
+  });
+
+  if (links.some((link) => link.transitionBox.containsPoint(mouseX, mouseY))) return;
+
+  if (selectedTopMenuButton === "select") {
+    if (!hoveredObject) {
+      console.log("Double clicked on empty space");
+      let stateID = getNewStateId();
+      states.push(new State(stateID, mouseX / globalScaleFactor, mouseY / globalScaleFactor, stateRadius));
+      states[states.length - 1].selected = true;
+      selectedObject = { object: states[states.length - 1], index: states.length - 1 };
+
+      createHistory();
+    } else {
+      if (hoveredObject.object instanceof State) {
+        console.log("Double clicked on state");
+        contextMenu.position(globalWindowOffset.x + hoveredObject.object.x, globalWindowOffset.y + hoveredObject.object.y);
+
+        if (hoveredObject.object.isEndState) {
+          select("#set-final-state").html("Definir como Não Final");
+        } else {
+          select("#set-final-state").html("Definir como Final");
+        }
+
+        contextMenu.show();
+      }
+    }
+  }
+
+  return false;
+}
+
+// General mouse functions
 function mousePressed() {
   if ((mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) || cnvIsFocused === "menu" || cnvIsFocused === "export-menu") {
     // Click happened inside the canvas
@@ -1050,19 +1078,14 @@ function mousePressed() {
     cnv.elt.focus();
   } else {
     // Click happened outside the canvas
-    cnvIsFocused = "outside";
+    unHoverAllObjects();
+    unSelectAllObjects();
     mouseReleasedOnCanvas();
-    selectedArea.x1 = null;
-    selectedArea.y1 = null;
-    selectedArea.x2 = null;
-    selectedArea.y2 = null;
-    selectObjectsInsideArea();
-    selectedObject = null;
-    unCheckAll();
-    unHoverAll();
     setSelectedMenuButton(null);
-    closeExportMenu();
     closeContextMenuWhenClickngOutside();
+    closeExportMenu();
+    cnvIsFocused = "outside";
+    selectedObject = null;
 
     // Hide all states inputs
     closeFloatingCanvasMenus();
@@ -1073,260 +1096,97 @@ function mousePressed() {
       links[i].transitionBox.selectedRuleIndex = -1;
     }
   }
+
+  // return false;
 }
 
-function compareStatesOfHistory(index = -1) {
-  let realIndex = index === -1 ? historyIndex : index;
-  let currentState = structuredClone(createJSONExportObj());
-  let stateOnIndex = structuredClone(history[realIndex]);
+function mouseReleased() {
+  if (cnvIsFocused === "outside") return false;
+  if (!links.some((link) => link.transitionBox.selected)) {
+    mouseReleasedOnCanvas();
+  }
 
-  return { isEqual: compareJSONObjects(currentState, stateOnIndex), currentState: currentState };
+  return false;
 }
 
-function createHistory() {
-  let { isEqual, currentState } = compareStatesOfHistory();
-
-  if (!isEqual) {
-    // Remove all history after current index
-    history = history.slice(0, historyIndex + 1);
-
-    // Check if history is full
-    if (history.length >= maxHistory) {
-      history.shift();
-      historyIndex--;
-    }
-
-    history.push(currentState);
-    historyIndex++;
-    console.log("History Length: ", history.length);
-  } else {
-    console.log("States are equal");
-  }
-}
-
-function mouseReleasedOnCanvas() {
-  mouseButton = 0;
-  isMouseLeftPressed = false;
-  isMouseRightPressed = false;
-  movingCanvasOffset.x = 0;
-  movingCanvasOffset.y = 0;
-
-  selectObjectsInsideArea();
-  selectedArea.x1 = null;
-  selectedArea.y1 = null;
-  selectedArea.x2 = null;
-  selectedArea.y2 = null;
-
-  if (currentLink instanceof TemporaryLink) {
-    if (currentLink.from && currentLink.to) {
-      if (lastSelectedState) {
-        // Check if already exists a link between the two states
-        let hoveredObject = checkFirstSelectedObject();
-
-        if (!(lastSelectedState instanceof State) || !(hoveredObject && hoveredObject.object instanceof State)) {
-          selectedObject = null;
-          lastSelectedState = null;
-          currentLink = null;
-          hoveredObject = null;
-          isMouseWithShiftPressed = false;
-          isMouseLeftPressed = false;
-
-          return;
-        }
-
-        if (hoveredObject && !links.some((link) => link instanceof Link && link.stateA.id === lastSelectedState.id && link.stateB.id === states[hoveredObject.index].id)) {
-          let from = lastSelectedState;
-          let to = null;
-
-          if (hoveredObject && states[hoveredObject.index].id !== lastSelectedState.id) {
-            to = states[hoveredObject.index];
-          }
-
-          if (from && to) {
-            links.push(new Link(from, to));
-            links[links.length - 1].selected = true;
-            links[links.length - 1].transitionBox.selected = true;
-
-            // Extra: if already exists a link to -> from
-            if (links.some((link) => link.stateA.id === to.id && link.stateB.id === from.id)) {
-              let link = links.find((link) => link.stateA.id === to.id && link.stateB.id === from.id);
-              if (link) {
-                if (link.perpendicularPart === 0) {
-                  link.perpendicularPart = 10;
-                  links[links.length - 1].perpendicularPart = 10;
-                }
-              }
-            }
-          }
-        } else {
-          console.log("Link already exists");
-          let link = links.find((link) => link.stateA.id === lastSelectedState.id && link.stateB.id === states[hoveredObject.index].id);
-          if (link) {
-            link.selected = true;
-            link.transitionBox.selected = true;
-          }
-        }
-      } else {
-        let hoveredObject = checkFirstSelectedObject();
-        if (hoveredObject && hoveredObject.object instanceof State) {
-          stateOnIndex = states[hoveredObject.index];
-          startLink = new StartLink(stateOnIndex, currentLink.from, globalScaleFactor);
-          startLink.selected = true;
-
-          for (let i = 0; i < states.length; i++) {
-            states[i].isStartState = false;
-          }
-
-          stateOnIndex.isStartState = true;
-
-          createHistory();
-        }
-      }
-    }
-  } else if (currentLink instanceof SelfLink) {
-    // Check if already exists a link to itself
-    unCheckAll();
-    if (!links.some((link) => link instanceof SelfLink && link.state.id === lastSelectedState.id)) {
-      links.push(new SelfLink(currentLink.state, true));
-      links[links.length - 1].selected = true;
-      links[links.length - 1].transitionBox.selected = true;
-    } else {
-      console.log("Link already exists");
-      let link = links.find((link) => link instanceof SelfLink && link.state.id === lastSelectedState.id);
-      if (link) {
-        link.selected = true;
-        link.transitionBox.selected = true;
-      }
-    }
+function mouseMoved() {
+  if (mouseX < 0 || mouseX > width || mouseY < 0 || mouseY > height) {
+    mouseReleasedOnCanvas();
   }
 
-  isMouseWithShiftPressed = false;
-  isShiftPressed = false;
-
-  currentLink = null;
-  lastSelectedState = null;
-
-  if (startLink) startLink.mouseReleased();
-
-  for (let i = 0; i < links.length; i++) {
-    links[i].mouseReleased();
-  }
-
-  for (let i = 0; i < states.length; i++) {
-    states[i].mouseReleased();
-  }
+  return false;
 }
 
 function mouseWheel(event) {
-  if (cnvIsFocused === "outside") return;
+  if (cnvIsFocused === "outside") return false;
 
   if (event.delta > 0) {
     globalScaleFactor = max(globalScaleFactor - 0.25, 0.5);
-    slider.value(globalScaleFactor);
+    scalingCanvasSlider.value(globalScaleFactor);
   } else {
     globalScaleFactor = min(globalScaleFactor + 0.25, 2.0);
-    slider.value(globalScaleFactor);
+    scalingCanvasSlider.value(globalScaleFactor);
   }
+
+  return false;
 }
 
+// Keyboard functions
 function keyPressed() {
-  if (cnvIsFocused === "outside") return;
+  if (cnvIsFocused === "outside") return false;
 
   if (
     (keyCode === 49 || keyCode === 50 || keyCode === 51 || keyCode === 52 || keyCode === 53) &&
-    !isShiftPressed &&
-    !(selectedObject && selectedObject.object instanceof State) &&
-    !(selectedObject && selectedObject.object instanceof Link) &&
-    !(selectedObject && selectedObject.object instanceof SelfLink) &&
+    !keyIsDown(SHIFT) &&
+    !states.some((state) => state.input.visible) &&
     !links.some((link) => link.transitionBox.selected)
   ) {
     let index = keyCode - 49;
-    let buttons = ["select", "addState", "addLink", "move", "delete"];
+    let buttons = ["select", "move", "addState", "addLink", "delete"];
     setSelectedMenuButton(buttons[index]);
-    return;
+    return false;
   }
 
-  if (keyCode === SHIFT) isShiftPressed = true;
-  if (keyCode === DELETE) {
-    deleteObject();
-  }
+  if (keyCode === DELETE) deleteObject();
 
-  for (let i = 0; i < states.length; i++) {
-    states[i].keyPressed();
-  }
+  states.forEach((state) => {
+    state.keyPressed();
+  });
 
-  for (let i = 0; i < links.length; i++) {
-    links[i].transitionBox.keyPressed();
-  }
+  links.forEach((link) => {
+    link.transitionBox.keyPressed();
+  });
 
   // Check ctrl + z
   if (keyIsDown(CONTROL) && (key == "z" || key == "Z")) {
-    let newIndex = max(historyIndex - 1, 0);
+    let newIndex = max(currentHistoryIndex - 1, 0);
 
-    if (newIndex !== historyIndex) {
-      historyIndex = newIndex;
-      createCanvasStatesFromOBJ(history[historyIndex]);
+    if (newIndex !== currentHistoryIndex) {
+      currentHistoryIndex = newIndex;
+      createCanvasStatesFromOBJ(history[currentHistoryIndex]);
     }
   }
 
   // Check ctrl + y
   if (keyIsDown(CONTROL) && (key == "y" || key == "Y")) {
-    let newIndex = min(historyIndex + 1, history.length - 1);
+    let newIndex = min(currentHistoryIndex + 1, history.length - 1);
 
-    if (newIndex !== historyIndex) {
-      historyIndex = newIndex;
-      createCanvasStatesFromOBJ(history[historyIndex]);
+    if (newIndex !== currentHistoryIndex) {
+      currentHistoryIndex = newIndex;
+      createCanvasStatesFromOBJ(history[currentHistoryIndex]);
     }
   }
+
+  // return false;
 }
 
 function keyReleased() {
-  if (keyCode === SHIFT) {
-    isShiftPressed = false;
-    isMouseWithShiftPressed = false;
+  if (keyCode === SHIFT && selectedTopMenuButton !== "addLink") {
     currentLink = null;
   } else if (keyCode === CONTROL) {
     movingCanvasOffset.x = 0;
     movingCanvasOffset.y = 0;
   }
-}
 
-function doubleClick() {
-  let overState = checkFirstSelectedObject(mouseX, mouseY, false);
-
-  for (let i = 0; i < links.length; i++) {
-    links[i].transitionBox.doubleClick();
-    links[i].doubleClick();
-  }
-
-  if (links.some((link) => link.transitionBox.containsPoint(mouseX, mouseY))) return;
-
-  if (!overState) {
-    console.log("Double clicked on empty space");
-    let stateID = getNewStateId();
-    states.push(new State(stateID, mouseX / globalScaleFactor, mouseY / globalScaleFactor, stateRadius, globalScaleFactor));
-    states[states.length - 1].selected = true;
-    selectedObject = { object: states[states.length - 1], index: states.length - 1 };
-
-    createHistory();
-  } else {
-    if (overState.object instanceof State) {
-      console.log("Double clicked on state");
-      overState.object.isEndState = !overState.object.isEndState;
-
-      createHistory();
-    }
-  }
-}
-
-function mouseDragged() {
-  // if (cnvIsFocused === "outside") return;
-
-  for (let i = 0; i < links.length; i++) {
-    links[i].mouseDragged();
-  }
-
-  if (startLink) startLink.mouseDragged();
-
-  return false;
+  // return false;
 }
