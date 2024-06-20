@@ -544,13 +544,6 @@ function reCalculateCanvasPositions() {
   globalWindowOffset = cnv.position();
 }
 
-// Load files
-let mathFont = null;
-
-function preload() {
-  mathFont = loadFont("../fonts/cmunbi.ttf");
-}
-
 // Main functions
 function setup() {
   // Import tex map

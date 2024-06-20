@@ -1,9 +1,8 @@
 function calculateTextWidth(xx = -1000, yy = -1000, substring = [], fontSize = 12 * globalScaleFactor) {
   push();
   textAlign(CENTER, CENTER);
-  textFont("Arial");
+  textFont("cmunbi");
   textSize(fontSize);
-  textStyle(BOLD);
 
   let startX = xx;
 
@@ -55,9 +54,8 @@ function calculateTextWidth(xx = -1000, yy = -1000, substring = [], fontSize = 1
 function drawText(xx = -1000, yy = -1000, substring = [], fontSize = 12 * globalScaleFactor) {
   push();
   textAlign(LEFT, CENTER);
-  textFont("Arial");
+  textFont("cmunbi");
   textSize(fontSize);
-  textStyle(BOLD);
 
   for (let i = 0; i < substring.length; i++) {
     let newString = substring[i];
