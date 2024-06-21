@@ -48,7 +48,7 @@ class State {
       createHistory();
     }
 
-    if (this.selected && selectedTopMenuButton === "select") {
+    if (this.selected && selectedLeftSidebarButton === "select") {
       this.dragging = true;
       this.offsetX = this.x - mouseX;
       this.offsetY = this.y - mouseY;
@@ -103,14 +103,11 @@ class State {
   draw() {
     push();
     // Different fill based on status
-    strokeWeight(1 * this.scaleFactor);
-    if (this.hovering) stroke(17, 82, 140);
-    if (this.selected) {
-      stroke(23, 98, 163);
-      strokeWeight(2 * this.scaleFactor);
-    }
+    strokeWeight(2 * this.scaleFactor);
+    fill("#1762A3");
+    stroke("#ffffff");
+    if (this.selected) fill("#11528C");
 
-    fill(255);
     ellipseMode(CENTER);
     ellipse(this.x, this.y, this.r * 2, this.r * 2);
     if (this.isEndState) ellipse(this.x, this.y, this.r * 1.6, this.r * 1.6);
@@ -119,8 +116,7 @@ class State {
 
     push();
     // Different fill based on status
-    if (this.hovering) fill(17, 82, 140);
-    if (this.selected) fill(23, 98, 163);
+    fill("#ffffff");
 
     drawText(this.x - (this.input.textWidth / 2) * globalScaleFactor, this.y, this.input.allSubstrings, this.input.fontSize * globalScaleFactor);
     pop();

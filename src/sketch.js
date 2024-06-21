@@ -3,6 +3,7 @@ let cnv = null;
 let cnvIsFocused = "outside";
 let globalWindowOffset = { x: 0, y: 0 };
 let texMap = {};
+let fs = false;
 
 // Current status
 let isCanvasMoving = false;
@@ -29,65 +30,125 @@ let movingCanvasOffset = { x: 0, y: 0 };
 let contextMenu = null;
 
 // Creating HTML Elements
-function createTopMenu() {
-  let topMenu = createDiv("");
-  topMenu.id("top-menu");
-  topMenu.class("w-full flex justify-between items-end");
+function createMTDoomWrapper() {
+  let mtDoomWrapper = createDiv("");
+  mtDoomWrapper.id("mt-doom-wrapper");
+  mtDoomWrapper.class("w-full max-w-[60rem] max-h-[40rem] flex flex-col justify-center rounded-[.5rem] overflow-hidden");
 
-  let leftMenu = createDiv("");
-  leftMenu.id("left-menu");
-  leftMenu.class("flex items-center gap-1");
-  leftMenu.parent(topMenu);
+  let topToolbar = createTopToolbar();
+  topToolbar.parent(mtDoomWrapper);
 
-  let rightMenu = createDiv("");
-  rightMenu.id("right-menu");
-  rightMenu.class("flex items-center gap-1");
-  rightMenu.parent(topMenu);
+  let playgroundContainer = createDiv("");
+  playgroundContainer.id("playground-container");
+  playgroundContainer.class("w-full h-full border-r-[.5rem] border-b-[.5rem] border-[--color-white] flex overflow-hidden");
+  playgroundContainer.parent(mtDoomWrapper);
 
-  // Left menu buttons
-  const leftMenuButtons = [
-    { id: "select", icon: "fa-solid fa-arrow-pointer", mousePressed: () => setMenuMousePressed("select") },
-    { id: "move", icon: "fa-solid fa-arrows-up-down-left-right", mousePressed: () => setMenuMousePressed("move") },
-    { id: "addState", icon: "fa-solid fa-circle-plus", mousePressed: () => setMenuMousePressed("addState") },
-    { id: "addLink", icon: "fa-solid fa-arrow-right", mousePressed: () => setMenuMousePressed("addLink") },
-    { id: "delete", icon: "fa-solid fa-trash", mousePressed: () => setMenuMousePressed("delete") },
+  let leftSidebar = createCanvasLeftSidebar();
+  leftSidebar.parent(playgroundContainer);
+
+  let canvasContainer = createDiv("");
+  canvasContainer.id("canvas-container");
+  canvasContainer.class("flex-grow");
+  canvasContainer.parent(playgroundContainer);
+
+  return mtDoomWrapper;
+}
+
+function createTopToolbar() {
+  let topToolbar = createDiv("");
+  topToolbar.id("top-toolbar");
+  topToolbar.class("w-full flex justify-between items-center bg-[--color-white] px-[2rem] py-[1rem]");
+
+  let leftDiv = createDiv("");
+  leftDiv.parent(topToolbar);
+  leftDiv.class("flex items-center jusi gap-1");
+
+  // let collapseButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>keyboard_arrow_right</span>");
+  // collapseButton.class("w-[2.6rem] h-[2.6rem] text-white flex items-center justify-center transition-transform rotate-90");
+  // collapseButton.parent(leftDiv);
+  // collapseButton.mousePressed(() => {
+  //   collapseButton.toggleClass("rotate-90");
+  //   let playgroundContainer = select("#playground-container");
+  //   if (playgroundContainer.height === 0) {
+  //     playgroundContainer.style("height", "40rem");
+  //   } else {
+  //     playgroundContainer.style("height", "0");
+  //   }
+  // });
+
+  let mtTitle = createElement("p", "Máquina de Estados 01");
+  mtTitle.class("text-[1.4rem] text-white font-bold");
+  mtTitle.parent(leftDiv);
+
+  let rightDiv = createDiv("");
+  rightDiv.class("flex items-center gap-1");
+  rightDiv.parent(topToolbar);
+
+  let fullscreenButton = createButton("<span class='material-symbols-outlined' style='font-size: 1.8rem'>fullscreen</span>");
+  fullscreenButton.class("w-[2.6rem] h-[2.6rem] text-white flex items-center justify-center");
+  fullscreenButton.id("fullscreenButton");
+  fullscreenButton.parent(rightDiv);
+  fullscreenButton.mousePressed(() => (fs = !fs));
+
+  return topToolbar;
+}
+
+function createCanvasLeftSidebar() {
+  let leftSidebar = createDiv("");
+  leftSidebar.id("top-menu");
+  leftSidebar.class("bg-[--color-white] flex flex-col justify-between items-center");
+
+  let topArea = createDiv("");
+  topArea.id("topAreau");
+  topArea.class("flex flex-col items-center");
+  topArea.parent(leftSidebar);
+
+  let bottomMenu = createDiv("");
+  bottomMenu.id("bottom-menu");
+  bottomMenu.class("flex flex-col items-center");
+  bottomMenu.parent(leftSidebar);
+
+  // Top menu buttons
+  const topMenuButtons = [
+    { id: "select", icon: "arrow_selector_tool", mousePressed: () => setMenuMousePressed("select") },
+    { id: "move", icon: "open_with", mousePressed: () => setMenuMousePressed("move") },
+    { id: "addState", icon: "add_circle", mousePressed: () => setMenuMousePressed("addState") },
+    { id: "addLink", icon: "arrow_right_alt", mousePressed: () => setMenuMousePressed("addLink") },
+    { id: "delete", icon: "close", mousePressed: () => setMenuMousePressed("delete") },
+    // { id: "cleanAll", icon: "remove_selection", mousePressed: () => setMenuMousePressed("delete") },
   ];
 
-  leftMenuButtons.forEach((btn) => {
-    let button = createButton("");
+  topMenuButtons.forEach((btn) => {
+    let button = createButton(`<span class='material-symbols-outlined' style='font-size: 1.6rem'>${btn.icon}</span>`);
     button.id(btn.id);
-    button.class("w-[40px] h-[40px] rounded-[5px] text-white bg-[#4e5f6f] hover:bg-[#526a7c] transition-colors");
+    button.class("w-[5rem] h-[3.6rem] flex items-center justify-center text-white hover:bg-[--color-primary] transition-colors");
     button.mousePressed(btn.mousePressed);
-    button.parent(leftMenu);
-
-    let icon = createElement("i");
-    icon.class(btn.icon);
-    icon.parent(button);
+    button.parent(topArea);
   });
 
-  // Right imput file hidden
+  // Bottom input file hidden
   inputFile = createFileInput(handleInputFile);
   inputFile.attribute("accept", ".json");
   inputFile.position(-1000, -1000);
   inputFile.hide();
 
-  // Right menu buttons
-  let importButton = createButton("Importar");
-  importButton.class("w-[100px] py-1 rounded-[5px] text-white bg-[#4e5f6f] hover:bg-[#526a7c] transition-colors");
+  // Bottom menu buttons
+  let importButton = createButton("<span class='material-symbols-outlined' style='font-size: 1.6rem'>upload_file</span>");
+  importButton.class("w-[5rem] h-[3.6rem] flex items-center justify-center text-white hover:bg-[--color-primary] transition-colors");
   importButton.id("import-button");
   importButton.mousePressed(() => {
     cnvIsFocused = "menu";
     closeFloatingCanvasMenus();
     inputFile.elt.click();
   });
-  importButton.parent(rightMenu);
+  importButton.parent(bottomMenu);
 
   let exportMenuWrapper = createDiv("");
   exportMenuWrapper.class("relative");
-  exportMenuWrapper.parent(rightMenu);
+  exportMenuWrapper.parent(bottomMenu);
 
-  let exportButton = createButton("Exportar");
-  exportButton.class("w-[100px] py-1 rounded-[5px] text-white bg-[#4e5f6f] hover:bg-[#526a7c] transition-colors");
+  let exportButton = createButton("<span class='material-symbols-outlined' style='font-size: 1.6rem'>download</span>");
+  exportButton.class("w-[5rem] h-[3.6rem] flex items-center justify-center text-white hover:bg-[--color-primary] transition-colors");
   exportButton.id("export-button-toggle");
   exportButton.mousePressed(() => toggleExportMenu());
   exportButton.parent(exportMenuWrapper);
@@ -109,13 +170,31 @@ function createTopMenu() {
   exportAsJSONButton.mousePressed(() => exportAsJSON());
   exportAsJSONButton.parent(floatingExportMenu);
 
-  return topMenu;
+  let zoomInButton = createButton("<span class='material-symbols-outlined' style='font-size: 1.8rem'>zoom_in</span>");
+  zoomInButton.class("w-[5rem] h-[3.6rem] flex items-center justify-center text-white hover:bg-[--color-primary] transition-colors");
+  zoomInButton.id("zoom-in");
+  zoomInButton.mousePressed(() => {
+    cnvIsFocused = "menu";
+    scalingCanvasSlider.value(Number(scalingCanvasSlider.value()) + 0.25);
+  });
+  zoomInButton.parent(bottomMenu);
+
+  let zoomOutButton = createButton("<span class='material-symbols-outlined' style='font-size: 1.8rem'>zoom_out</span>");
+  zoomOutButton.class("w-[5rem] h-[3.6rem] flex items-center justify-center text-white hover:bg-[--color-primary] transition-colors");
+  zoomOutButton.id("zoom-out");
+  zoomOutButton.mousePressed(() => {
+    cnvIsFocused = "menu";
+    scalingCanvasSlider.value(Number(scalingCanvasSlider.value()) - 0.25);
+  });
+  zoomOutButton.parent(bottomMenu);
+
+  return leftSidebar;
 }
 
 function createBottomMenu() {
   let bottomMenu = createDiv("");
   bottomMenu.id("bottom-menu");
-  bottomMenu.class("w-full flex items-center justify-end gap-1");
+  bottomMenu.class("w-full flex items-center justify-end gap-1 hidden");
 
   let span1 = createElement("span");
   span1.class("text-white");
@@ -134,7 +213,7 @@ function createBottomMenu() {
   input.input(() => {
     cnvIsFocused = "canvas";
     globalScaleFactor = input.value();
-    if (!selectedTopMenuButton) setSelectedMenuButton("select");
+    if (!selectedLeftSidebarButton) setSelectedMenuButton("select");
   });
 
   let span2 = createElement("span");
@@ -151,14 +230,14 @@ function createContextMenu() {
   mainDiv.hide();
   mainDiv.parent("playground-container");
   mainDiv.elt.addEventListener("contextmenu", (event) => event.preventDefault());
-  mainDiv.class("absolute bg-[#222831] py-2 rounded-[5px] flex flex-col gap-1 drop-shadow-md");
+  mainDiv.class("absolute bg-[#222831] py-[.8rem] rounded-[5px] flex flex-col gap-[.5rem] drop-shadow-md");
   mainDiv.position(globalWindowOffset.x + 100, globalWindowOffset.y + 100);
 
   let options = [
     {
       label: "Estado inicial",
       id: "set-initial-state",
-      class: "w-full py-1 px-3 text-left hover:bg-[#1762a3] text-white text-sm",
+      class: "w-full py-[.5rem] px-[1rem] text-left hover:bg-[--color-primary-hover] transition-colors text-white text-[1.2rem]",
       mousePressed: () => {
         if (selectedObject) {
           let index = states.findIndex((state) => state.id === selectedObject.object.id);
@@ -170,7 +249,7 @@ function createContextMenu() {
     {
       label: "Definir como Final",
       id: "set-final-state",
-      class: "w-full py-1 px-3 text-left hover:bg-[#1762a3] text-white text-sm",
+      class: "w-full py-[.5rem] px-[1rem] text-left hover:bg-[--color-primary-hover] transition-colors text-white text-[1.2rem]",
       mousePressed: () => {
         toggleFinalState();
         createHistory();
@@ -179,13 +258,13 @@ function createContextMenu() {
     {
       label: "Renomear Estado",
       id: "rename-state",
-      class: "w-full py-1 px-3 text-left hover:bg-[#1762a3] text-white text-sm flex items-center justify-between  pt-1 mt-1 border-t-[1px] border-t-[#36404e]",
+      class: "w-full py-[.5rem] px-[1rem] text-left hover:bg-[--color-primary-hover] transition-colors text-white text-[1.2rem] flex items-center justify-between border-y-[1px] border-[#36404e]",
       mousePressed: () => renameState(),
     },
     {
       label: "Deletar",
       id: "delete-state",
-      class: "w-full py-1 px-3 text-left hover:bg-[#1762a3] text-white text-sm flex items-center justify-between  pt-1 mt-1 border-t-[1px] border-t-[#36404e]",
+      class: "w-full py-[.5rem] px-[1rem] text-left hover:bg-[--color-primary-hover] transition-colors text-white text-[1.2rem] flex items-center justify-between",
       mousePressed: () => {
         cnvIsFocused = "export-menu";
         deleteObject();
@@ -211,25 +290,21 @@ function createContextMenu() {
 }
 
 // Top (Left) Menu Button functions
-let topMenu = null;
-let selectedTopMenuButton = null;
+let leftSidebar = null;
+let selectedLeftSidebarButton = null;
 
 function setSelectedMenuButton(buttonId = null) {
-  selectedTopMenuButton = buttonId;
-  let leftMenuButtons = selectAll("#left-menu button");
+  selectedLeftSidebarButton = buttonId;
+  let leftMenuButtons = selectAll("#top-menu button");
 
   if (leftMenuButtons) {
     if (buttonId) {
       let selectedButton = select(`#${buttonId}`);
-      if (buttonId === "delete") {
-        selectedButton.class("w-[40px] h-[40px] rounded-[5px] text-white bg-red-600 hover:bg-red-700 transition-colors");
-      } else {
-        selectedButton.class("w-[40px] h-[40px] rounded-[5px] text-white bg-[var(--selected-color)] hover:bg-[--selected-hover-color] transition-colors");
-      }
+      selectedButton.addClass("bg-[--color-primary-hover]");
     }
 
     leftMenuButtons.forEach((btn) => {
-      if (btn.elt.id !== buttonId) btn.class("w-[40px] h-[40px] rounded-[5px] text-white bg-[#4e5f6f] hover:bg-[#526a7c] transition-colors");
+      if (btn.elt.id !== buttonId) btn.removeClass("bg-[--color-primary-hover]");
     });
   }
 
@@ -271,7 +346,7 @@ function closeExportMenu() {
 
 function toggleExportMenu() {
   cnvIsFocused = "export-menu";
-  if (!selectedTopMenuButton) setSelectedMenuButton("select");
+  if (!selectedLeftSidebarButton) setSelectedMenuButton("select");
 
   closeFloatingCanvasMenus();
 
@@ -549,22 +624,11 @@ function setup() {
   // Import tex map
   texMap = getTexMap();
 
-  // Create playground container
-  let playgroundContainer = createDiv("");
-  playgroundContainer.id("playground-container");
-  playgroundContainer.class("flex flex-col gap-[6px]");
-
-  // Create main html elements
-  topMenu = createTopMenu();
-  topMenu.parent(playgroundContainer);
-
-  let canvasContainer = createDiv("");
-  canvasContainer.id("canvas-container");
-  canvasContainer.parent(playgroundContainer);
+  // Create mtDoomWrapper
+  createMTDoomWrapper();
 
   // Create canvas
   cnv = createCanvas(600, 400);
-  cnv.style("border-radius", "5px");
   cnv.parent("canvas-container");
   cnv.elt.addEventListener("contextmenu", (event) => event.preventDefault());
   cnv.mousePressed(mousePressedOnCanvas);
@@ -574,7 +638,7 @@ function setup() {
 
   // Create bottom menu
   let bottomMenu = createBottomMenu();
-  bottomMenu.parent(playgroundContainer);
+  // bottomMenu.parent("body");
 
   // Set canvas initial position and size
   reCalculateCanvasPositions();
@@ -596,23 +660,39 @@ function setup() {
 }
 
 function draw() {
+  let mtDoomWrapper = select("#mt-doom-wrapper");
+  let playgroundContainer = select("#playground-container");
+  let fullscreenButton = select("#fullscreenButton");
+
+  if (fs) {
+    mtDoomWrapper.addClass("min-w-[100vw]");
+    mtDoomWrapper.addClass("min-h-[100vh]");
+    playgroundContainer.addClass("flex-grow");
+    fullscreenButton.html("<span class='material-symbols-outlined' style='font-size: 1.8rem'>fullscreen_exit</span>");
+  } else {
+    mtDoomWrapper.removeClass("min-w-[100vw]");
+    mtDoomWrapper.removeClass("min-h-[100vh]");
+    playgroundContainer.removeClass("flex-grow");
+    fullscreenButton.html("<span class='material-symbols-outlined' style='font-size: 1.8rem'>fullscreen</span>");
+  }
+
   // Set properties
   reCalculateCanvasPositions();
   globalScaleFactor = scalingCanvasSlider.value();
-  background(255);
+  background("#181a1e");
 
   // Check if canvas is focused
-  if (cnvIsFocused === "outside") {
-    cnv.style("opacity", "0.9");
-    cnv.style("border", "none");
-    cnv.style("box-shadow", "none");
-  } else {
-    cnv.style("box-shadow", "0px 0px 3px 3px rgba(23, 98, 163, 1)");
-    cnv.style("opacity", "1");
-  }
+  // if (cnvIsFocused === "outside") {
+  //   cnv.style("opacity", "0.9");
+  //   cnv.style("border", "none");
+  //   cnv.style("box-shadow", "none");
+  // } else {
+  //   cnv.style("box-shadow", "0px 0px 3px 3px rgba(23, 98, 163, 1)");
+  //   cnv.style("opacity", "1");
+  // }
 
   // Move canvas
-  if (mouseIsPressed && ((keyIsDown(CONTROL) && mouseButton === LEFT) || mouseButton === CENTER || selectedTopMenuButton === "move")) {
+  if (mouseIsPressed && ((keyIsDown(CONTROL) && mouseButton === LEFT) || mouseButton === CENTER || selectedLeftSidebarButton === "move")) {
     moveCanvas();
   }
 
@@ -659,9 +739,9 @@ function draw() {
 
 // Action functions
 function createLink() {
-  if ((selectedTopMenuButton !== "select" && selectedTopMenuButton !== "addLink") || links.some((link) => link.transitionBox.selected)) return;
+  if ((selectedLeftSidebarButton !== "select" && selectedLeftSidebarButton !== "addLink") || links.some((link) => link.transitionBox.selected)) return;
 
-  if (mouseIsPressed && mouseButton === LEFT && (keyIsDown(SHIFT) || selectedTopMenuButton === "addLink")) {
+  if (mouseIsPressed && mouseButton === LEFT && (keyIsDown(SHIFT) || selectedLeftSidebarButton === "addLink")) {
     let hoveredObject = getFirstSelectedObject(mouseX, mouseY, false);
 
     if ((hoveredObject && hoveredObject.object instanceof State) || !hoveredObject) {
@@ -873,14 +953,14 @@ function mousePressedOnCanvas() {
   closeExportMenu();
   closeContextMenuWhenClickngOutside();
 
-  if (mouseButton === CENTER || keyIsDown(SHIFT) || keyIsDown(CONTROL) || selectedTopMenuButton === "move") return;
+  if (mouseButton === CENTER || keyIsDown(SHIFT) || keyIsDown(CONTROL) || selectedLeftSidebarButton === "move") return;
 
   selectedObject = getFirstSelectedObject();
   if (selectedObject) selectedObject.object.selected = true;
 
   if (mouseButton === LEFT) {
     // Add State on Click Canvas
-    if (selectedTopMenuButton === "addState" && !selectedObject) {
+    if (selectedLeftSidebarButton === "addState" && !selectedObject) {
       if (checkAnyStateInputVisible()) createHistory();
       unSelectAllObjects();
 
@@ -898,7 +978,7 @@ function mousePressedOnCanvas() {
     }
 
     // Delete Object on Click Canvas
-    if (selectedTopMenuButton === "delete") {
+    if (selectedLeftSidebarButton === "delete") {
       if (checkAnyStateInputVisible()) createHistory();
 
       deleteObject();
@@ -1033,7 +1113,7 @@ function doubleClickOnCanvas() {
 
   if (links.some((link) => link.transitionBox.containsPoint(mouseX, mouseY))) return;
 
-  if (selectedTopMenuButton === "select") {
+  if (selectedLeftSidebarButton === "select") {
     if (!hoveredObject) {
       console.log("Double clicked on empty space");
       let stateID = getNewStateId();
@@ -1065,7 +1145,7 @@ function doubleClickOnCanvas() {
 function mousePressed() {
   if ((mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) || cnvIsFocused === "menu" || cnvIsFocused === "export-menu") {
     // Click happened inside the canvas
-    if (!selectedTopMenuButton && cnvIsFocused !== "export-menu") setSelectedMenuButton("select");
+    if (!selectedLeftSidebarButton && cnvIsFocused !== "export-menu") setSelectedMenuButton("select");
 
     cnvIsFocused = "canvas";
     cnv.elt.focus();
@@ -1174,7 +1254,7 @@ function keyPressed() {
 }
 
 function keyReleased() {
-  if (keyCode === SHIFT && selectedTopMenuButton !== "addLink") {
+  if (keyCode === SHIFT && selectedLeftSidebarButton !== "addLink") {
     currentLink = null;
   } else if (keyCode === CONTROL) {
     movingCanvasOffset.x = 0;

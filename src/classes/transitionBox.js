@@ -77,22 +77,22 @@ class TransitionBox {
     this.mainDiv = createDiv();
     this.mainDiv.parent(this.parent);
     this.mainDiv.position(this.x + globalWindowOffset.x, this.y + globalWindowOffset.y);
-    this.mainDiv.class("flex flex-col gap-[2px] items-center justify-center absolute z-[100]");
+    this.mainDiv.class("flex flex-col gap-[.2rem] items-center justify-center absolute z-[100]");
     this.boxDiv = createDiv();
     this.boxDiv.parent(this.mainDiv);
-    this.boxDiv.class("bg-[#222831] p-2 rounded-[5px] flex flex-col gap-1 drop-shadow-md");
+    this.boxDiv.class("bg-[#222831] p-[1rem] rounded-[.5rem] flex flex-col gap-[.5rem] drop-shadow-md");
 
     // Inputs
     this.inputDiv = createDiv();
     this.inputDiv.parent(this.boxDiv);
-    this.inputDiv.class("flex items-center justify-center gap-1");
+    this.inputDiv.class("flex items-center justify-center gap-[.5rem]");
     this.readInput = createInput();
     this.readInput.parent(this.inputDiv);
-    this.readInput.class("px-2 py-1 rounded-[3px] focus:outline-none w-[80px] bg-transparent border-2 border-[#1762a3] text-white");
+    this.readInput.class("px-[1rem] py-1 rounded-[.4rem] focus:outline-none w-[8rem] bg-transparent border-2 border-[--color-primary] text-white");
     this.readInput.attribute("placeholder", "Lê");
     this.writeInput = createInput();
     this.writeInput.parent(this.inputDiv);
-    this.writeInput.class("px-2 py-1 rounded-[3px] focus:outline-none w-[80px] bg-transparent border-2 border-[#1762a3] text-white");
+    this.writeInput.class("px-[1rem] py-1 rounded-[.4rem] focus:outline-none w-[8rem] bg-transparent border-2 border-[--color-primary] text-white");
     this.writeInput.attribute("placeholder", "Escreve");
 
     // Buttons
@@ -101,17 +101,17 @@ class TransitionBox {
     this.buttonDiv.class("flex items-center justify-between");
     this.directionButtonDiv = createDiv();
     this.directionButtonDiv.parent(this.buttonDiv);
-    this.directionButtonDiv.class("flex items-center gap-1");
+    this.directionButtonDiv.class("flex items-center gap-[.4rem]");
     this.leftButton = createButton("E");
     this.leftButton.parent(this.directionButtonDiv);
-    this.leftButton.class("w-[35px] h-[35px] text-md text-white font-semibold border-2 border-[#1762a3] rounded-[5px] bg-transparent transition-colors");
+    this.leftButton.class("w-[3rem] h-[3rem] text-[1.2rem] text-white font-semibold border-[.1rem] border-[--color-primary] rounded-[.4rem] bg-transparent transition-colors");
     this.leftButton.id("leftButton");
     this.leftButton.mousePressed(() => this.switchButtons("left"));
 
     this.rightButton = createButton("D");
     this.rightButton.parent(this.directionButtonDiv);
 
-    this.rightButton.class("w-[35px] h-[35px] text-md text-white font-semibold border-2 border-[#1762a3] rounded-[5px] bg-transparent transition-colors");
+    this.rightButton.class("w-[3rem] h-[3rem] text-[1.2rem] text-white font-semibold border-[.1rem] border-[--color-primary] rounded-[5px] bg-transparent transition-colors");
     this.rightButton.id("rightButton");
     this.rightButton.mousePressed(() => this.switchButtons("right"));
 
@@ -123,7 +123,7 @@ class TransitionBox {
     // Label
     this.labelDiv = createDiv();
     this.labelDiv.parent(this.mainDiv);
-    this.labelDiv.class("bg-[#222831] px-3 py-1 rounded-[5px] flex flex-col gap-1 drop-shadow-md");
+    this.labelDiv.class("bg-[#222831] px-[1rem] py-[.2rem] rounded-[5px] flex flex-col gap-1 drop-shadow-md");
     this.labelSpan = createSpan("aasad -> b, D");
     this.labelSpan.parent(this.labelDiv);
     this.labelSpan.class("font-semibold text-white");
@@ -241,13 +241,13 @@ class TransitionBox {
   mousePressed() {
     this.selectedRuleIndex = this.ruleContainsPoint();
 
-    if (this.selectedRuleIndex !== -1 && selectedTopMenuButton === "delete") {
+    if (this.selectedRuleIndex !== -1 && selectedLeftSidebarButton === "delete") {
       this.removeRule();
     }
   }
 
   doubleClick() {
-    if (selectedTopMenuButton !== "select" && selectedTopMenuButton !== "addLink") return;
+    if (selectedLeftSidebarButton !== "select" && selectedLeftSidebarButton !== "addLink") return;
     this.selectedRuleIndex = this.ruleContainsPoint();
     this.selected = this.selectedRuleIndex !== -1;
     this.getRule();
@@ -345,9 +345,9 @@ class TransitionBox {
       let xx = this.rulesX - this.rules[i].width / 2;
 
       push();
-      fill(23, 42, 43);
-      if (this.ruleContainsPoint(mouseX, mouseY) === i) fill(17, 82, 140);
-      if (this.selectedRuleIndex === i) fill(23, 98, 163);
+      fill("#ffffff");
+      if (this.ruleContainsPoint(mouseX, mouseY) === i) fill("#E4E4E4");
+      if (this.selectedRuleIndex === i) fill("#E4E4E4");
 
       drawText(xx, yy, this.rules[i].label, this.ruleFontSize);
       pop();

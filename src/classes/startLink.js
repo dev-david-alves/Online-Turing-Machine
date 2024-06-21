@@ -48,7 +48,7 @@ class StartLink {
   }
 
   mouseDragged() {
-    if (this.hovering && selectedTopMenuButton === "select") {
+    if (this.hovering && selectedLeftSidebarButton === "select") {
       this.dragging = true;
       console.log("Dragging start link");
     }
@@ -75,22 +75,22 @@ class StartLink {
     let stuff = this.getEndPoints();
 
     push();
-    stroke(0, 0, 0);
-    fill(0, 0, 0);
-    strokeWeight(1 * this.scaleFactor);
+    stroke("#ffffff");
+    fill("#ffffff");
+    strokeWeight(2 * this.scaleFactor);
 
     // draw the line
     if (this.hovering) {
-      stroke(17, 82, 140);
-      fill(17, 82, 140);
+      stroke("#E4E4E4");
+      fill("#E4E4E4");
     }
 
     if (this.selected) {
-      strokeWeight(2 * this.scaleFactor);
-      stroke(23, 98, 163);
-      fill(23, 98, 163);
+      stroke("#11528C");
+      fill("#11528C");
     }
 
+    circle(stuff.startX, stuff.startY, 5 * this.scaleFactor);
     line(stuff.startX, stuff.startY, stuff.endX, stuff.endY);
 
     // draw the head of the arrow

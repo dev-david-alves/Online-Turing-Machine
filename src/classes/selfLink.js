@@ -63,7 +63,7 @@ class SelfLink {
   }
 
   mouseDragged() {
-    if (selectedTopMenuButton === "addLink") return;
+    if (selectedLeftSidebarButton === "addLink") return;
 
     if (this.selected) {
       this.dragging = true;
@@ -111,19 +111,18 @@ class SelfLink {
   draw() {
     let stuff = this.getEndPointsAndCircle();
     push();
-    stroke(0, 0, 0);
-    fill(0, 0, 0);
-    strokeWeight(1 * this.scaleFactor);
+    stroke("#ffffff");
+    fill("#ffffff");
+    strokeWeight(2 * this.scaleFactor);
 
     if (this.hovering) {
-      stroke(17, 82, 140);
-      fill(17, 82, 140);
+      stroke("#E4E4E4");
+      fill("#E4E4E4");
     }
 
     if (this.selected) {
-      strokeWeight(2 * this.scaleFactor);
-      stroke(23, 98, 163);
-      fill(23, 98, 163);
+      stroke("#11528C");
+      fill("#11528C");
     }
 
     // draw arc
