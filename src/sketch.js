@@ -33,23 +33,30 @@ let contextMenu = null;
 function createMTDoomWrapper() {
   let mtDoomWrapper = createDiv("");
   mtDoomWrapper.id("mt-doom-wrapper");
-  mtDoomWrapper.class("w-full max-w-[60rem] max-h-[40rem] flex flex-col justify-center rounded-[.5rem] overflow-hidden");
+  mtDoomWrapper.class("w-full max-w-[75rem] max-h-[45rem] flex flex-col justify-center rounded-[.5rem] overflow-hidden");
 
   let topToolbar = createTopToolbar();
   topToolbar.parent(mtDoomWrapper);
 
   let playgroundContainer = createDiv("");
   playgroundContainer.id("playground-container");
-  playgroundContainer.class("w-full h-full border-r-[.5rem] border-b-[.5rem] border-[--color-white] flex overflow-hidden");
+  playgroundContainer.class("relative w-full h-full border-r-[.5rem] border-b-[.5rem] border-[--color-white] flex overflow-hidden");
   playgroundContainer.parent(mtDoomWrapper);
 
   let leftSidebar = createCanvasLeftSidebar();
   leftSidebar.parent(playgroundContainer);
 
+  let mainContent = createDiv("");
+  mainContent.id("main-content");
+  mainContent.class("w-full flex flex-col justify-center relative");
+  mainContent.parent(playgroundContainer);
+
   let canvasContainer = createDiv("");
   canvasContainer.id("canvas-container");
   canvasContainer.class("flex-grow");
-  canvasContainer.parent(playgroundContainer);
+  canvasContainer.parent(mainContent);
+
+  createCanvasBottomMenu().parent(mainContent);
 
   return mtDoomWrapper;
 }
@@ -191,38 +198,211 @@ function createCanvasLeftSidebar() {
   return leftSidebar;
 }
 
-function createBottomMenu() {
+function toggleLabEnvironment() {
+  // let handleBottomMenu = select("#handle-bottom-menu");
+  // handleBottomMenu.toggleClass("hidden");
+  let bottomMenuContent = select("#bottom-menu-content");
+  bottomMenuContent.toggleClass("hidden");
+  bottomMenuContent.toggleClass("pb-[.5rem]");
+}
+
+function createCanvasBottomMenu() {
+  let bottomWrapper = createDiv("");
+  bottomWrapper.class("absolute bottom-0 min-w-full px-[.5rem]");
   let bottomMenu = createDiv("");
   bottomMenu.id("bottom-menu");
-  bottomMenu.class("w-full flex items-center justify-end gap-1 hidden");
+  bottomMenu.class("w-full flex flex-col items-center justify-center gap-[1rem] bg-[--color-white] pt-[.5rem] rounded-t-[1rem]");
+  bottomMenu.parent(bottomWrapper);
 
-  let span1 = createElement("span");
-  span1.class("text-white");
-  span1.html("0.5");
-  span1.parent(bottomMenu);
+  // let maximizeIcon = createElement("span");
+  // maximizeIcon.class("material-symbols-outlined text-white h-0 mb-[1rem]");
+  // maximizeIcon.style("font-size", "2rem");
+  // maximizeIcon.html("maximize");
+  // maximizeIcon.id("handle-bottom-menu");
+  // maximizeIcon.parent(bottomMenu);
 
-  let input = createInput("1");
-  input.id("scalingCanvasSlider");
-  input.attribute("type", "range");
-  input.attribute("min", "0.5");
-  input.attribute("max", "2");
-  input.attribute("step", "0.25");
-  input.attribute("value", "1");
-  input.class("w-[15%] min-w-[75px]");
-  input.parent(bottomMenu);
-  input.input(() => {
-    cnvIsFocused = "canvas";
-    globalScaleFactor = input.value();
-    if (!selectedLeftSidebarButton) setSelectedMenuButton("select");
+  let bottomMenuButtons = createDiv("");
+  bottomMenuButtons.class("flex items center gap-[1rem]");
+  bottomMenuButtons.parent(bottomMenu);
+
+  let buttons = [
+    {
+      icon: `
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 2048 2048">
+        <path fill="white"
+          d="M1859 1758q14 23 21 47t7 51q0 40-15 75t-41 61t-61 41t-75 15H354q-40 0-75-15t-61-41t-41-61t-15-75q0-27 6-51t21-47l569-992q10-14 10-34V128H640V0h768v128h-128v604q0 19 10 35zM896 732q0 53-27 99l-331 577h972l-331-577q-27-46-27-99V128H896zm799 1188q26 0 44-19t19-45q0-10-2-17t-8-16l-164-287H464l-165 287q-9 15-9 33q0 26 18 45t46 19z" />
+      </svg>`,
+      mousePressed: (btn) => {
+        toggleLabEnvironment();
+        if (btn) {
+          btn.toggleClass("bg-[--color-primary]");
+          btn.toggleClass("border-[--color-primary]");
+        }
+      },
+    },
+    // { icon: "lab_panel", mousePressed: () => {} },
+    // { icon: "settings", mousePressed: () => {} },
+  ];
+
+  buttons.forEach((btn) => {
+    let button = createButton(btn.icon);
+    button.class("w-[3rem] h-[3rem] rounded-[.4rem] text-white border-[.1rem] border-white flex items-center justify-center");
+    button.mousePressed(() => btn.mousePressed(button));
+    button.parent(bottomMenuButtons);
   });
 
-  let span2 = createElement("span");
-  span2.class("text-white");
-  span2.html("2.0");
-  span2.parent(bottomMenu);
+  let bottomMenuContent = createDiv("");
+  bottomMenuContent.class("w-full flex flex-col items-center px-[2rem] gap-[.5rem] pb-[1rem]");
+  bottomMenuContent.parent(bottomMenu);
+  bottomMenuContent.id("bottom-menu-content");
 
-  return bottomMenu;
+  let inputWordDiv = createDiv("");
+  inputWordDiv.class("w-full flex items-center gap-[.5rem]");
+  inputWordDiv.parent(bottomMenuContent);
+
+  let inputWordLabel = createElement("label", "Entrada");
+  inputWordLabel.class("text-white text-[1.4rem]");
+  inputWordLabel.parent(inputWordDiv);
+
+  let inputWord = createInput("1010");
+  inputWord.attribute("type", "text");
+  inputWord.attribute("placeholder", "Ex: 1010...");
+  inputWord.attribute("maxlength", "200");
+  inputWord.id("input-word");
+  inputWord.class("w-full h-[2.8rem] px-[1rem] rounded-[.4rem] focus:outline-none bg-transparent border-2 border-[--color-primary] text-white");
+  inputWord.parent(inputWordDiv);
+
+  let clearButton = createButton("Limpar");
+  clearButton.class("h-[2.8rem] px-[1rem] text-white text-[1.4rem] rounded-[.4rem] bg-[--color-background]");
+  clearButton.parent(inputWordDiv);
+
+  let bottomMenuSimulationButtons = createDiv("");
+  bottomMenuSimulationButtons.class("w-full flex items-center justify-between");
+  bottomMenuSimulationButtons.parent(bottomMenuContent);
+
+  let bottomMenuSimulationButtonsLeft = createDiv("");
+  bottomMenuSimulationButtonsLeft.class("flex items-center justify-center gap-[.5rem]");
+  bottomMenuSimulationButtonsLeft.parent(bottomMenuSimulationButtons);
+
+  let skipPreviousButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>skip_previous</span>");
+  skipPreviousButton.class("w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[#4B4B4B] flex items-center justify-center");
+  skipPreviousButton.parent(bottomMenuSimulationButtonsLeft);
+
+  let chevronLeftButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>chevron_left</span>");
+  chevronLeftButton.class("w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[#4B4B4B] flex items-center justify-center");
+  chevronLeftButton.parent(bottomMenuSimulationButtonsLeft);
+
+  let playButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>play_arrow</span>");
+  playButton.class("w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[--color-primary] flex items-center justify-center");
+  playButton.parent(bottomMenuSimulationButtonsLeft);
+
+  let chevronRightButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>chevron_right</span>");
+  chevronRightButton.class("w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[--color-primary] flex items-center justify-center");
+  chevronRightButton.parent(bottomMenuSimulationButtonsLeft);
+
+  let skipNextButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>skip_next</span>");
+  skipNextButton.class("w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[--color-primary] flex items-center justify-center");
+  skipNextButton.parent(bottomMenuSimulationButtonsLeft);
+
+  let bottomMenuSimulationButtonsRight = createDiv("");
+  bottomMenuSimulationButtonsRight.class("flex items-center gap-[3rem]");
+  bottomMenuSimulationButtonsRight.parent(bottomMenuSimulationButtons);
+
+  let pauseIntervalDiv = createDiv("");
+  pauseIntervalDiv.class("flex items center gap-[.5rem] text-white text-[1.2rem]");
+  pauseIntervalDiv.parent(bottomMenuSimulationButtonsRight);
+
+  let pauseIntervalLabel = createElement("label", "Pausa");
+  pauseIntervalLabel.parent(pauseIntervalDiv);
+
+  let pauseIntervalInput = createInput("");
+  pauseIntervalInput.attribute("type", "range");
+  pauseIntervalInput.attribute("id", "step-interval");
+  pauseIntervalInput.attribute("min", "0");
+  pauseIntervalInput.attribute("max", "5");
+  pauseIntervalInput.attribute("step", "1");
+  pauseIntervalInput.attribute("value", "2");
+  pauseIntervalInput.class("w-[10rem] accent-[--color-primary]");
+  pauseIntervalInput.parent(pauseIntervalDiv);
+
+  let pauseIntervalSpan = createElement("span", "1.5s");
+  pauseIntervalSpan.parent(pauseIntervalDiv);
+
+  let maxStepsDiv = createDiv("");
+  maxStepsDiv.class("flex items center gap-[.5rem] text-white text-[1.2rem]");
+  maxStepsDiv.parent(bottomMenuSimulationButtonsRight);
+
+  let maxStepsLabel = createElement("label", "Max. passos.");
+  maxStepsLabel.parent(maxStepsDiv);
+
+  let maxStepsInput = createInput("");
+  maxStepsInput.attribute("type", "range");
+  maxStepsInput.attribute("id", "step-interval");
+  maxStepsInput.attribute("min", "0");
+  maxStepsInput.attribute("max", "1000");
+  maxStepsInput.attribute("step", "50");
+  maxStepsInput.attribute("value", "500");
+  maxStepsInput.class("w-[10rem] accent-[--color-primary]");
+  maxStepsInput.parent(maxStepsDiv);
+
+  let maxStepsSpan = createElement("span", "500");
+  maxStepsSpan.parent(maxStepsDiv);
+
+  let tapeDiv = createDiv("");
+  tapeDiv.class("flex items-center");
+  tapeDiv.parent(bottomMenuContent);
+
+  let tapeBoundsImage = createImg("./assets/tape-bounds.svg", "tape-bounds-image");
+  tapeBoundsImage.class("h-[2.45rem] mt-[.1rem]");
+  tapeBoundsImage.parent(tapeDiv);
+
+  for (let i = 0; i < 8; i++) {
+    let tapeCell = createDiv("");
+    tapeCell.class("relative w-[3rem] h-[2.4rem] bg-white border-x-[.05rem] border-[--color-white] text-[1.4rem] font-semibold text-[dark-white] flex items-center justify-center");
+    tapeCell.parent(tapeDiv);
+    let span = createElement("span", "1");
+    span.parent(tapeCell);
+  }
+
+  let tapeBoundsImage2 = createImg("./assets/tape-bounds.svg", "tape-bounds-image");
+  tapeBoundsImage2.class("h-[2.5rem] rotate-180 mt-[.01rem]");
+  tapeBoundsImage2.parent(tapeDiv);
+
+  return bottomWrapper;
 }
+
+// function createBottomMenu() {
+//   let bottomMenu = createDiv("");
+//   bottomMenu.id("bottom-menu");
+//   bottomMenu.class("w-full flex items-center justify-end gap-1 hidden");
+
+//   let span1 = createElement("span");
+//   span1.class("text-white");
+//   span1.html("0.5");
+//   span1.parent(bottomMenu);
+
+//   let input = createInput("1");
+//   input.id("scalingCanvasSlider");
+//   input.attribute("type", "range");
+//   input.attribute("min", "0.5");
+//   input.attribute("max", "2");
+//   input.attribute("step", "0.25");
+//   input.attribute("value", "1");
+//   input.class("w-[15%] min-w-[75px]");
+//   input.parent(bottomMenu);
+//   input.input(() => {
+//     cnvIsFocused = "canvas";
+//     globalScaleFactor = input.value();
+//     if (!selectedLeftSidebarButton) setSelectedMenuButton("select");
+//   });
+
+//   let span2 = createElement("span");
+//   span2.class("text-white");
+//   span2.html("2.0");
+//   span2.parent(bottomMenu);
+
+//   return bottomMenu;
+// }
 
 function createContextMenu() {
   let mainDiv = createDiv("");
@@ -637,7 +817,7 @@ function setup() {
   cnv.doubleClicked(doubleClickOnCanvas);
 
   // Create bottom menu
-  let bottomMenu = createBottomMenu();
+  // let bottomMenu = createBottomMenu();
   // bottomMenu.parent("body");
 
   // Set canvas initial position and size
@@ -678,7 +858,7 @@ function draw() {
 
   // Set properties
   reCalculateCanvasPositions();
-  globalScaleFactor = scalingCanvasSlider.value();
+  // globalScaleFactor = scalingCanvasSlider.value();
   background("#181a1e");
 
   // Check if canvas is focused
@@ -1206,7 +1386,7 @@ function mouseWheel(event) {
 
 // Keyboard functions
 function keyPressed() {
-  if (cnvIsFocused === "outside") return false;
+  // if (cnvIsFocused === "outside") return false;
 
   if (
     (keyCode === 49 || keyCode === 50 || keyCode === 51 || keyCode === 52 || keyCode === 53) &&
@@ -1217,7 +1397,7 @@ function keyPressed() {
     let index = keyCode - 49;
     let buttons = ["select", "move", "addState", "addLink", "delete"];
     setSelectedMenuButton(buttons[index]);
-    return false;
+    // return false;
   }
 
   if (keyCode === DELETE) deleteObject();
