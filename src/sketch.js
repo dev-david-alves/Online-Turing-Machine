@@ -4,6 +4,7 @@ let cnvIsFocused = "outside";
 let globalWindowOffset = { x: 0, y: 0 };
 let texMap = {};
 let fs = false;
+let mtCreated = null;
 
 // Current status
 let isCanvasMoving = false;
@@ -182,7 +183,8 @@ function createCanvasLeftSidebar() {
   zoomInButton.id("zoom-in");
   zoomInButton.mousePressed(() => {
     cnvIsFocused = "menu";
-    scalingCanvasSlider.value(Number(scalingCanvasSlider.value()) + 0.25);
+    // scalingCanvasSlider.value(Number(scalingCanvasSlider.value()) + 0.25);
+    globalScaleFactor = min(2.0, globalScaleFactor + 0.25);
   });
   zoomInButton.parent(bottomMenu);
 
@@ -191,7 +193,8 @@ function createCanvasLeftSidebar() {
   zoomOutButton.id("zoom-out");
   zoomOutButton.mousePressed(() => {
     cnvIsFocused = "menu";
-    scalingCanvasSlider.value(Number(scalingCanvasSlider.value()) - 0.25);
+    // scalingCanvasSlider.value(Number(scalingCanvasSlider.value()) - 0.25);
+    globalScaleFactor = max(0.5, globalScaleFactor - 0.25);
   });
   zoomOutButton.parent(bottomMenu);
 
@@ -204,6 +207,202 @@ function toggleLabEnvironment() {
   let bottomMenuContent = select("#bottom-menu-content");
   bottomMenuContent.toggleClass("hidden");
   bottomMenuContent.toggleClass("pb-[.5rem]");
+}
+
+// MT functions
+
+function createMT() {
+  let q = new Set(states.map((state) => state.id));
+  let sigma = new Set(); // I don't need this
+  let gamma = new Set();
+  let startState = startLink ? startLink.state.id : null;
+  let endStates = new Set(states.filter((state) => state.isEndState).map((state) => state.id));
+
+  if (startState === null || endStates.size === 0) {
+    let tapeDiv = select("#tape-div");
+    tapeDiv.show();
+
+    let wrapperAlertDiv = createDiv("");
+    wrapperAlertDiv.class("w-full flex flex-col items-center justify-center gap-[.5rem]");
+    wrapperAlertDiv.parent(tapeDiv);
+
+    if (startState === null) {
+      let initialStateAlertDiv = createDiv("Defina um estado inicial!");
+      initialStateAlertDiv.class("w-full py-[.5rem] flex items-center justify-center bg-[#ff0000] rounded-[.5rem] text-white text-[1.4rem]");
+      initialStateAlertDiv.parent(wrapperAlertDiv);
+    }
+
+    if (endStates.size === 0) {
+      let endStateAlertDiv = createDiv("Defina pelo menos um estado final!");
+      endStateAlertDiv.class("mt-[.5rem] w-full py-[.5rem] flex items-center justify-center bg-[#ff0000] rounded-[.5rem] text-white text-[1.4rem]");
+      endStateAlertDiv.parent(wrapperAlertDiv);
+    }
+
+    return null;
+  }
+
+  // Break the rules into read, write, direction
+  links.forEach((link) => {
+    link.transitionBox.rules.forEach((rule) => {
+      let ruleBreak = rule.label.filter((r) => r !== " " && r !== "→" && r !== ", ");
+      gamma.add(ruleBreak[0]);
+      gamma.add(ruleBreak[1]);
+    });
+  });
+
+  // Create the delta
+  let delta = {};
+
+  links.forEach((link) => {
+    let stateA = null;
+    let stateB = null;
+
+    if (link instanceof SelfLink) {
+      stateA = link.state.id;
+      stateB = link.state.id;
+    } else {
+      stateA = link.stateA.id;
+      stateB = link.stateB.id;
+    }
+
+    if (!delta[stateA]) delta[stateA] = {};
+
+    link.transitionBox.rules.forEach((rule) => {
+      let ruleBreak = rule.label.filter((r) => r !== " " && r !== "→" && r !== ", ");
+
+      if (!delta[stateA][ruleBreak[0]]) delta[stateA][ruleBreak[0]] = {};
+
+      delta[stateA][ruleBreak[0]] = {
+        write: ruleBreak[1],
+        move: ruleBreak[2] === "D" ? 1 : -1,
+        nextState: stateB,
+      };
+    });
+  });
+
+  // console.log("Q: ", q);
+  // console.log("Gamma: ", gamma);
+  // console.log("Delta: ", delta);
+  // console.log("Start State: ", startState);
+  // console.log("End States: ", endStates);
+
+  return new MT(q, sigma, gamma, delta, startState, endStates);
+}
+
+function updateUIWhenSimulating(accepted, end, labOpened = false) {
+  if (!mtCreated) return;
+  states.forEach((state) => {
+    state.simulating = false;
+    if (state.id === mtCreated.currentState && labOpened) state.simulating = true;
+  });
+
+  if (accepted && end) {
+    let tapeDiv = select("#tape-div");
+    tapeDiv.show();
+    tapeDiv.removeClass("bg-[#ff0000]");
+    tapeDiv.addClass("bg-[#6cfe6c]");
+    tapeDiv.addClass("filter-[blur(1rem)]");
+
+    // alert("Word accepted!");
+  } else if (!accepted && end) {
+    let tapeDiv = select("#tape-div");
+    tapeDiv.show();
+    tapeDiv.removeClass("bg-[#6cfe6c]");
+    tapeDiv.addClass("bg-[#ff0000]");
+
+    // alert("Word rejected!");
+  } else {
+    let tapeDiv = select("#tape-div");
+    tapeDiv.show();
+    tapeDiv.removeClass("bg-[#ff0000]");
+    tapeDiv.removeClass("bg-[#6cfe6c]");
+  }
+}
+
+function fastSimulationReset() {
+  mtCreated = null;
+  createTape();
+  updateUIWhenSimulating(false, false, true);
+}
+
+function goToLeftOnTape() {
+  alert("Not implemented yet!");
+  if (!mtCreated) return;
+  // mtCreated.goToLeftOnTape();
+}
+
+function goToRightOnTape() {
+  if (!mtCreated) {
+    mtCreated = createMT();
+    if (!mtCreated) return;
+
+    mtCreated.simulatedWord = select("#input-word").value();
+    mtCreated.tape = select("#input-word").value().split("");
+  }
+
+  const { accepted, end } = mtCreated.goToRightOnTape();
+  createTape();
+
+  updateUIWhenSimulating(accepted, end, true);
+}
+
+function fastSimulation() {
+  mtCreated = createMT();
+  if (!mtCreated) return;
+  let inputWord = select("#input-word").value();
+
+  const { accepted, end } = mtCreated.fastSimulation(inputWord, parseInt(select("#max-steps").value()));
+  createTape();
+
+  updateUIWhenSimulating(accepted, end, true);
+}
+
+// End MT functions #############################
+
+function createTape() {
+  let tapeDiv = select("#tape-div");
+  if (!tapeDiv) return;
+
+  if (!mtCreated) {
+    tapeDiv.html("");
+    tapeDiv.hide();
+
+    mtCreated = createMT();
+    if (!mtCreated) return;
+    mtCreated.tape = select("#input-word").value().split("");
+  }
+
+  tapeDiv.html("");
+  tapeDiv.hide();
+  if (mtCreated.tape.length === 0) return;
+
+  tapeDiv.show();
+  let tapeWrapper = createDiv("");
+  tapeWrapper.class("flex items-center justify-center");
+  tapeWrapper.parent(tapeDiv);
+
+  let tapeBoundsImage = createImg("./assets/tape-bounds.svg", "tape-bounds-image");
+  tapeBoundsImage.class("h-[2.5rem] mt-[.1rem]");
+  tapeBoundsImage.parent(tapeWrapper);
+
+  for (let i = 0; i < mtCreated.tape.length; i++) {
+    let tapeCell = createDiv("");
+    tapeCell.class("relative w-[3rem] h-[2.4rem] bg-white border-x-[.05rem] border-[--color-white] text-[1.4rem] font-semibold text-[dark-white] flex items-center justify-center");
+    tapeCell.parent(tapeWrapper);
+    let span = createElement("span", mtCreated.tape[i]);
+    span.parent(tapeCell);
+
+    // Tape head
+    if (i === mtCreated.head) {
+      let tapeHead = createDiv("<img src='../assets/tape-head.svg' class='w-[2.2rem] h-[2.2rem]'>");
+      tapeHead.class("absolute -bottom-[1.2rem]");
+      tapeHead.parent(tapeCell);
+    }
+  }
+
+  let tapeBoundsImage2 = createImg("./assets/tape-bounds.svg", "tape-bounds-image");
+  tapeBoundsImage2.class("h-[2.5rem] rotate-180 mt-[.01rem]");
+  tapeBoundsImage2.parent(tapeWrapper);
 }
 
 function createCanvasBottomMenu() {
@@ -237,8 +436,20 @@ function createCanvasBottomMenu() {
         if (btn) {
           btn.toggleClass("bg-[--color-primary]");
           btn.toggleClass("border-[--color-primary]");
+          btn.toggleClass("activated-lab-test");
+
+          if (btn.hasClass("activated-lab-test")) {
+            fastSimulationReset();
+            updateUIWhenSimulating(false, false, true);
+          } else {
+            updateUIWhenSimulating(false, false, false);
+          }
+
+          closeExportMenu();
+          closeFloatingCanvasMenus();
         }
       },
+      id: "lab-test",
     },
     // { icon: "lab_panel", mousePressed: () => {} },
     // { icon: "settings", mousePressed: () => {} },
@@ -246,13 +457,14 @@ function createCanvasBottomMenu() {
 
   buttons.forEach((btn) => {
     let button = createButton(btn.icon);
-    button.class("w-[3rem] h-[3rem] rounded-[.4rem] text-white border-[.1rem] border-white flex items-center justify-center");
+    button.id(btn.id);
+    button.class("w-[3rem] h-[3rem] rounded-[.4rem] text-white border-[.1rem] flex items-center justify-center outline-none");
     button.mousePressed(() => btn.mousePressed(button));
     button.parent(bottomMenuButtons);
   });
 
   let bottomMenuContent = createDiv("");
-  bottomMenuContent.class("w-full flex flex-col items-center px-[2rem] gap-[.5rem] pb-[1rem]");
+  bottomMenuContent.class("w-full flex flex-col items-center px-[2rem] gap-[.5rem] pb-[1rem] pb-[.5rem] hidden");
   bottomMenuContent.parent(bottomMenu);
   bottomMenuContent.id("bottom-menu-content");
 
@@ -264,17 +476,44 @@ function createCanvasBottomMenu() {
   inputWordLabel.class("text-white text-[1.4rem]");
   inputWordLabel.parent(inputWordDiv);
 
-  let inputWord = createInput("1010");
+  let inputWord = createInput("0011");
   inputWord.attribute("type", "text");
   inputWord.attribute("placeholder", "Ex: 1010...");
   inputWord.attribute("maxlength", "200");
+  inputWord.attribute("autocomplete", "off");
   inputWord.id("input-word");
-  inputWord.class("w-full h-[2.8rem] px-[1rem] rounded-[.4rem] focus:outline-none bg-transparent border-2 border-[--color-primary] text-white");
+  inputWord.class("w-full h-[2.8rem] px-[1rem] rounded-[.4rem] focus:outline-none bg-transparent border-2 border-[--color-primary] text-[1.4rem] text-white autofill:bg-yellow-200");
   inputWord.parent(inputWordDiv);
+  inputWord.input(() => {
+    mtCreated = createMT();
+    if (!mtCreated) return;
+    mtCreated.simulatedWord = inputWord.value();
+    mtCreated.tape = inputWord.value().split("");
+    createTape();
+
+    states.forEach((state) => {
+      state.simulating = false;
+      if (state.id === mtCreated.currentState) state.simulating = true;
+    });
+
+    updateUIWhenSimulating(false, false, true);
+  });
 
   let clearButton = createButton("Limpar");
   clearButton.class("h-[2.8rem] px-[1rem] text-white text-[1.4rem] rounded-[.4rem] bg-[--color-background]");
   clearButton.parent(inputWordDiv);
+  clearButton.mousePressed(() => {
+    inputWord.value("");
+    mtCreated = createMT();
+    createTape();
+
+    states.forEach((state) => {
+      state.simulating = false;
+      if (state.id === mtCreated.currentState) state.simulating = true;
+    });
+
+    updateUIWhenSimulating(false, false, true);
+  });
 
   let bottomMenuSimulationButtons = createDiv("");
   bottomMenuSimulationButtons.class("w-full flex items-center justify-between");
@@ -284,49 +523,73 @@ function createCanvasBottomMenu() {
   bottomMenuSimulationButtonsLeft.class("flex items-center justify-center gap-[.5rem]");
   bottomMenuSimulationButtonsLeft.parent(bottomMenuSimulationButtons);
 
-  let skipPreviousButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>skip_previous</span>");
-  skipPreviousButton.class("w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[#4B4B4B] flex items-center justify-center");
-  skipPreviousButton.parent(bottomMenuSimulationButtonsLeft);
+  let fastResetButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>skip_previous</span>");
+  fastResetButton.class("w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[#4B4B4B] flex items-center justify-center");
+  fastResetButton.id("fast-reset-button");
+  fastResetButton.parent(bottomMenuSimulationButtonsLeft);
+  fastResetButton.mousePressed(() => {
+    if (fastResetButton.hasClass("active-class")) fastSimulationReset();
+  });
 
-  let chevronLeftButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>chevron_left</span>");
-  chevronLeftButton.class("w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[#4B4B4B] flex items-center justify-center");
-  chevronLeftButton.parent(bottomMenuSimulationButtonsLeft);
+  let goToLeftOnTapeButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>chevron_left</span>");
+  goToLeftOnTapeButton.class("w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[#4B4B4B] flex items-center justify-center");
+  goToLeftOnTapeButton.id("goto-left-button");
+  goToLeftOnTapeButton.parent(bottomMenuSimulationButtonsLeft);
+  goToLeftOnTapeButton.mousePressed(() => {
+    if (goToLeftOnTapeButton.hasClass("active-class")) goToLeftOnTape();
+  });
 
-  let playButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>play_arrow</span>");
-  playButton.class("w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[--color-primary] flex items-center justify-center");
-  playButton.parent(bottomMenuSimulationButtonsLeft);
+  // let playButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>play_arrow</span>");
+  // playButton.class("w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[--color-primary] flex items-center justify-center");
+  // playButton.id("play-button");
+  // playButton.parent(bottomMenuSimulationButtonsLeft);
 
-  let chevronRightButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>chevron_right</span>");
-  chevronRightButton.class("w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[--color-primary] flex items-center justify-center");
-  chevronRightButton.parent(bottomMenuSimulationButtonsLeft);
+  let goToRightOnTapeButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>chevron_right</span>");
+  goToRightOnTapeButton.class("w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[--color-primary] flex items-center justify-center active-class");
+  goToRightOnTapeButton.id("goto-right-button");
+  goToRightOnTapeButton.parent(bottomMenuSimulationButtonsLeft);
+  goToRightOnTapeButton.mousePressed(() => {
+    if (goToRightOnTapeButton.hasClass("active-class")) goToRightOnTape();
+  });
 
-  let skipNextButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>skip_next</span>");
-  skipNextButton.class("w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[--color-primary] flex items-center justify-center");
-  skipNextButton.parent(bottomMenuSimulationButtonsLeft);
+  let fastSimulationButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>skip_next</span>");
+  fastSimulationButton.class("w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[--color-primary] flex items-center justify-center active-class");
+  fastSimulationButton.id("fast-simulation-button");
+  fastSimulationButton.parent(bottomMenuSimulationButtonsLeft);
+  fastSimulationButton.mousePressed(() => {
+    if (fastSimulationButton.hasClass("active-class")) fastSimulation();
+  });
 
   let bottomMenuSimulationButtonsRight = createDiv("");
   bottomMenuSimulationButtonsRight.class("flex items-center gap-[3rem]");
   bottomMenuSimulationButtonsRight.parent(bottomMenuSimulationButtons);
 
-  let pauseIntervalDiv = createDiv("");
-  pauseIntervalDiv.class("flex items center gap-[.5rem] text-white text-[1.2rem]");
-  pauseIntervalDiv.parent(bottomMenuSimulationButtonsRight);
+  // let pauseIntervalDiv = createDiv("");
+  // pauseIntervalDiv.class("flex items center gap-[.5rem] text-white text-[1.2rem]");
+  // pauseIntervalDiv.parent(bottomMenuSimulationButtonsRight);
 
-  let pauseIntervalLabel = createElement("label", "Pausa");
-  pauseIntervalLabel.parent(pauseIntervalDiv);
+  // let pauseIntervalLabel = createElement("label", "Pausa");
+  // pauseIntervalLabel.parent(pauseIntervalDiv);
 
-  let pauseIntervalInput = createInput("");
-  pauseIntervalInput.attribute("type", "range");
-  pauseIntervalInput.attribute("id", "step-interval");
-  pauseIntervalInput.attribute("min", "0");
-  pauseIntervalInput.attribute("max", "5");
-  pauseIntervalInput.attribute("step", "1");
-  pauseIntervalInput.attribute("value", "2");
-  pauseIntervalInput.class("w-[10rem] accent-[--color-primary]");
-  pauseIntervalInput.parent(pauseIntervalDiv);
+  // let pauseIntervalInput = createInput("");
+  // pauseIntervalInput.attribute("type", "range");
+  // pauseIntervalInput.attribute("id", "interval-pause");
+  // pauseIntervalInput.attribute("min", "0.1");
+  // pauseIntervalInput.attribute("max", "3");
+  // pauseIntervalInput.attribute("step", "0.1");
+  // pauseIntervalInput.attribute("value", "2");
+  // pauseIntervalInput.class("w-[10rem] accent-[--color-primary]");
+  // pauseIntervalInput.parent(pauseIntervalDiv);
+  // pauseIntervalDiv.input(() => {
+  //   let pauseIntervalSpan = select("#interval-pause-span");
+  //   // One decimal place
+  //   let convertedValue = parseFloat(pauseIntervalInput.value()).toFixed(1);
+  //   if (pauseIntervalSpan) pauseIntervalSpan.html(convertedValue + "s");
+  // });
 
-  let pauseIntervalSpan = createElement("span", "1.5s");
-  pauseIntervalSpan.parent(pauseIntervalDiv);
+  // let pauseIntervalSpan = createElement("span", "1.5s");
+  // pauseIntervalSpan.id("interval-pause-span");
+  // pauseIntervalSpan.parent(pauseIntervalDiv);
 
   let maxStepsDiv = createDiv("");
   maxStepsDiv.class("flex items center gap-[.5rem] text-white text-[1.2rem]");
@@ -337,36 +600,26 @@ function createCanvasBottomMenu() {
 
   let maxStepsInput = createInput("");
   maxStepsInput.attribute("type", "range");
-  maxStepsInput.attribute("id", "step-interval");
-  maxStepsInput.attribute("min", "0");
-  maxStepsInput.attribute("max", "1000");
+  maxStepsInput.attribute("id", "max-steps");
+  maxStepsInput.attribute("min", "100");
+  maxStepsInput.attribute("max", "900");
   maxStepsInput.attribute("step", "50");
   maxStepsInput.attribute("value", "500");
   maxStepsInput.class("w-[10rem] accent-[--color-primary]");
   maxStepsInput.parent(maxStepsDiv);
+  maxStepsInput.input(() => {
+    let maxStepsSpan = select("#max-steps-span");
+    if (maxStepsSpan) maxStepsSpan.html(maxStepsInput.value());
+  });
 
   let maxStepsSpan = createElement("span", "500");
+  maxStepsSpan.id("max-steps-span");
   maxStepsSpan.parent(maxStepsDiv);
 
   let tapeDiv = createDiv("");
-  tapeDiv.class("flex items-center");
+  tapeDiv.class("w-full py-[.2rem] rounded-[.4rem] flex items-center justify-center");
+  tapeDiv.id("tape-div");
   tapeDiv.parent(bottomMenuContent);
-
-  let tapeBoundsImage = createImg("./assets/tape-bounds.svg", "tape-bounds-image");
-  tapeBoundsImage.class("h-[2.45rem] mt-[.1rem]");
-  tapeBoundsImage.parent(tapeDiv);
-
-  for (let i = 0; i < 8; i++) {
-    let tapeCell = createDiv("");
-    tapeCell.class("relative w-[3rem] h-[2.4rem] bg-white border-x-[.05rem] border-[--color-white] text-[1.4rem] font-semibold text-[dark-white] flex items-center justify-center");
-    tapeCell.parent(tapeDiv);
-    let span = createElement("span", "1");
-    span.parent(tapeCell);
-  }
-
-  let tapeBoundsImage2 = createImg("./assets/tape-bounds.svg", "tape-bounds-image");
-  tapeBoundsImage2.class("h-[2.5rem] rotate-180 mt-[.01rem]");
-  tapeBoundsImage2.parent(tapeDiv);
 
   return bottomWrapper;
 }
@@ -824,11 +1077,11 @@ function setup() {
   reCalculateCanvasPositions();
 
   // Just for testing
-  states.push(new State(states.length, 150 / globalScaleFactor, 200 / globalScaleFactor, stateRadius));
-  states.push(new State(states.length, 450 / globalScaleFactor, 200 / globalScaleFactor, stateRadius));
+  // states.push(new State(states.length, 150 / globalScaleFactor, 200 / globalScaleFactor, stateRadius));
+  // states.push(new State(states.length, 450 / globalScaleFactor, 200 / globalScaleFactor, stateRadius));
 
   // Activate default button when starting
-  setSelectedMenuButton("addLink");
+  setSelectedMenuButton("select");
   cnvIsFocused = "canvas";
 
   // Create slider
@@ -837,6 +1090,276 @@ function setup() {
 
   // First save on history
   history.push(createJSONExportObj());
+
+  createCanvasStatesFromOBJ({
+    globalScaleFactor: 0.75,
+    states: [
+      {
+        id: 0,
+        x: 160,
+        y: 209,
+        isStartState: true,
+        isEndState: false,
+        label: "Q_{0}",
+      },
+      {
+        id: 1,
+        x: 305.7567927805132,
+        y: 110.68511759352104,
+        isStartState: false,
+        isEndState: false,
+        label: "Q_{1}",
+      },
+      {
+        id: 2,
+        x: 468.7055736142388,
+        y: 207.7069324399201,
+        isStartState: false,
+        isEndState: false,
+        label: "Q_{2}",
+      },
+      {
+        id: 3,
+        x: 228.76252751089598,
+        y: 353.0913112397834,
+        isStartState: false,
+        isEndState: true,
+        label: "Q_{3}",
+      },
+      {
+        id: 4,
+        x: 408,
+        y: 354.4666697184245,
+        isStartState: false,
+        isEndState: false,
+        label: "Q_{4}",
+      },
+    ],
+    links: [
+      {
+        isSelfLink: false,
+        stateA: 0,
+        stateB: 1,
+        rules: [
+          {
+            label: ["0", " ", "→", " ", "☐", ", ", "D"],
+            width: 44.3056640625,
+          },
+        ],
+        parallelPart: 0.375,
+        perpendicularPart: 0,
+        lineAngleAdjust: 0,
+        hasCircle: false,
+        startX: 180.72589420515166,
+        startY: 195.02011053702995,
+        endX: 285.0308985753615,
+        endY: 124.6650070564911,
+        circleX: null,
+        circleY: null,
+        circleR: null,
+      },
+      {
+        isSelfLink: false,
+        stateA: 1,
+        stateB: 2,
+        rules: [
+          {
+            label: ["1", " ", "→", " ", "x", ", ", "E"],
+            width: 40.517578125,
+          },
+        ],
+        parallelPart: 0.375,
+        perpendicularPart: 0,
+        lineAngleAdjust: 0,
+        hasCircle: false,
+        startX: 327.2374638645883,
+        startY: 123.47498740434314,
+        endX: 447.22490253016366,
+        endY: 194.917062629098,
+        circleX: null,
+        circleY: null,
+        circleR: null,
+      },
+      {
+        isSelfLink: true,
+        state: 1,
+        rules: [
+          {
+            label: ["0", " ", "→", " ", "0", ", ", "D"],
+            width: 41.87109375,
+          },
+          {
+            label: ["x", " ", "→", " ", "x", ", ", "D"],
+            width: 41.30859375,
+          },
+        ],
+        anchorAngle: -1.5707963267948966,
+      },
+      {
+        isSelfLink: true,
+        state: 2,
+        rules: [
+          {
+            label: ["0", " ", "→", " ", "0", ", ", "E"],
+            width: 40.798828125,
+          },
+          {
+            label: ["x", " ", "→", " ", "x", ", ", "E"],
+            width: 40.236328125,
+          },
+        ],
+        anchorAngle: -1.5707963267948966,
+      },
+      {
+        isSelfLink: false,
+        stateA: 2,
+        stateB: 0,
+        rules: [
+          {
+            label: ["☐", " ", "→", " ", "☐", ", ", "D"],
+            width: 46.740234375,
+          },
+        ],
+        parallelPart: 0.375,
+        perpendicularPart: 0,
+        lineAngleAdjust: 0,
+        hasCircle: false,
+        startX: 443.7057929239131,
+        startY: 207.81164841586215,
+        endX: 184.9997806903257,
+        endY: 208.89528402405793,
+        circleX: null,
+        circleY: null,
+        circleR: null,
+      },
+      {
+        isSelfLink: false,
+        stateA: 0,
+        stateB: 4,
+        rules: [
+          {
+            label: ["x", " ", "→", " ", "x", ", ", "D"],
+            width: 41.30859375,
+          },
+        ],
+        parallelPart: 0.5,
+        perpendicularPart: 0,
+        lineAngleAdjust: 0,
+        hasCircle: false,
+        startX: 181.56413446698215,
+        startY: 221.64864042851687,
+        endX: 386.4358655330179,
+        endY: 341.8180292899076,
+        circleX: null,
+        circleY: null,
+        circleR: null,
+      },
+      {
+        isSelfLink: true,
+        state: 4,
+        rules: [
+          {
+            label: ["x", " ", "→", " ", "x", ", ", "D"],
+            width: 41.30859375,
+          },
+        ],
+        anchorAngle: -1.5707963267948966,
+      },
+      {
+        isSelfLink: false,
+        stateA: 0,
+        stateB: 3,
+        rules: [
+          {
+            label: ["☐", " ", "→", " ", "☐", ", ", "E"],
+            width: 45.66796875,
+          },
+        ],
+        parallelPart: 0.5,
+        perpendicularPart: 0,
+        lineAngleAdjust: 0,
+        hasCircle: false,
+        startX: 170.76717784822588,
+        startY: 231.56253268550927,
+        endX: 217.99534966267007,
+        endY: 330.52877855427414,
+        circleX: null,
+        circleY: null,
+        circleR: null,
+      },
+      {
+        isSelfLink: false,
+        stateA: 4,
+        stateB: 3,
+        rules: [
+          {
+            label: ["☐", " ", "→", " ", "☐", ", ", "E"],
+            width: 45.66796875,
+          },
+        ],
+        parallelPart: 0.5,
+        perpendicularPart: 0,
+        lineAngleAdjust: 0,
+        hasCircle: false,
+        startX: 383.00073597833597,
+        startY: 354.2748406926382,
+        endX: 253.76179153256,
+        endY: 353.2831402655697,
+        circleX: null,
+        circleY: null,
+        circleR: null,
+      },
+    ],
+    initialStateLink: {
+      state: 0,
+      deltaX: -60,
+      deltaY: 0,
+    },
+  });
+}
+
+function simulationButtonActivation() {
+  let fastResetButton = select("#fast-reset-button");
+  let goToLeftOnTapeButton = select("#goto-left-button");
+  let goToRightOnTapeButton = select("#goto-right-button");
+  let fastSimulationButton = select("#fast-simulation-button");
+  let inputWord = select("#input-word");
+
+  let diactivatedClass = "w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[#4B4B4B] flex items-center justify-center";
+  let activatedClass = "w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[--color-primary] flex items-center justify-center active-class";
+
+  if (!inputWord || inputWord.value() === "" || inputWord.value().length === 0) {
+    fastResetButton.class(diactivatedClass);
+    goToLeftOnTapeButton.class(diactivatedClass);
+    goToRightOnTapeButton.class(diactivatedClass);
+    fastSimulationButton.class(diactivatedClass);
+    return;
+  }
+
+  if (inputWord && inputWord !== "") {
+    if (!mtCreated) {
+      fastResetButton.class(diactivatedClass);
+      goToLeftOnTapeButton.class(diactivatedClass);
+      goToRightOnTapeButton.class(activatedClass);
+      fastSimulationButton.class(activatedClass);
+    } else {
+      if (mtCreated.head > 0) {
+        fastResetButton.class(activatedClass);
+        goToLeftOnTapeButton.class(activatedClass);
+      } else if (mtCreated.head <= 0) {
+        fastResetButton.class(diactivatedClass);
+        goToLeftOnTapeButton.class(diactivatedClass);
+      }
+
+      if (!(mtCreated.endStates.has(mtCreated.currentState) && mtCreated.maxInterectedIndex >= mtCreated.simulatedWord.length)) {
+        goToRightOnTapeButton.class(activatedClass);
+        fastSimulationButton.class(activatedClass);
+      } else {
+        goToRightOnTapeButton.class(diactivatedClass);
+        fastSimulationButton.class(diactivatedClass);
+      }
+    }
+  }
 }
 
 function draw() {
@@ -856,20 +1379,20 @@ function draw() {
     fullscreenButton.html("<span class='material-symbols-outlined' style='font-size: 1.8rem'>fullscreen</span>");
   }
 
+  // Simulation buttons activation
+  simulationButtonActivation();
+
   // Set properties
   reCalculateCanvasPositions();
   // globalScaleFactor = scalingCanvasSlider.value();
   background("#181a1e");
 
   // Check if canvas is focused
-  // if (cnvIsFocused === "outside") {
-  //   cnv.style("opacity", "0.9");
-  //   cnv.style("border", "none");
-  //   cnv.style("box-shadow", "none");
-  // } else {
-  //   cnv.style("box-shadow", "0px 0px 3px 3px rgba(23, 98, 163, 1)");
-  //   cnv.style("opacity", "1");
-  // }
+  if (cnvIsFocused === "outside") {
+    mtDoomWrapper.removeClass("canvas-focused");
+  } else {
+    mtDoomWrapper.addClass("canvas-focused");
+  }
 
   // Move canvas
   if (mouseIsPressed && ((keyIsDown(CONTROL) && mouseButton === LEFT) || mouseButton === CENTER || selectedLeftSidebarButton === "move")) {
@@ -1375,10 +1898,10 @@ function mouseWheel(event) {
 
   if (event.delta > 0) {
     globalScaleFactor = max(globalScaleFactor - 0.25, 0.5);
-    scalingCanvasSlider.value(globalScaleFactor);
+    // scalingCanvasSlider.value(globalScaleFactor);
   } else {
     globalScaleFactor = min(globalScaleFactor + 0.25, 2.0);
-    scalingCanvasSlider.value(globalScaleFactor);
+    // scalingCanvasSlider.value(globalScaleFactor);
   }
 
   return false;
@@ -1392,7 +1915,8 @@ function keyPressed() {
     (keyCode === 49 || keyCode === 50 || keyCode === 51 || keyCode === 52 || keyCode === 53) &&
     !keyIsDown(SHIFT) &&
     !states.some((state) => state.input.visible) &&
-    !links.some((link) => link.transitionBox.selected)
+    !links.some((link) => link.transitionBox.selected) &&
+    !select("#lab-test").hasClass("activated-lab-test")
   ) {
     let index = keyCode - 49;
     let buttons = ["select", "move", "addState", "addLink", "delete"];

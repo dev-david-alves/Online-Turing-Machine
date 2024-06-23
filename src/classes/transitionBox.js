@@ -210,6 +210,7 @@ class TransitionBox {
 
   keyPressed() {
     if (keyCode === ENTER) {
+      if (!this.selected) return;
       this.confirmRule();
     } else if (keyCode === BACKSPACE) {
       this.checkReadAndWriteInput();

@@ -10,6 +10,7 @@ class State {
     this.dragging = false;
     this.hovering = false;
     this.selected = false;
+    this.simulating = false;
 
     // Position
     this.x = x * this.scaleFactor;
@@ -107,6 +108,10 @@ class State {
     fill("#1762A3");
     stroke("#ffffff");
     if (this.selected) fill("#11528C");
+    if (this.simulating) {
+      strokeWeight(4 * this.scaleFactor);
+      fill("purple");
+    }
 
     ellipseMode(CENTER);
     ellipse(this.x, this.y, this.r * 2, this.r * 2);

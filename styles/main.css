@@ -14,6 +14,8 @@
 /* Variables */
 :root{
   font-size: 62.5%;
+  --color-shadow-low: rgba(23, 98, 163, 0.4);
+  --color-shadow-high: rgba(23, 98, 163, 1.0);
 
   --color-primary: #1762A3;
   --color-primary-hover: #11528C;
@@ -85,3 +87,37 @@ body {
 .math-font {
   font-family: 'cmunbi';
 }
+
+.canvas-focused {
+  box-shadow: 0 0 4.2rem 0 var(--color-shadow-low), 0 0 2.1rem 0 var(--color-shadow-high);
+}
+
+/* Custom styles for the autocomplete suggestions */
+input::-webkit-autocomplete,
+input::-webkit-autocomplete-popup {
+    /* Set the background color for autocomplete suggestions */
+    background-color: var(--color-white); /* Tailwind bg-gray-200 */
+}
+
+/* Remove browser default styles */
+input::-webkit-autocomplete-popup {
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* Style for each suggestion */
+input::-webkit-autocomplete-item {
+    padding: 0.5rem; /* Tailwind p-2 */
+    color: #1f2937; /* Tailwind text-gray-800 */
+}
+
+/* Style for the hovered suggestion */
+input::-webkit-autocomplete-item:hover {
+    background-color: var(--color-background); /* Tailwind bg-gray-300 */
+}
+
+/* For testing purposes */
+/* a {
+  color: #6cfe6c;
+} */

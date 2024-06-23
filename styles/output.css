@@ -566,8 +566,8 @@ video {
   position: relative;
 }
 
-.-bottom-\[\.6rem\] {
-  bottom: -.6rem;
+.-bottom-\[1\.2rem\] {
+  bottom: -1.2rem;
 }
 
 .-left-\[21px\] {
@@ -594,10 +594,6 @@ video {
   z-index: 5;
 }
 
-.-mt-\[\.1rem\] {
-  margin-top: -.1rem;
-}
-
 .mb-\[1rem\] {
   margin-bottom: 1rem;
 }
@@ -608,6 +604,10 @@ video {
 
 .mt-\[\.1rem\] {
   margin-top: .1rem;
+}
+
+.mt-\[\.5rem\] {
+  margin-top: .5rem;
 }
 
 .flex {
@@ -622,12 +622,8 @@ video {
   height: 0px;
 }
 
-.h-\[1\.2rem\] {
-  height: 1.2rem;
-}
-
-.h-\[2\.45rem\] {
-  height: 2.45rem;
+.h-\[2\.2rem\] {
+  height: 2.2rem;
 }
 
 .h-\[2\.4rem\] {
@@ -682,6 +678,10 @@ video {
   width: 15%;
 }
 
+.w-\[2\.2rem\] {
+  width: 2.2rem;
+}
+
 .w-\[2\.6rem\] {
   width: 2.6rem;
 }
@@ -708,10 +708,6 @@ video {
 
 .min-w-\[100vw\] {
   min-width: 100vw;
-}
-
-.min-w-\[70rem\] {
-  min-width: 70rem;
 }
 
 .min-w-\[75px\] {
@@ -813,10 +809,6 @@ video {
   border-top-right-radius: 1rem;
 }
 
-.border {
-  border-width: 1px;
-}
-
 .border-2 {
   border-width: 2px;
 }
@@ -851,10 +843,6 @@ video {
   border-style: solid;
 }
 
-.border-none {
-  border-style: none;
-}
-
 .border-\[\#36404e\] {
   --tw-border-opacity: 1;
   border-color: rgb(54 64 78 / var(--tw-border-opacity));
@@ -873,11 +861,6 @@ video {
   border-color: rgb(0 0 0 / var(--tw-border-opacity));
 }
 
-.border-white {
-  --tw-border-opacity: 1;
-  border-color: rgb(255 255 255 / var(--tw-border-opacity));
-}
-
 .bg-\[\#222831\] {
   --tw-bg-opacity: 1;
   background-color: rgb(34 40 49 / var(--tw-bg-opacity));
@@ -893,9 +876,19 @@ video {
   background-color: rgb(78 95 111 / var(--tw-bg-opacity));
 }
 
+.bg-\[\#6cfe6c\] {
+  --tw-bg-opacity: 1;
+  background-color: rgb(108 254 108 / var(--tw-bg-opacity));
+}
+
 .bg-\[\#9caab7\] {
   --tw-bg-opacity: 1;
   background-color: rgb(156 170 183 / var(--tw-bg-opacity));
+}
+
+.bg-\[\#ff0000\] {
+  --tw-bg-opacity: 1;
+  background-color: rgb(255 0 0 / var(--tw-bg-opacity));
 }
 
 .bg-\[--color-background\] {
@@ -925,10 +918,6 @@ video {
 .bg-white {
   --tw-bg-opacity: 1;
   background-color: rgb(255 255 255 / var(--tw-bg-opacity));
-}
-
-.stroke-white {
-  stroke: #fff;
 }
 
 .p-\[1rem\] {
@@ -967,11 +956,6 @@ video {
 .py-\[\.2rem\] {
   padding-top: .2rem;
   padding-bottom: .2rem;
-}
-
-.py-\[\.4rem\] {
-  padding-top: .4rem;
-  padding-bottom: .4rem;
 }
 
 .py-\[\.5rem\] {
@@ -1067,6 +1051,18 @@ video {
   filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
 }
 
+.filter {
+  filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
+}
+
+.\!transition {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-backdrop-filter !important;
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter !important;
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-backdrop-filter !important;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition-duration: 150ms !important;
+}
+
 .transition {
   transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-backdrop-filter;
   transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
@@ -1099,6 +1095,8 @@ video {
 
 :root{
   font-size: 62.5%;
+  --color-shadow-low: rgba(23, 98, 163, 0.4);
+  --color-shadow-high: rgba(23, 98, 163, 1.0);
   --color-primary: #1762A3;
   --color-primary-hover: #11528C;
   --color-danger: #FF0060;
@@ -1164,6 +1162,59 @@ body {
 
 .math-font {
   font-family: 'cmunbi';
+}
+
+.canvas-focused {
+  box-shadow: 0 0 4.2rem 0 var(--color-shadow-low), 0 0 2.1rem 0 var(--color-shadow-high);
+}
+
+/* Custom styles for the autocomplete suggestions */
+
+input::-webkit-autocomplete,
+input::-webkit-autocomplete-popup {
+  /* Set the background color for autocomplete suggestions */
+  background-color: var(--color-white);
+  /* Tailwind bg-gray-200 */
+}
+
+/* Remove browser default styles */
+
+input::-webkit-autocomplete-popup {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Style for each suggestion */
+
+input::-webkit-autocomplete-item {
+  padding: 0.5rem;
+  /* Tailwind p-2 */
+  color: #1f2937;
+  /* Tailwind text-gray-800 */
+}
+
+/* Style for the hovered suggestion */
+
+input::-webkit-autocomplete-item:hover {
+  background-color: var(--color-background);
+  /* Tailwind bg-gray-300 */
+}
+
+/* For testing purposes */
+
+/* a {
+  color: #6cfe6c;
+} */
+
+.autofill\:bg-yellow-200:-webkit-autofill {
+  --tw-bg-opacity: 1;
+  background-color: rgb(254 240 138 / var(--tw-bg-opacity));
+}
+
+.autofill\:bg-yellow-200:autofill {
+  --tw-bg-opacity: 1;
+  background-color: rgb(254 240 138 / var(--tw-bg-opacity));
 }
 
 .hover\:bg-\[\#526a7c\]:hover {
