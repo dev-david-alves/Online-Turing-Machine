@@ -34,14 +34,14 @@ let contextMenu = null;
 function createMTDoomWrapper() {
   let mtDoomWrapper = createDiv("");
   mtDoomWrapper.id("mt-doom-wrapper");
-  mtDoomWrapper.class("w-full max-w-[75rem] max-h-[45rem] flex flex-col justify-center rounded-[.5rem] overflow-hidden");
+  mtDoomWrapper.class("w-full max-w-[75rem] flex flex-col justify-center rounded-[.5rem]");
 
   let topToolbar = createTopToolbar();
   topToolbar.parent(mtDoomWrapper);
 
   let playgroundContainer = createDiv("");
   playgroundContainer.id("playground-container");
-  playgroundContainer.class("relative w-full h-full border-r-[.5rem] border-b-[.5rem] border-[--color-white] flex overflow-hidden");
+  playgroundContainer.class("relative w-full h-full rounded-b-[.5rem] border-r-[.5rem] border-b-[.5rem] border-[--color-white] flex");
   playgroundContainer.parent(mtDoomWrapper);
 
   let leftSidebar = createCanvasLeftSidebar();
@@ -49,7 +49,7 @@ function createMTDoomWrapper() {
 
   let mainContent = createDiv("");
   mainContent.id("main-content");
-  mainContent.class("w-full flex flex-col justify-center relative");
+  mainContent.class("w-full flex flex-col justify-center relative overflow-hidden");
   mainContent.parent(playgroundContainer);
 
   let canvasContainer = createDiv("");
@@ -57,7 +57,7 @@ function createMTDoomWrapper() {
   canvasContainer.class("flex-grow");
   canvasContainer.parent(mainContent);
 
-  createCanvasBottomMenu().parent(mainContent);
+  createCanvasBottomDrawer().parent(mainContent);
 
   return mtDoomWrapper;
 }
@@ -65,7 +65,7 @@ function createMTDoomWrapper() {
 function createTopToolbar() {
   let topToolbar = createDiv("");
   topToolbar.id("top-toolbar");
-  topToolbar.class("w-full flex justify-between items-center bg-[--color-white] px-[2rem] py-[1rem]");
+  topToolbar.class("w-full flex justify-between items-center bg-[--color-white] px-[2rem] py-[1rem] rounded-t-[.5rem]");
 
   let leftDiv = createDiv("");
   leftDiv.parent(topToolbar);
@@ -85,7 +85,7 @@ function createTopToolbar() {
   // });
 
   let mtTitle = createElement("p", "Máquina de Estados 01");
-  mtTitle.class("text-[1.4rem] text-white font-bold");
+  mtTitle.class("text-[1.4rem] text-white font-bold mt-title");
   mtTitle.parent(leftDiv);
 
   let rightDiv = createDiv("");
@@ -96,7 +96,10 @@ function createTopToolbar() {
   fullscreenButton.class("w-[2.6rem] h-[2.6rem] text-white flex items-center justify-center");
   fullscreenButton.id("fullscreenButton");
   fullscreenButton.parent(rightDiv);
-  fullscreenButton.mousePressed(() => (fs = !fs));
+  fullscreenButton.mousePressed(() => {
+    fs = !fs;
+    cnvIsFocused = "menu";
+  });
 
   return topToolbar;
 }
@@ -107,31 +110,93 @@ function createCanvasLeftSidebar() {
   leftSidebar.class("bg-[--color-white] flex flex-col justify-between items-center");
 
   let topArea = createDiv("");
-  topArea.id("topAreau");
+  topArea.id("topArea");
   topArea.class("flex flex-col items-center");
   topArea.parent(leftSidebar);
 
   let bottomMenu = createDiv("");
-  bottomMenu.id("bottom-menu");
+  bottomMenu.id("bottom-drawer");
   bottomMenu.class("flex flex-col items-center");
   bottomMenu.parent(leftSidebar);
 
   // Top menu buttons
   const topMenuButtons = [
-    { id: "select", icon: "arrow_selector_tool", mousePressed: () => setMenuMousePressed("select") },
-    { id: "move", icon: "open_with", mousePressed: () => setMenuMousePressed("move") },
-    { id: "addState", icon: "add_circle", mousePressed: () => setMenuMousePressed("addState") },
-    { id: "addLink", icon: "arrow_right_alt", mousePressed: () => setMenuMousePressed("addLink") },
-    { id: "delete", icon: "close", mousePressed: () => setMenuMousePressed("delete") },
-    // { id: "cleanAll", icon: "remove_selection", mousePressed: () => setMenuMousePressed("delete") },
+    {
+      id: "select",
+      icon: "arrow_selector_tool",
+      tipType: "tip",
+      tipMessage: "Selecione ou mova um elemento do canvas ao clicar sobre ele",
+      tipDirection: "left",
+      mousePressed: () => setMenuMousePressed("select"),
+    },
+    {
+      id: "move",
+      icon: "open_with",
+      tipType: "tip",
+      tipMessage: "Pressione e arraste dentro do canvas para mover a visualização",
+      tipDirection: "left",
+      mousePressed: () => setMenuMousePressed("move"),
+    },
+    {
+      id: "addState",
+      icon: "add_circle",
+      tipType: "tip",
+      tipMessage: "Adiciona um novo estado de MT ao canvas no local clicado",
+      tipDirection: "left",
+      mousePressed: () => setMenuMousePressed("addState"),
+    },
+    {
+      id: "addLink",
+      icon: "arrow_right_alt",
+      tipType: "tip",
+      tipMessage: "Adiciona uma transição entre estados da MT no canvas, também pode ser utilizado para definir estado inicial",
+      tipDirection: "left",
+      mousePressed: () => setMenuMousePressed("addLink"),
+    },
+    { id: "delete", icon: "close", tipType: "tip", tipMessage: "Deleta um elemento do canvas ao clicar sobre ele", tipDirection: "left", mousePressed: () => setMenuMousePressed("delete") },
+    {
+      id: "cleanAll",
+      icon: "remove_selection",
+      tipType: "tip",
+      tipMessage: "Limpa todo o canvas",
+      tipDirection: "left",
+      mousePressed: () => {
+        if (confirm("Você tem certeza que deseja limpar o canvas?")) {
+          states = [];
+          links = [];
+          startLink = null;
+          currentLink = null;
+          lastSelectedState = null;
+          selectedObject = null;
+          mtCreated = null;
+          createHistory();
+        }
+      },
+    },
   ];
 
   topMenuButtons.forEach((btn) => {
+    let toolTipWrapper = createDiv("");
+    toolTipWrapper.class("tooltip-wrapper");
+    toolTipWrapper.parent(topArea);
     let button = createButton(`<span class='material-symbols-outlined' style='font-size: 1.6rem'>${btn.icon}</span>`);
     button.id(btn.id);
     button.class("w-[5rem] h-[3.6rem] flex items-center justify-center text-white hover:bg-[--color-primary] transition-colors");
     button.mousePressed(btn.mousePressed);
-    button.parent(topArea);
+    button.parent(toolTipWrapper);
+
+    let toolTip = createDiv("");
+    toolTip.class(`tooltip ${btn.tipDirection}`);
+    toolTip.parent(toolTipWrapper);
+    let toolTipContent = createDiv("");
+    toolTipContent.class("flex flex-col justify-center text-white");
+    toolTipContent.parent(toolTip);
+    let title = createElement("span", "Dica!");
+    title.class("title");
+    title.parent(toolTipContent);
+    let description = createElement("p", btn.tipMessage);
+    description.class("description");
+    description.parent(toolTipContent);
   });
 
   // Bottom input file hidden
@@ -140,7 +205,10 @@ function createCanvasLeftSidebar() {
   inputFile.position(-1000, -1000);
   inputFile.hide();
 
-  // Bottom menu buttons
+  // Bottom menu buttons with tooltips
+  let importTooltipWrapper = createDiv("");
+  importTooltipWrapper.class("tooltip-wrapper");
+  importTooltipWrapper.parent(bottomMenu);
   let importButton = createButton("<span class='material-symbols-outlined' style='font-size: 1.6rem'>upload_file</span>");
   importButton.class("w-[5rem] h-[3.6rem] flex items-center justify-center text-white hover:bg-[--color-primary] transition-colors");
   importButton.id("import-button");
@@ -149,64 +217,132 @@ function createCanvasLeftSidebar() {
     closeFloatingCanvasMenus();
     inputFile.elt.click();
   });
-  importButton.parent(bottomMenu);
+  importButton.parent(importTooltipWrapper);
+  let importTooltip = createDiv("");
+  importTooltip.class("tooltip left");
+  importTooltip.parent(importTooltipWrapper);
+  let importTooltipContent = createDiv("");
+  importTooltipContent.class("flex flex-col justify-center text-white");
+  importTooltipContent.parent(importTooltip);
+  let title = createElement("span", "Dica!");
+  title.class("title");
+  title.parent(importTooltipContent);
+  let description = createElement("p", "Importar arquivo de MT (.json)");
+  description.class("description");
+  description.parent(importTooltipContent);
 
   let exportMenuWrapper = createDiv("");
   exportMenuWrapper.class("relative");
   exportMenuWrapper.parent(bottomMenu);
 
+  let exportTooltipWrapper = createDiv("");
+  exportTooltipWrapper.class("tooltip-wrapper");
+  exportTooltipWrapper.id("export-tooltip-wrapper");
+  exportTooltipWrapper.parent(exportMenuWrapper);
   let exportButton = createButton("<span class='material-symbols-outlined' style='font-size: 1.6rem'>download</span>");
   exportButton.class("w-[5rem] h-[3.6rem] flex items-center justify-center text-white hover:bg-[--color-primary] transition-colors");
   exportButton.id("export-button-toggle");
   exportButton.mousePressed(() => toggleExportMenu());
-  exportButton.parent(exportMenuWrapper);
+  exportButton.parent(exportTooltipWrapper);
+  let exportTooltip = createDiv("");
+  exportTooltip.class("tooltip left");
+  exportTooltip.parent(exportTooltipWrapper);
+  let exportTooltipContent = createDiv("");
+  exportTooltipContent.class("flex flex-col justify-center text-white");
+  exportTooltipContent.parent(exportTooltip);
+  let exportTitle = createElement("span", "Dica!");
+  exportTitle.class("title");
+  exportTitle.parent(exportTooltipContent);
+  let exportDescription = createElement("p", "Exportar MT como imagem (.png) ou arquivo (.json)");
+  exportDescription.class("description");
+  exportDescription.parent(exportTooltipContent);
 
   let floatingExportMenu = createDiv("");
-  floatingExportMenu.class("menu-export absolute top-[45px] -left-[21px] bg-[#9caab7] p-[8px] rounded-lg flex-col gap-1 drop-shadow-lg z-[4] hidden");
+  floatingExportMenu.class("export-tooltip left");
   floatingExportMenu.id("floating-export-menu");
   floatingExportMenu.parent(exportMenuWrapper);
 
-  let exportAsPNGButton = createButton(".PNG");
-  exportAsPNGButton.class("w-[100px] py-1 rounded-[5px] text-white bg-[#4e5f6f] hover:bg-[#526a7c] transition-colors z-[5]");
+  let exportAsPNGButton = createButton("Exportar como imagem");
+  exportAsPNGButton.class("w-full h-[2.4rem] rounded-[.2rem] px-[1rem] mt-[.5rem] text-left text-white text-[1rem] font-medium hover:bg-[#5F5F5F] transition-colors z-[5]");
   exportAsPNGButton.id("export-as-png");
   exportAsPNGButton.mousePressed(() => exportAsPNG());
   exportAsPNGButton.parent(floatingExportMenu);
 
-  let exportAsJSONButton = createButton(".JSON");
-  exportAsJSONButton.class("w-[100px] py-1 rounded-[5px] text-white bg-[#4e5f6f] hover:bg-[#526a7c] transition-colors z-[5]");
+  let exportAsJSONButton = createButton("Exportar como arquivo DTM");
+  exportAsJSONButton.class("w-full h-[2.4rem] rounded-[.2rem] px-[1rem] mt-[.5rem] text-left text-white text-[1rem] font-medium hover:bg-[#5F5F5F] transition-colors z-[5]");
   exportAsJSONButton.id("export-as-dtm");
   exportAsJSONButton.mousePressed(() => exportAsJSON());
   exportAsJSONButton.parent(floatingExportMenu);
 
+  let zoomInTooltipWrapper = createDiv("");
+  zoomInTooltipWrapper.class("tooltip-wrapper");
+  zoomInTooltipWrapper.parent(bottomMenu);
   let zoomInButton = createButton("<span class='material-symbols-outlined' style='font-size: 1.8rem'>zoom_in</span>");
   zoomInButton.class("w-[5rem] h-[3.6rem] flex items-center justify-center text-white hover:bg-[--color-primary] transition-colors");
   zoomInButton.id("zoom-in");
   zoomInButton.mousePressed(() => {
     cnvIsFocused = "menu";
-    // scalingCanvasSlider.value(Number(scalingCanvasSlider.value()) + 0.25);
     globalScaleFactor = min(2.0, globalScaleFactor + 0.25);
   });
-  zoomInButton.parent(bottomMenu);
+  zoomInButton.parent(zoomInTooltipWrapper);
+  let zoomInTooltip = createDiv("");
+  zoomInTooltip.class("tooltip left");
+  zoomInTooltip.parent(zoomInTooltipWrapper);
+  let zoomInTooltipContent = createDiv("");
+  zoomInTooltipContent.class("flex flex-col justify-center text-white");
+  zoomInTooltipContent.parent(zoomInTooltip);
+  let zoomInTitle = createElement("span", "Dica!");
+  zoomInTitle.class("title");
+  zoomInTitle.parent(zoomInTooltipContent);
+  let zoomInDescription = createElement("p", "Aumentar zoom do canvas");
+  zoomInDescription.class("description");
+  zoomInDescription.parent(zoomInTooltipContent);
 
+  let zoomOutTooltipWrapper = createDiv("");
+  zoomOutTooltipWrapper.class("tooltip-wrapper");
+  zoomOutTooltipWrapper.parent(bottomMenu);
   let zoomOutButton = createButton("<span class='material-symbols-outlined' style='font-size: 1.8rem'>zoom_out</span>");
   zoomOutButton.class("w-[5rem] h-[3.6rem] flex items-center justify-center text-white hover:bg-[--color-primary] transition-colors");
   zoomOutButton.id("zoom-out");
   zoomOutButton.mousePressed(() => {
     cnvIsFocused = "menu";
-    // scalingCanvasSlider.value(Number(scalingCanvasSlider.value()) - 0.25);
     globalScaleFactor = max(0.5, globalScaleFactor - 0.25);
   });
-  zoomOutButton.parent(bottomMenu);
+  zoomOutButton.parent(zoomOutTooltipWrapper);
+  let zoomOutTooltip = createDiv("");
+  zoomOutTooltip.class("tooltip left");
+  zoomOutTooltip.parent(zoomOutTooltipWrapper);
+  let zoomOutTooltipContent = createDiv("");
+  zoomOutTooltipContent.class("flex flex-col justify-center text-white");
+  zoomOutTooltipContent.parent(zoomOutTooltip);
+  let zoomOutTitle = createElement("span", "Dica!");
+  zoomOutTitle.class("title");
+  zoomOutTitle.parent(zoomOutTooltipContent);
+  let zoomOutDescription = createElement("p", "Diminuir zoom do canvas");
+  zoomOutDescription.class("description");
+  zoomOutDescription.parent(zoomOutTooltipContent);
 
   return leftSidebar;
 }
 
-function toggleLabEnvironment() {
-  // let handleBottomMenu = select("#handle-bottom-menu");
-  // handleBottomMenu.toggleClass("hidden");
-  let bottomMenuContent = select("#bottom-menu-content");
-  bottomMenuContent.toggleClass("hidden");
-  bottomMenuContent.toggleClass("pb-[.5rem]");
+function openBottomDrawer() {
+  let bottomDrawerContent = select("#bottom-drawer-content");
+  bottomDrawerContent.removeClass("hidden");
+  bottomDrawerContent.removeClass("pb-[.5rem]");
+}
+
+function closeBottomDrawer() {
+  let bottomDrawerContent = select("#bottom-drawer-content");
+  bottomDrawerContent.addClass("hidden");
+  bottomDrawerContent.addClass("pb-[.5rem]");
+
+  let toggleButtons = selectAll("#bottom-drawer-buttons button");
+  toggleButtons.forEach((btn) => {
+    btn.removeClass("bg-[--color-primary]");
+    btn.removeClass("border-[--color-primary]");
+    btn.removeClass("active");
+    updateUIWhenSimulating(false, false, false);
+  });
 }
 
 // MT functions
@@ -405,24 +541,25 @@ function createTape() {
   tapeBoundsImage2.parent(tapeWrapper);
 }
 
-function createCanvasBottomMenu() {
+function createCanvasBottomDrawer() {
   let bottomWrapper = createDiv("");
   bottomWrapper.class("absolute bottom-0 min-w-full px-[.5rem]");
-  let bottomMenu = createDiv("");
-  bottomMenu.id("bottom-menu");
-  bottomMenu.class("w-full flex flex-col items-center justify-center gap-[1rem] bg-[--color-white] pt-[.5rem] rounded-t-[1rem]");
-  bottomMenu.parent(bottomWrapper);
+  let bottomDrawer = createDiv("");
+  bottomDrawer.id("bottom-drawer");
+  bottomDrawer.class("w-full flex flex-col items-center justify-center gap-[1rem] bg-[--color-white] pt-[.5rem] rounded-t-[1rem]");
+  bottomDrawer.parent(bottomWrapper);
 
   // let maximizeIcon = createElement("span");
   // maximizeIcon.class("material-symbols-outlined text-white h-0 mb-[1rem]");
   // maximizeIcon.style("font-size", "2rem");
   // maximizeIcon.html("maximize");
-  // maximizeIcon.id("handle-bottom-menu");
-  // maximizeIcon.parent(bottomMenu);
+  // maximizeIcon.id("handle-bottom-drawer");
+  // maximizeIcon.parent(bottomDrawer);
 
-  let bottomMenuButtons = createDiv("");
-  bottomMenuButtons.class("flex items center gap-[1rem]");
-  bottomMenuButtons.parent(bottomMenu);
+  let bottomDrawerButtons = createDiv("");
+  bottomDrawerButtons.class("flex items center gap-[1rem]");
+  bottomDrawerButtons.id("bottom-drawer-buttons");
+  bottomDrawerButtons.parent(bottomDrawer);
 
   let buttons = [
     {
@@ -432,16 +569,17 @@ function createCanvasBottomMenu() {
           d="M1859 1758q14 23 21 47t7 51q0 40-15 75t-41 61t-61 41t-75 15H354q-40 0-75-15t-61-41t-41-61t-15-75q0-27 6-51t21-47l569-992q10-14 10-34V128H640V0h768v128h-128v604q0 19 10 35zM896 732q0 53-27 99l-331 577h972l-331-577q-27-46-27-99V128H896zm799 1188q26 0 44-19t19-45q0-10-2-17t-8-16l-164-287H464l-165 287q-9 15-9 33q0 26 18 45t46 19z" />
       </svg>`,
       mousePressed: (btn) => {
-        toggleLabEnvironment();
         if (btn) {
           btn.toggleClass("bg-[--color-primary]");
           btn.toggleClass("border-[--color-primary]");
-          btn.toggleClass("activated-lab-test");
+          btn.toggleClass("active");
 
-          if (btn.hasClass("activated-lab-test")) {
+          if (btn.hasClass("active")) {
+            openBottomDrawer();
             fastSimulationReset();
             updateUIWhenSimulating(false, false, true);
           } else {
+            closeBottomDrawer();
             updateUIWhenSimulating(false, false, false);
           }
 
@@ -460,17 +598,17 @@ function createCanvasBottomMenu() {
     button.id(btn.id);
     button.class("w-[3rem] h-[3rem] rounded-[.4rem] text-white border-[.1rem] flex items-center justify-center outline-none");
     button.mousePressed(() => btn.mousePressed(button));
-    button.parent(bottomMenuButtons);
+    button.parent(bottomDrawerButtons);
   });
 
-  let bottomMenuContent = createDiv("");
-  bottomMenuContent.class("w-full flex flex-col items-center px-[2rem] gap-[.5rem] pb-[1rem] pb-[.5rem] hidden");
-  bottomMenuContent.parent(bottomMenu);
-  bottomMenuContent.id("bottom-menu-content");
+  let bottomDrawerContent = createDiv("");
+  bottomDrawerContent.class("w-full flex flex-col items-center px-[2rem] gap-[.5rem] pb-[1rem] pb-[.5rem] hidden");
+  bottomDrawerContent.parent(bottomDrawer);
+  bottomDrawerContent.id("bottom-drawer-content");
 
   let inputWordDiv = createDiv("");
   inputWordDiv.class("w-full flex items-center gap-[.5rem]");
-  inputWordDiv.parent(bottomMenuContent);
+  inputWordDiv.parent(bottomDrawerContent);
 
   let inputWordLabel = createElement("label", "Entrada");
   inputWordLabel.class("text-white text-[1.4rem]");
@@ -515,18 +653,18 @@ function createCanvasBottomMenu() {
     updateUIWhenSimulating(false, false, true);
   });
 
-  let bottomMenuSimulationButtons = createDiv("");
-  bottomMenuSimulationButtons.class("w-full flex items-center justify-between");
-  bottomMenuSimulationButtons.parent(bottomMenuContent);
+  let bottomDrawerSimulationButtons = createDiv("");
+  bottomDrawerSimulationButtons.class("w-full flex items-center justify-between");
+  bottomDrawerSimulationButtons.parent(bottomDrawerContent);
 
-  let bottomMenuSimulationButtonsLeft = createDiv("");
-  bottomMenuSimulationButtonsLeft.class("flex items-center justify-center gap-[.5rem]");
-  bottomMenuSimulationButtonsLeft.parent(bottomMenuSimulationButtons);
+  let bottomDrawerSimulationButtonsLeft = createDiv("");
+  bottomDrawerSimulationButtonsLeft.class("flex items-center justify-center gap-[.5rem]");
+  bottomDrawerSimulationButtonsLeft.parent(bottomDrawerSimulationButtons);
 
   let fastResetButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>skip_previous</span>");
   fastResetButton.class("w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[#4B4B4B] flex items-center justify-center");
   fastResetButton.id("fast-reset-button");
-  fastResetButton.parent(bottomMenuSimulationButtonsLeft);
+  fastResetButton.parent(bottomDrawerSimulationButtonsLeft);
   fastResetButton.mousePressed(() => {
     if (fastResetButton.hasClass("active-class")) fastSimulationReset();
   });
@@ -534,7 +672,7 @@ function createCanvasBottomMenu() {
   let goToLeftOnTapeButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>chevron_left</span>");
   goToLeftOnTapeButton.class("w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[#4B4B4B] flex items-center justify-center");
   goToLeftOnTapeButton.id("goto-left-button");
-  goToLeftOnTapeButton.parent(bottomMenuSimulationButtonsLeft);
+  goToLeftOnTapeButton.parent(bottomDrawerSimulationButtonsLeft);
   goToLeftOnTapeButton.mousePressed(() => {
     if (goToLeftOnTapeButton.hasClass("active-class")) goToLeftOnTape();
   });
@@ -542,12 +680,12 @@ function createCanvasBottomMenu() {
   // let playButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>play_arrow</span>");
   // playButton.class("w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[--color-primary] flex items-center justify-center");
   // playButton.id("play-button");
-  // playButton.parent(bottomMenuSimulationButtonsLeft);
+  // playButton.parent(bottomDrawerSimulationButtonsLeft);
 
   let goToRightOnTapeButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>chevron_right</span>");
   goToRightOnTapeButton.class("w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[--color-primary] flex items-center justify-center active-class");
   goToRightOnTapeButton.id("goto-right-button");
-  goToRightOnTapeButton.parent(bottomMenuSimulationButtonsLeft);
+  goToRightOnTapeButton.parent(bottomDrawerSimulationButtonsLeft);
   goToRightOnTapeButton.mousePressed(() => {
     if (goToRightOnTapeButton.hasClass("active-class")) goToRightOnTape();
   });
@@ -555,18 +693,18 @@ function createCanvasBottomMenu() {
   let fastSimulationButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>skip_next</span>");
   fastSimulationButton.class("w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[--color-primary] flex items-center justify-center active-class");
   fastSimulationButton.id("fast-simulation-button");
-  fastSimulationButton.parent(bottomMenuSimulationButtonsLeft);
+  fastSimulationButton.parent(bottomDrawerSimulationButtonsLeft);
   fastSimulationButton.mousePressed(() => {
     if (fastSimulationButton.hasClass("active-class")) fastSimulation();
   });
 
-  let bottomMenuSimulationButtonsRight = createDiv("");
-  bottomMenuSimulationButtonsRight.class("flex items-center gap-[3rem]");
-  bottomMenuSimulationButtonsRight.parent(bottomMenuSimulationButtons);
+  let bottomDrawerSimulationButtonsRight = createDiv("");
+  bottomDrawerSimulationButtonsRight.class("flex items-center gap-[3rem]");
+  bottomDrawerSimulationButtonsRight.parent(bottomDrawerSimulationButtons);
 
   // let pauseIntervalDiv = createDiv("");
   // pauseIntervalDiv.class("flex items center gap-[.5rem] text-white text-[1.2rem]");
-  // pauseIntervalDiv.parent(bottomMenuSimulationButtonsRight);
+  // pauseIntervalDiv.parent(bottomDrawerSimulationButtonsRight);
 
   // let pauseIntervalLabel = createElement("label", "Pausa");
   // pauseIntervalLabel.parent(pauseIntervalDiv);
@@ -593,7 +731,7 @@ function createCanvasBottomMenu() {
 
   let maxStepsDiv = createDiv("");
   maxStepsDiv.class("flex items center gap-[.5rem] text-white text-[1.2rem]");
-  maxStepsDiv.parent(bottomMenuSimulationButtonsRight);
+  maxStepsDiv.parent(bottomDrawerSimulationButtonsRight);
 
   let maxStepsLabel = createElement("label", "Max. passos.");
   maxStepsLabel.parent(maxStepsDiv);
@@ -619,43 +757,10 @@ function createCanvasBottomMenu() {
   let tapeDiv = createDiv("");
   tapeDiv.class("w-full py-[.2rem] rounded-[.4rem] flex items-center justify-center");
   tapeDiv.id("tape-div");
-  tapeDiv.parent(bottomMenuContent);
+  tapeDiv.parent(bottomDrawerContent);
 
   return bottomWrapper;
 }
-
-// function createBottomMenu() {
-//   let bottomMenu = createDiv("");
-//   bottomMenu.id("bottom-menu");
-//   bottomMenu.class("w-full flex items-center justify-end gap-1 hidden");
-
-//   let span1 = createElement("span");
-//   span1.class("text-white");
-//   span1.html("0.5");
-//   span1.parent(bottomMenu);
-
-//   let input = createInput("1");
-//   input.id("scalingCanvasSlider");
-//   input.attribute("type", "range");
-//   input.attribute("min", "0.5");
-//   input.attribute("max", "2");
-//   input.attribute("step", "0.25");
-//   input.attribute("value", "1");
-//   input.class("w-[15%] min-w-[75px]");
-//   input.parent(bottomMenu);
-//   input.input(() => {
-//     cnvIsFocused = "canvas";
-//     globalScaleFactor = input.value();
-//     if (!selectedLeftSidebarButton) setSelectedMenuButton("select");
-//   });
-
-//   let span2 = createElement("span");
-//   span2.class("text-white");
-//   span2.html("2.0");
-//   span2.parent(bottomMenu);
-
-//   return bottomMenu;
-// }
 
 function createContextMenu() {
   let mainDiv = createDiv("");
@@ -722,7 +827,7 @@ function createContextMenu() {
   return mainDiv;
 }
 
-// Top (Left) Menu Button functions
+// Left Sidebar Menu Button functions
 let leftSidebar = null;
 let selectedLeftSidebarButton = null;
 
@@ -770,7 +875,6 @@ let exportAsDMTButton = null;
 
 function closeExportMenu() {
   let floatingMenu = select("#floating-export-menu");
-
   if (!floatingMenu.hasClass("hidden")) {
     floatingMenu.removeClass("flex");
     floatingMenu.addClass("hidden");
@@ -786,6 +890,9 @@ function toggleExportMenu() {
   let floatingMenu = select("#floating-export-menu");
   // if hidden, show it
   if (floatingMenu.hasClass("hidden")) {
+    console.log(floatingMenu);
+    let exportTooltipWrapper = select("#export-tooltip-wrapper");
+    exportTooltipWrapper.addClass("export-tooltip-active");
     floatingMenu.removeClass("hidden");
     floatingMenu.addClass("flex");
   } else {
@@ -1046,7 +1153,7 @@ function reCalculateCanvasPositions() {
   let canvasContainer = select("#canvas-container");
   let canvasWidth = canvasContainer.elt.offsetWidth;
   let canvasHeight = canvasContainer.elt.offsetHeight;
-  resizeCanvas(canvasWidth, canvasHeight);
+  // resizeCanvas(canvasWidth, canvasHeight);
 
   // Set window offset
   globalWindowOffset = cnv.position();
@@ -1070,8 +1177,8 @@ function setup() {
   cnv.doubleClicked(doubleClickOnCanvas);
 
   // Create bottom menu
-  // let bottomMenu = createBottomMenu();
-  // bottomMenu.parent("body");
+  // let bottomDrawer = createBottomDrawer();
+  // bottomDrawer.parent("body");
 
   // Set canvas initial position and size
   reCalculateCanvasPositions();
@@ -1651,6 +1758,7 @@ function moveCanvas(x = mouseX, y = mouseY) {
 
 // Mouse Canvas functions
 function mousePressedOnCanvas() {
+  closeBottomDrawer();
   if (cnvIsFocused === "outside") return;
 
   closeExportMenu();
@@ -1916,7 +2024,7 @@ function keyPressed() {
     !keyIsDown(SHIFT) &&
     !states.some((state) => state.input.visible) &&
     !links.some((link) => link.transitionBox.selected) &&
-    !select("#lab-test").hasClass("activated-lab-test")
+    !select("#lab-test").hasClass("active")
   ) {
     let index = keyCode - 49;
     let buttons = ["select", "move", "addState", "addLink", "delete"];
