@@ -14,6 +14,7 @@ class MT {
     this.head = 0;
 
     // Extra
+    this.history = [];
     this.maxInterectedIndex = 0;
     this.currentState = this.initialState;
     this.blankSymbol = "☐";
@@ -59,13 +60,6 @@ class MT {
     return true;
   }
 
-  fastSimulationReset() {
-    this.head = 0;
-    this.tape = [];
-    this.maxInterectedIndex = 0;
-    console.log("Tape reseted");
-  }
-
   checkAcceptance() {
     if (this.endStates.has(this.currentState)) {
       if (this.maxInterectedIndex >= this.simulatedWord.length) return { accepted: true, end: true };
@@ -75,11 +69,31 @@ class MT {
     return { accepted: false, end: false };
   }
 
-  goToLeftOnTape() {
-    this.head = Math.max(0, this.head - 1);
+  createHistory() {
+    this.history.push({
+      tape: [...this.tape],
+      tapeHead: this.head,
+      currentState: this.currentState,
+      maxInterectedIndex: this.maxInterectedIndex,
+    });
   }
 
-  goToRightOnTape() {
+  fastSimulationReset() {
+    this.head = 0;
+    this.tape = [];
+    this.maxInterectedIndex = 0;
+    this.history = [];
+  }
+
+  backwardSimulation() {
+    let last = this.history.pop();
+    this.tape = last.tape;
+    this.head = last.tapeHead;
+    this.currentState = last.currentState;
+    this.maxInterectedIndex = last.maxInterectedIndex;
+  }
+
+  forwardSimulation() {
     if (!this.checkValidMTFormat()) {
       alert("Invalid Turing Machine format\n\n");
       return { accepted: false, end: true };
@@ -92,6 +106,8 @@ class MT {
     const transition = this.delta[this.currentState][currentSymbol];
 
     if (!transition) return { accepted: false, end: true };
+
+    this.createHistory();
 
     this.tape[this.head] = transition.write;
     this.head += transition.move;
@@ -122,7 +138,7 @@ class MT {
     this.head = 0;
 
     do {
-      let result = this.goToRightOnTape();
+      let result = this.forwardSimulation();
       if (result.end) return result;
 
       maxIteractions--;
@@ -131,9 +147,5 @@ class MT {
         return { accepted: false, end: true };
       }
     } while (true);
-  }
-
-  printTape() {
-    console.log("Tape: ", this.tape.join(""));
   }
 }

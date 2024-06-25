@@ -461,13 +461,15 @@ function fastSimulationReset() {
   updateUIWhenSimulating(false, false, true);
 }
 
-function goToLeftOnTape() {
-  alert("Not implemented yet!");
+function backwardSimulation() {
   if (!mtCreated) return;
-  // mtCreated.goToLeftOnTape();
+  mtCreated.backwardSimulation();
+  createTape();
+
+  updateUIWhenSimulating(false, false, true);
 }
 
-function goToRightOnTape() {
+function forwardSimulation() {
   if (!mtCreated) {
     mtCreated = createMT();
     if (!mtCreated) return;
@@ -476,7 +478,7 @@ function goToRightOnTape() {
     mtCreated.tape = select("#input-word").value().split("");
   }
 
-  const { accepted, end } = mtCreated.goToRightOnTape();
+  const { accepted, end } = mtCreated.forwardSimulation();
   createTape();
 
   updateUIWhenSimulating(accepted, end, true);
@@ -670,12 +672,12 @@ function createCanvasBottomDrawer() {
     if (fastResetButton.hasClass("active-class")) fastSimulationReset();
   });
 
-  let goToLeftOnTapeButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>chevron_left</span>");
-  goToLeftOnTapeButton.class("w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[#4B4B4B] flex items-center justify-center");
-  goToLeftOnTapeButton.id("goto-left-button");
-  goToLeftOnTapeButton.parent(bottomDrawerSimulationButtonsLeft);
-  goToLeftOnTapeButton.mousePressed(() => {
-    if (goToLeftOnTapeButton.hasClass("active-class")) goToLeftOnTape();
+  let backwardSimulationButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>chevron_left</span>");
+  backwardSimulationButton.class("w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[#4B4B4B] flex items-center justify-center");
+  backwardSimulationButton.id("backward-simulation-button");
+  backwardSimulationButton.parent(bottomDrawerSimulationButtonsLeft);
+  backwardSimulationButton.mousePressed(() => {
+    if (backwardSimulationButton.hasClass("active-class")) backwardSimulation();
   });
 
   // let playButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>play_arrow</span>");
@@ -683,12 +685,12 @@ function createCanvasBottomDrawer() {
   // playButton.id("play-button");
   // playButton.parent(bottomDrawerSimulationButtonsLeft);
 
-  let goToRightOnTapeButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>chevron_right</span>");
-  goToRightOnTapeButton.class("w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[--color-primary] flex items-center justify-center active-class");
-  goToRightOnTapeButton.id("goto-right-button");
-  goToRightOnTapeButton.parent(bottomDrawerSimulationButtonsLeft);
-  goToRightOnTapeButton.mousePressed(() => {
-    if (goToRightOnTapeButton.hasClass("active-class")) goToRightOnTape();
+  let forwardSimulationButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>chevron_right</span>");
+  forwardSimulationButton.class("w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[--color-primary] flex items-center justify-center active-class");
+  forwardSimulationButton.id("forward-simulation-button");
+  forwardSimulationButton.parent(bottomDrawerSimulationButtonsLeft);
+  forwardSimulationButton.mousePressed(() => {
+    if (forwardSimulationButton.hasClass("active-class")) forwardSimulation();
   });
 
   let fastSimulationButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>skip_next</span>");
@@ -1432,8 +1434,8 @@ function setup() {
 
 function simulationButtonActivation() {
   let fastResetButton = select("#fast-reset-button");
-  let goToLeftOnTapeButton = select("#goto-left-button");
-  let goToRightOnTapeButton = select("#goto-right-button");
+  let backwardSimulationButton = select("#backward-simulation-button");
+  let forwardSimulationButton = select("#forward-simulation-button");
   let fastSimulationButton = select("#fast-simulation-button");
   let inputWord = select("#input-word");
 
@@ -1442,8 +1444,8 @@ function simulationButtonActivation() {
 
   if (!inputWord || inputWord.value() === "" || inputWord.value().length === 0) {
     fastResetButton.class(diactivatedClass);
-    goToLeftOnTapeButton.class(diactivatedClass);
-    goToRightOnTapeButton.class(diactivatedClass);
+    backwardSimulationButton.class(diactivatedClass);
+    forwardSimulationButton.class(diactivatedClass);
     fastSimulationButton.class(diactivatedClass);
     return;
   }
@@ -1451,23 +1453,23 @@ function simulationButtonActivation() {
   if (inputWord && inputWord !== "") {
     if (!mtCreated) {
       fastResetButton.class(diactivatedClass);
-      goToLeftOnTapeButton.class(diactivatedClass);
-      goToRightOnTapeButton.class(activatedClass);
+      backwardSimulationButton.class(diactivatedClass);
+      forwardSimulationButton.class(activatedClass);
       fastSimulationButton.class(activatedClass);
     } else {
-      if (mtCreated.head > 0) {
+      if (mtCreated.history.length > 0) {
         fastResetButton.class(activatedClass);
-        goToLeftOnTapeButton.class(activatedClass);
-      } else if (mtCreated.head <= 0) {
+        backwardSimulationButton.class(activatedClass);
+      } else {
         fastResetButton.class(diactivatedClass);
-        goToLeftOnTapeButton.class(diactivatedClass);
+        backwardSimulationButton.class(diactivatedClass);
       }
 
       if (!(mtCreated.endStates.has(mtCreated.currentState) && mtCreated.maxInterectedIndex >= mtCreated.simulatedWord.length)) {
-        goToRightOnTapeButton.class(activatedClass);
+        forwardSimulationButton.class(activatedClass);
         fastSimulationButton.class(activatedClass);
       } else {
-        goToRightOnTapeButton.class(diactivatedClass);
+        forwardSimulationButton.class(diactivatedClass);
         fastSimulationButton.class(diactivatedClass);
       }
     }
