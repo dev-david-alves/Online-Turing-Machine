@@ -54,7 +54,7 @@ function createMTDoomWrapper() {
 
   let canvasContainer = createDiv("");
   canvasContainer.id("canvas-container");
-  canvasContainer.class("flex-grow");
+  canvasContainer.class("w-full h-full");
   canvasContainer.parent(mainContent);
 
   createCanvasBottomDrawer().parent(mainContent);
@@ -487,7 +487,8 @@ function fastSimulation() {
   if (!mtCreated) return;
   let inputWord = select("#input-word").value();
 
-  const { accepted, end } = mtCreated.fastSimulation(inputWord, parseInt(select("#max-steps").value()));
+  // const { accepted, end } = mtCreated.fastSimulation(inputWord, parseInt(select("#max-steps").value()));
+  const { accepted, end } = mtCreated.fastSimulation(inputWord, 1000);
   createTape();
 
   updateUIWhenSimulating(accepted, end, true);
@@ -530,7 +531,7 @@ function createTape() {
 
     // Tape head
     if (i === mtCreated.head) {
-      let tapeHead = createDiv("<img src='../assets/tape-head.svg' class='w-[2.2rem] h-[2.2rem]'>");
+      let tapeHead = createDiv("<img src='./assets/tape-head.svg' class='w-[2.2rem] h-[2.2rem]'>");
       tapeHead.class("absolute -bottom-[1.2rem]");
       tapeHead.parent(tapeCell);
     }
@@ -615,7 +616,7 @@ function createCanvasBottomDrawer() {
   inputWordLabel.parent(inputWordDiv);
 
   let inputWord = createInput("0011");
-  inputWord.attribute("type", "text");
+  inputWord.attribute("type", "search");
   inputWord.attribute("placeholder", "Ex: 1010...");
   inputWord.attribute("maxlength", "200");
   inputWord.attribute("autocomplete", "off");
@@ -637,25 +638,25 @@ function createCanvasBottomDrawer() {
     updateUIWhenSimulating(false, false, true);
   });
 
-  let clearButton = createButton("Limpar");
-  clearButton.class("h-[2.8rem] px-[1rem] text-white text-[1.4rem] rounded-[.4rem] bg-[--color-background]");
-  clearButton.parent(inputWordDiv);
-  clearButton.mousePressed(() => {
-    inputWord.value("");
-    mtCreated = createMT();
-    createTape();
+  // let clearButton = createButton("Limpar");
+  // clearButton.class("h-[2.8rem] px-[1rem] text-white text-[1.4rem] rounded-[.4rem] bg-[--color-background]");
+  // clearButton.parent(inputWordDiv);
+  // clearButton.mousePressed(() => {
+  //   inputWord.value("");
+  //   mtCreated = createMT();
+  //   createTape();
 
-    states.forEach((state) => {
-      state.simulating = false;
-      if (state.id === mtCreated.currentState) state.simulating = true;
-    });
+  //   states.forEach((state) => {
+  //     state.simulating = false;
+  //     if (state.id === mtCreated.currentState) state.simulating = true;
+  //   });
 
-    updateUIWhenSimulating(false, false, true);
-  });
+  //   updateUIWhenSimulating(false, false, true);
+  // });
 
   let bottomDrawerSimulationButtons = createDiv("");
-  bottomDrawerSimulationButtons.class("w-full flex items-center justify-between");
-  bottomDrawerSimulationButtons.parent(bottomDrawerContent);
+  bottomDrawerSimulationButtons.class("flex items-center justify-between");
+  bottomDrawerSimulationButtons.parent(inputWordDiv);
 
   let bottomDrawerSimulationButtonsLeft = createDiv("");
   bottomDrawerSimulationButtonsLeft.class("flex items-center justify-center gap-[.5rem]");
@@ -729,30 +730,30 @@ function createCanvasBottomDrawer() {
   // pauseIntervalSpan.id("interval-pause-span");
   // pauseIntervalSpan.parent(pauseIntervalDiv);
 
-  let maxStepsDiv = createDiv("");
-  maxStepsDiv.class("flex items center gap-[.5rem] text-white text-[1.2rem]");
-  maxStepsDiv.parent(bottomDrawerSimulationButtonsRight);
+  // let maxStepsDiv = createDiv("");
+  // maxStepsDiv.class("flex items center gap-[.5rem] text-white text-[1.2rem]");
+  // maxStepsDiv.parent(bottomDrawerSimulationButtonsRight);
 
-  let maxStepsLabel = createElement("label", "Max. passos.");
-  maxStepsLabel.parent(maxStepsDiv);
+  // let maxStepsLabel = createElement("label", "Max. passos.");
+  // maxStepsLabel.parent(maxStepsDiv);
 
-  let maxStepsInput = createInput("");
-  maxStepsInput.attribute("type", "range");
-  maxStepsInput.attribute("id", "max-steps");
-  maxStepsInput.attribute("min", "100");
-  maxStepsInput.attribute("max", "900");
-  maxStepsInput.attribute("step", "50");
-  maxStepsInput.attribute("value", "500");
-  maxStepsInput.class("w-[10rem] accent-[--color-primary]");
-  maxStepsInput.parent(maxStepsDiv);
-  maxStepsInput.input(() => {
-    let maxStepsSpan = select("#max-steps-span");
-    if (maxStepsSpan) maxStepsSpan.html(maxStepsInput.value());
-  });
+  // let maxStepsInput = createInput("");
+  // maxStepsInput.attribute("type", "range");
+  // maxStepsInput.attribute("id", "max-steps");
+  // maxStepsInput.attribute("min", "100");
+  // maxStepsInput.attribute("max", "900");
+  // maxStepsInput.attribute("step", "50");
+  // maxStepsInput.attribute("value", "500");
+  // maxStepsInput.class("w-[10rem] accent-[--color-primary]");
+  // maxStepsInput.parent(maxStepsDiv);
+  // maxStepsInput.input(() => {
+  //   let maxStepsSpan = select("#max-steps-span");
+  //   if (maxStepsSpan) maxStepsSpan.html(maxStepsInput.value());
+  // });
 
-  let maxStepsSpan = createElement("span", "500");
-  maxStepsSpan.id("max-steps-span");
-  maxStepsSpan.parent(maxStepsDiv);
+  // let maxStepsSpan = createElement("span", "500");
+  // maxStepsSpan.id("max-steps-span");
+  // maxStepsSpan.parent(maxStepsDiv);
 
   let tapeDiv = createDiv("");
   tapeDiv.class("w-full py-[.2rem] rounded-[.4rem] flex items-center justify-center");
@@ -1153,7 +1154,11 @@ function reCalculateCanvasPositions() {
   let canvasContainer = select("#canvas-container");
   let canvasWidth = canvasContainer.elt.offsetWidth;
   let canvasHeight = canvasContainer.elt.offsetHeight;
-  // resizeCanvas(canvasWidth, canvasHeight);
+  if (fs) {
+    resizeCanvas(canvasWidth, canvasHeight);
+  } else {
+    resizeCanvas(canvasWidth, 400);
+  }
 
   // Set window offset
   globalWindowOffset = cnv.position();
