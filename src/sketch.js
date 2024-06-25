@@ -1927,7 +1927,7 @@ function doubleClickOnCanvas() {
     link.doubleClick();
   });
 
-  if (links.some((link) => link.transitionBox.containsPoint(mouseX, mouseY))) return;
+  if (links.some((link) => link.transitionBox.containsPoint(mouseX, mouseY) && link.transitionBox.selected)) return;
 
   if (selectedLeftSidebarButton === "select") {
     if (!hoveredObject) {
