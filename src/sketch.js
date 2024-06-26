@@ -1266,11 +1266,13 @@ function draw() {
     mtDoomWrapper.addClass("min-h-[100vh]");
     playgroundContainer.addClass("flex-grow");
     fullscreenButton.html("<span class='material-symbols-outlined' style='font-size: 1.8rem'>fullscreen_exit</span>");
+    select("#title").hide();
   } else {
     mtDoomWrapper.removeClass("min-w-[100vw]");
     mtDoomWrapper.removeClass("min-h-[100vh]");
     playgroundContainer.removeClass("flex-grow");
     fullscreenButton.html("<span class='material-symbols-outlined' style='font-size: 1.8rem'>fullscreen</span>");
+    select("#title").show();
   }
 
   // Simulation buttons activation
