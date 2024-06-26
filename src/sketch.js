@@ -439,6 +439,9 @@ function updateUIWhenSimulating(accepted, end, labOpened = false) {
     tapeDiv.addClass("bg-[#6cfe6c]");
     tapeDiv.addClass("filter-[blur(1rem)]");
 
+    tapeDiv.removeClass("word-rejected");
+    tapeDiv.addClass("word-accepeted");
+
     // alert("Word accepted!");
   } else if (!accepted && end) {
     let tapeDiv = select("#tape-div");
@@ -446,12 +449,18 @@ function updateUIWhenSimulating(accepted, end, labOpened = false) {
     tapeDiv.removeClass("bg-[#6cfe6c]");
     tapeDiv.addClass("bg-[#ff0000]");
 
+    tapeDiv.removeClass("word-accepeted");
+    tapeDiv.addClass("word-rejected");
+
     // alert("Word rejected!");
   } else {
     let tapeDiv = select("#tape-div");
     tapeDiv.show();
     tapeDiv.removeClass("bg-[#ff0000]");
     tapeDiv.removeClass("bg-[#6cfe6c]");
+
+    tapeDiv.removeClass("word-rejected");
+    tapeDiv.removeClass("word-accepeted");
   }
 }
 
@@ -580,6 +589,9 @@ function createCanvasBottomDrawer() {
           if (btn.hasClass("active")) {
             openBottomDrawer();
             fastSimulationReset();
+            if (mtCreated) mtCreated.simulatedWord = select("#input-word").value();
+            if (mtCreated.simulatedWord.length === 0) mtCreated.tape = [mtCreated.blankSymbol];
+            createTape();
             updateUIWhenSimulating(false, false, true);
           } else {
             closeBottomDrawer();
@@ -629,7 +641,9 @@ function createCanvasBottomDrawer() {
     mtCreated = createMT();
     if (!mtCreated) return;
     mtCreated.simulatedWord = inputWord.value();
-    mtCreated.tape = inputWord.value().split("");
+    if (mtCreated.simulatedWord.length > 0) mtCreated.tape = inputWord.value().split("");
+    else mtCreated.tape = [mtCreated.blankSymbol];
+
     createTape();
 
     states.forEach((state) => {
@@ -1216,35 +1230,24 @@ function simulationButtonActivation() {
   let diactivatedClass = "w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[#4B4B4B] flex items-center justify-center";
   let activatedClass = "w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[--color-primary] flex items-center justify-center active-class";
 
-  if (!inputWord || inputWord.value() === "" || inputWord.value().length === 0) {
-    fastResetButton.class(diactivatedClass);
-    backwardSimulationButton.class(diactivatedClass);
-    forwardSimulationButton.class(diactivatedClass);
-    fastSimulationButton.class(diactivatedClass);
-    return;
-  }
+  fastResetButton.class(diactivatedClass);
+  backwardSimulationButton.class(diactivatedClass);
+  forwardSimulationButton.class(diactivatedClass);
+  fastSimulationButton.class(diactivatedClass);
 
-  if (inputWord && inputWord !== "") {
-    if (!mtCreated) {
-      fastResetButton.class(diactivatedClass);
-      backwardSimulationButton.class(diactivatedClass);
-      forwardSimulationButton.class(activatedClass);
-      fastSimulationButton.class(activatedClass);
-    } else {
-      if (mtCreated.history.length > 0) {
-        fastResetButton.class(activatedClass);
-        backwardSimulationButton.class(activatedClass);
-      } else {
-        fastResetButton.class(diactivatedClass);
-        backwardSimulationButton.class(diactivatedClass);
-      }
+  if (!mtCreated) {
+    forwardSimulationButton.class(activatedClass);
+    fastSimulationButton.class(activatedClass);
+  } else {
+    if (mtCreated.history.length > 0) {
+      fastResetButton.class(activatedClass);
+      backwardSimulationButton.class(activatedClass);
+    }
 
+    if (!select("#tape-div").hasClass("word-accepted") && !select("#tape-div").hasClass("word-rejected")) {
       if (!(mtCreated.endStates.has(mtCreated.currentState) && mtCreated.maxInterectedIndex >= mtCreated.simulatedWord.length)) {
         forwardSimulationButton.class(activatedClass);
         fastSimulationButton.class(activatedClass);
-      } else {
-        forwardSimulationButton.class(diactivatedClass);
-        fastSimulationButton.class(diactivatedClass);
       }
     }
   }

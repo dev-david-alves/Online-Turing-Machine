@@ -99,6 +99,8 @@ class MT {
       return { accepted: false, end: true };
     }
 
+    if (this.tape.length === 0) this.tape = [this.blankSymbol];
+
     let result = this.checkAcceptance();
     if (result.end) return result;
 
@@ -133,6 +135,7 @@ class MT {
     this.simulatedWord = word;
     this.maxInterectedIndex = 0; // To check if all the word was interected at least once
     this.tape = this.simulatedWord.split("");
+    if (this.tape.length === 0) this.tape = [this.blankSymbol];
 
     this.currentState = this.initialState;
     this.head = 0;
