@@ -356,6 +356,7 @@ function createMT() {
 
   if (startState === null || endStates.size === 0) {
     let tapeDiv = select("#tape-div");
+    tapeDiv.html("");
     tapeDiv.show();
 
     let wrapperAlertDiv = createDiv("");
@@ -589,8 +590,10 @@ function createCanvasBottomDrawer() {
           if (btn.hasClass("active")) {
             openBottomDrawer();
             fastSimulationReset();
-            if (mtCreated) mtCreated.simulatedWord = select("#input-word").value();
-            if (mtCreated.simulatedWord.length === 0) mtCreated.tape = [mtCreated.blankSymbol];
+            if (mtCreated) {
+              mtCreated.simulatedWord = select("#input-word").value();
+              if (mtCreated.simulatedWord.length === 0) mtCreated.tape = [mtCreated.blankSymbol];
+            }
             createTape();
             updateUIWhenSimulating(false, false, true);
           } else {

@@ -973,6 +973,10 @@ video {
   font-size: 1rem;
 }
 
+.text-\[4rem\] {
+  font-size: 4rem;
+}
+
 .font-bold {
   font-weight: 700;
 }
@@ -985,9 +989,17 @@ video {
   font-weight: 600;
 }
 
+.font-black {
+  font-weight: 900;
+}
+
 .text-\[\#676768\] {
   --tw-text-opacity: 1;
   color: rgb(103 103 104 / var(--tw-text-opacity));
+}
+
+.text-\[--color-primary\] {
+  color: var(--color-primary);
 }
 
 .text-\[dark-white\] {
