@@ -409,9 +409,14 @@ function createMT() {
 
       if (!delta[stateA][ruleBreak[0]]) delta[stateA][ruleBreak[0]] = {};
 
+      let mappingMove = {
+        E: -1,
+        D: 1,
+        P: 0,
+      };
       delta[stateA][ruleBreak[0]] = {
         write: ruleBreak[1],
-        move: ruleBreak[2] === "D" ? 1 : -1,
+        move: mappingMove[ruleBreak[2]],
         nextState: stateB,
       };
     });
@@ -910,7 +915,6 @@ function toggleExportMenu() {
   let floatingMenu = select("#floating-export-menu");
   // if hidden, show it
   if (floatingMenu.hasClass("hidden")) {
-    console.log(floatingMenu);
     let exportTooltipWrapper = select("#export-tooltip-wrapper");
     exportTooltipWrapper.addClass("export-tooltip-active");
     floatingMenu.removeClass("hidden");

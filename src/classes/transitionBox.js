@@ -64,10 +64,17 @@ class TransitionBox {
       this.directionButtonPressed = "left";
       this.leftButton.style("background-color", "#1762a3");
       this.rightButton.style("background-color", "transparent");
-    } else {
+      this.stayButton.style("background-color", "transparent");
+    } else if (direction === "right") {
       this.directionButtonPressed = "right";
       this.rightButton.style("background-color", "#1762a3");
       this.leftButton.style("background-color", "transparent");
+      this.stayButton.style("background-color", "transparent");
+    } else {
+      this.directionButtonPressed = "stay";
+      this.stayButton.style("background-color", "#1762a3");
+      this.leftButton.style("background-color", "transparent");
+      this.rightButton.style("background-color", "transparent");
     }
 
     this.changeResultText();
@@ -102,6 +109,7 @@ class TransitionBox {
     this.directionButtonDiv = createDiv();
     this.directionButtonDiv.parent(this.buttonDiv);
     this.directionButtonDiv.class("flex items-center gap-[.4rem]");
+
     this.leftButton = createButton("E");
     this.leftButton.parent(this.directionButtonDiv);
     this.leftButton.class("w-[3rem] h-[3rem] text-[1.2rem] text-white font-semibold border-[.1rem] border-[--color-primary] rounded-[.4rem] bg-transparent transition-colors");
@@ -110,10 +118,15 @@ class TransitionBox {
 
     this.rightButton = createButton("D");
     this.rightButton.parent(this.directionButtonDiv);
-
     this.rightButton.class("w-[3rem] h-[3rem] text-[1.2rem] text-white font-semibold border-[.1rem] border-[--color-primary] rounded-[5px] bg-transparent transition-colors");
     this.rightButton.id("rightButton");
     this.rightButton.mousePressed(() => this.switchButtons("right"));
+
+    this.stayButton = createButton("P");
+    this.stayButton.parent(this.directionButtonDiv);
+    this.stayButton.class("w-[3rem] h-[3rem] text-[1.2rem] text-white font-semibold border-[.1rem] border-[--color-primary] rounded-[5px] bg-transparent transition-colors");
+    this.stayButton.id("stayButton");
+    this.stayButton.mousePressed(() => this.switchButtons("stay"));
 
     this.confirmButton = createButton("<i class='fa-solid fa-check'></i>");
     this.confirmButton.parent(this.buttonDiv);
@@ -166,13 +179,6 @@ class TransitionBox {
       if (!this.ruleAlreadyExists(rule)) {
         this.rules[this.selectedRuleIndex] = { label: rule, width: calculateTextWidth(-1000, -1000, rule, this.ruleFontSize) };
       }
-
-      this.readInput.value("");
-      this.writeInput.value("");
-      this.switchButtons("left");
-
-      this.selectedRuleIndex = -1;
-      this.selected = false;
     } else {
       let { allReadSubstrings, allWriteSubstrings, direction } = this.changeResultText();
 
@@ -182,14 +188,13 @@ class TransitionBox {
       if (!this.ruleAlreadyExists(rule)) {
         this.rules.push({ label: rule, width: calculateTextWidth(-1000, -1000, rule, this.ruleFontSize) });
       }
-
-      this.readInput.value("");
-      this.writeInput.value("");
-      this.switchButtons("left");
-
-      this.selectedRuleIndex = -1;
-      this.selected = false;
     }
+
+    this.readInput.value("");
+    this.writeInput.value("");
+    this.switchButtons("left");
+    this.selectedRuleIndex = -1;
+    this.selected = false;
 
     createHistory();
   }
@@ -235,6 +240,8 @@ class TransitionBox {
         this.switchButtons("left");
       } else if (allSubstrings.includes(", D")) {
         this.switchButtons("right");
+      } else {
+        this.switchButtons("stay");
       }
     }
   }
@@ -298,7 +305,7 @@ class TransitionBox {
       allWriteSubstrings = [texMap["\\blank"]];
     }
 
-    let direction = this.directionButtonPressed === "left" ? "E" : "D";
+    let direction = this.directionButtonPressed === "left" ? "E" : this.directionButtonPressed === "right" ? "D" : "P";
     this.labelSpan.html(allReadSubstrings[0] + " → " + allWriteSubstrings[0] + ", " + direction);
     this.labelSpan.style("font-family", "cmunbi");
 

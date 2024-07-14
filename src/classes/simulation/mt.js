@@ -1,6 +1,7 @@
 // Deterministic Turing Machine
 const L = -1; // Left
 const R = 1; // Right
+const S = 0; // Stay
 
 class MT {
   constructor(Q = new set(), sigma = new set(), gamma = new set(), delta = {}, initialState = 0, endStates = new set()) {
@@ -52,7 +53,7 @@ class MT {
         if (!transition) return false;
 
         if (!this.gamma.has(transition.write)) return false;
-        if (transition.move !== L && transition.move !== R) return false;
+        if (transition.move !== L && transition.move !== R && transition.move !== S) return false;
         if (!this.Q.has(transition.nextState)) return false;
       }
     }
@@ -117,6 +118,7 @@ class MT {
 
     if (this.head < 0) {
       this.head = 0;
+      this.tape.unshift(this.blankSymbol);
     } else if (this.head >= this.tape.length) {
       this.tape.push(this.blankSymbol);
     }
