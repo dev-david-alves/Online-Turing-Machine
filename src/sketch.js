@@ -1316,6 +1316,11 @@ function setup() {
   scalingCanvasSlider = select("#scalingCanvasSlider");
   contextMenu = createContextMenu();
 
+  // Test
+  states.push(new State(states.length, 150 / globalScaleFactor, 200 / globalScaleFactor, stateRadius));
+  states.push(new State(states.length, 450 / globalScaleFactor, 200 / globalScaleFactor, stateRadius));
+  setSelectedMenuButton("addLink");
+
   // First save on history
   history.push(createJSONExportObj());
 }
@@ -1401,9 +1406,6 @@ function draw() {
     moveCanvas();
   }
 
-  // Call Create link Function to low the delay
-  createLink();
-
   // Remove links that has no rules
   for (let i = 0; i < links.length; i++) {
     if (!links[i].transitionBox.selected && links[i].transitionBox.rules.length === 0) {
@@ -1450,51 +1452,46 @@ function createLink() {
   )
     return;
 
-  if (mouseIsPressed && mouseButton === LEFT && (keyIsDown(SHIFT) || selectedLeftSidebarButton === "addLink")) {
-    let hoveredObject = getFirstSelectedObject(mouseX, mouseY, false);
+  let hoveredObject = getFirstSelectedObject(mouseX, mouseY, false);
 
-    if ((hoveredObject && hoveredObject.object instanceof State) || !hoveredObject) {
-      if (
-        hoveredObject &&
-        !(currentLink instanceof TemporaryLink && lastSelectedState !== states[hoveredObject.index])
-      ) {
-        currentLink = new SelfLink(states[hoveredObject.index]);
-        lastSelectedState = states[hoveredObject.index];
+  if ((hoveredObject && hoveredObject.object instanceof State) || !hoveredObject) {
+    if (hoveredObject && !(currentLink instanceof TemporaryLink && lastSelectedState !== states[hoveredObject.index])) {
+      currentLink = new SelfLink(states[hoveredObject.index]);
+      lastSelectedState = states[hoveredObject.index];
+    } else {
+      if (lastSelectedState) {
+        if (currentLink instanceof SelfLink && !currentLink.from) {
+          currentLink = new TemporaryLink();
+          currentLink.from = lastSelectedState.closestPointOnCircle(mouseX, mouseY);
+        }
       } else {
-        if (lastSelectedState) {
-          if (currentLink instanceof SelfLink && !currentLink.from) {
-            currentLink = new TemporaryLink();
-            currentLink.from = lastSelectedState.closestPointOnCircle(mouseX, mouseY);
-          }
-        } else {
-          if (!currentLink || !currentLink.from) {
-            currentLink = new TemporaryLink();
-            currentLink.from = { x: mouseX, y: mouseY };
-          }
+        if (!currentLink || !currentLink.from) {
+          currentLink = new TemporaryLink();
+          currentLink.from = { x: mouseX, y: mouseY };
         }
       }
-    } else {
-      if (currentLink instanceof SelfLink) {
-        currentLink = new TemporaryLink();
-        currentLink.from = lastSelectedState.closestPointOnCircle(mouseX, mouseY);
-      }
     }
+  } else {
+    if (currentLink instanceof SelfLink) {
+      currentLink = new TemporaryLink();
+      currentLink.from = lastSelectedState.closestPointOnCircle(mouseX, mouseY);
+    }
+  }
 
-    if (currentLink instanceof TemporaryLink) {
-      currentLink.to = { x: mouseX, y: mouseY };
+  if (currentLink instanceof TemporaryLink) {
+    currentLink.to = { x: mouseX, y: mouseY };
 
-      if (
-        hoveredObject &&
-        hoveredObject.object instanceof State &&
-        lastSelectedState &&
-        states[hoveredObject.index].id !== lastSelectedState.id
-      ) {
-        currentLink.to = states[hoveredObject.index].closestPointOnCircle(lastSelectedState.x, lastSelectedState.y);
-      } else if (lastSelectedState) {
-        currentLink.from = lastSelectedState.closestPointOnCircle(mouseX, mouseY);
-      } else if (hoveredObject && hoveredObject.object instanceof State && !lastSelectedState) {
-        currentLink.to = states[hoveredObject.index].closestPointOnCircle(currentLink.from.x, currentLink.from.y);
-      }
+    if (
+      hoveredObject &&
+      hoveredObject.object instanceof State &&
+      lastSelectedState &&
+      states[hoveredObject.index].id !== lastSelectedState.id
+    ) {
+      currentLink.to = states[hoveredObject.index].closestPointOnCircle(lastSelectedState.x, lastSelectedState.y);
+    } else if (lastSelectedState) {
+      currentLink.from = lastSelectedState.closestPointOnCircle(mouseX, mouseY);
+    } else if (hoveredObject && hoveredObject.object instanceof State && !lastSelectedState) {
+      currentLink.to = states[hoveredObject.index].closestPointOnCircle(currentLink.from.x, currentLink.from.y);
     }
   }
 }
@@ -1835,6 +1832,8 @@ function mouseDraggedOnCanvas() {
   links.forEach((link) => {
     link.mouseDragged();
   });
+
+  if (keyIsDown(SHIFT) || selectedLeftSidebarButton === "addLink") createLink();
 
   if (startLink) startLink.mouseDragged();
 
