@@ -57,7 +57,11 @@ class Link {
     this.perpendicularPart = (dx * (y - this.stateA.y) - dy * (x - this.stateA.x)) / scale;
 
     // Snap to a straight line
-    if (this.parallelPart > 0 && this.parallelPart < 1 && abs(this.perpendicularPart) < this.snapToPadding * this.scaleFactor) {
+    if (
+      this.parallelPart > 0 &&
+      this.parallelPart < 1 &&
+      abs(this.perpendicularPart) < this.snapToPadding * this.scaleFactor
+    ) {
       this.lineAngleAdjust = (this.perpendicularPart < 0) * PI;
       this.perpendicularPart = 0;
     }
@@ -80,11 +84,20 @@ class Link {
     }
 
     let anchor = this.getAnchorPoint();
-    let circle = this.circleFromThreePoints(this.stateA.x, this.stateA.y, this.stateB.x, this.stateB.y, anchor.x, anchor.y);
+    let circle = this.circleFromThreePoints(
+      this.stateA.x,
+      this.stateA.y,
+      this.stateB.x,
+      this.stateB.y,
+      anchor.x,
+      anchor.y,
+    );
     let isReversed = this.perpendicularPart > 0;
     let reverseScale = isReversed ? 1 : -1;
-    let startAngle = atan2(this.stateA.y - circle.y, this.stateA.x - circle.x) - (reverseScale * this.stateA.r) / circle.r;
-    let endAngle = atan2(this.stateB.y - circle.y, this.stateB.x - circle.x) + (reverseScale * this.stateA.r) / circle.r;
+    let startAngle =
+      atan2(this.stateA.y - circle.y, this.stateA.x - circle.x) - (reverseScale * this.stateA.r) / circle.r;
+    let endAngle =
+      atan2(this.stateB.y - circle.y, this.stateB.x - circle.x) + (reverseScale * this.stateA.r) / circle.r;
 
     let startX = circle.x + circle.r * cos(startAngle);
     let startY = circle.y + circle.r * sin(startAngle);

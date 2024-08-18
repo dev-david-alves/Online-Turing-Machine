@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/dev-david-alves/Online-Turing-Machine#readme",
   "devDependencies": {
+    "prettier": "3.3.3",
     "tailwindcss": "^3.4.3"
   }
 }

@@ -2,26 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap");
 
 /* Fonts */
 @font-face {
-  font-family: 'cmunbi';
-  src: url("../fonts/cmunbi.ttf") format('truetype');
+  font-family: "cmunbi";
+  src: url("../fonts/cmunbi.ttf") format("truetype");
 }
 
 /* Variables */
-:root{
+:root {
   font-size: 62.5%;
   --color-shadow-low: rgba(23, 98, 163, 0.4);
-  --color-shadow-high: rgba(23, 98, 163, 1.0);
+  --color-shadow-high: rgba(23, 98, 163, 1);
 
-  --color-primary: #1762A3;
-  --color-primary-hover: #11528C;
-  --color-danger: #FF0060;
-  --color-success: #1B9C85;
-  --color-warning: #F7D060;
+  --color-primary: #1762a3;
+  --color-primary-hover: #11528c;
+  --color-danger: #ff0060;
+  --color-success: #1b9c85;
+  --color-warning: #f7d060;
   --color-white: #fff;
   --color-info-dark: #7d8da1;
   --color-dark: #363949;
@@ -40,13 +39,13 @@
   --box-shadow-8: 0 0 1.6rem var(--color-light);
 }
 
-.dark-mode-variables{
+.dark-mode-variables {
   --color-background: #181a1e;
   --color-white: #202528;
   --color-dark: #edeffd;
   --color-dark-variant: #a3bdcc;
   --color-light: rgba(0, 0, 0, 0.4);
-  --box-shadow-8: 0 .8rem 1.6rem var(--color-light);
+  --box-shadow-8: 0 0.8rem 1.6rem var(--color-light);
 }
 
 * {
@@ -73,10 +72,12 @@ body {
 }
 
 .math-font {
-  font-family: 'cmunbi';
+  font-family: "cmunbi";
 }
 
-button, span, .mt-title {
+button,
+span,
+.mt-title {
   user-select: none; /* Standard syntax */
   -webkit-user-select: none; /* Safari */
   -moz-user-select: none; /* Firefox */
@@ -84,32 +85,34 @@ button, span, .mt-title {
 }
 
 .canvas-focused {
-  box-shadow: 0 0 4.2rem 0 var(--color-shadow-low), 0 0 2.1rem 0 var(--color-shadow-high);
+  box-shadow:
+    0 0 4.2rem 0 var(--color-shadow-low),
+    0 0 2.1rem 0 var(--color-shadow-high);
 }
 
 /* Custom styles for the autocomplete suggestions */
 input::-webkit-autocomplete,
 input::-webkit-autocomplete-popup {
-    /* Set the background color for autocomplete suggestions */
-    background-color: var(--color-white); /* Tailwind bg-gray-200 */
+  /* Set the background color for autocomplete suggestions */
+  background-color: var(--color-white); /* Tailwind bg-gray-200 */
 }
 
 /* Remove browser default styles */
 input::-webkit-autocomplete-popup {
-    border: none;
-    padding: 0;
-    margin: 0;
+  border: none;
+  padding: 0;
+  margin: 0;
 }
 
 /* Style for each suggestion */
 input::-webkit-autocomplete-item {
-    padding: 0.5rem; /* Tailwind p-2 */
-    color: #1f2937; /* Tailwind text-gray-800 */
+  padding: 0.5rem; /* Tailwind p-2 */
+  color: #1f2937; /* Tailwind text-gray-800 */
 }
 
 /* Style for the hovered suggestion */
 input::-webkit-autocomplete-item:hover {
-    background-color: var(--color-background); /* Tailwind bg-gray-300 */
+  background-color: var(--color-background); /* Tailwind bg-gray-300 */
 }
 
 /* Tooltip */
@@ -122,7 +125,9 @@ input::-webkit-autocomplete-item:hover {
 .tooltip-wrapper > .tooltip {
   visibility: hidden;
   opacity: 0;
-  transition: visibility 0s, opacity .8s ease-in;
+  transition:
+    visibility 0s,
+    opacity 0.8s ease-in;
 }
 
 .tooltip-wrapper:hover > .tooltip {
@@ -135,7 +140,7 @@ input::-webkit-autocomplete-item:hover {
   max-width: 20rem;
   position: absolute;
   box-shadow: var(--box-shadow-8);
-  padding: 1rem .8rem;
+  padding: 1rem 0.8rem;
 }
 
 /* TOP */
@@ -257,7 +262,7 @@ input::-webkit-autocomplete-item:hover {
   font-size: 1.2rem;
   font-weight: 500;
   color: var(--color-dark);
-  margin-top: .5rem ;
+  margin-top: 0.5rem;
 }
 
 /* Menu export */
@@ -268,7 +273,7 @@ input::-webkit-autocomplete-item:hover {
   max-width: 20rem;
   position: absolute;
   box-shadow: var(--box-shadow-8);
-  padding: 1rem .8rem;
+  padding: 1rem 0.8rem;
   flex-direction: column;
   align-items: center;
 }

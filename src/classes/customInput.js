@@ -21,7 +21,9 @@ class CustomInput {
 
     if (parent) this.input.parent(parent);
     this.input.size(this.width, this.height);
-    this.input.class(`absolute px-[5px] outline-none border-solid border-[1px] border-black rounded-1 rounded text-center`);
+    this.input.class(
+      `absolute px-[5px] outline-none border-solid border-[1px] border-black rounded-1 rounded text-center`,
+    );
     this.input.position(this.x + globalWindowOffset.x, this.y + globalWindowOffset.y);
 
     this.input.input(() => this.textInput(this.input.value()));
@@ -42,7 +44,9 @@ class CustomInput {
     }
 
     this.textWidth = calculateTextWidth(this.x, this.y, this.allSubstrings, this.fontSize);
-    this.input.class(`absolute px-[1rem] py-1 rounded-[.4rem] focus:outline-none w-[8rem] bg-transparent border-2 border-[--color-primary] text-white`);
+    this.input.class(
+      `absolute px-[1rem] py-1 rounded-[.4rem] focus:outline-none w-[8rem] bg-transparent border-2 border-[--color-primary] text-white`,
+    );
     this.input.position(this.x + globalWindowOffset.x, this.y + globalWindowOffset.y);
 
     if (!this.visible) {

@@ -41,7 +41,9 @@ function createMTDoomWrapper() {
 
   let playgroundContainer = createDiv("");
   playgroundContainer.id("playground-container");
-  playgroundContainer.class("relative w-full h-full rounded-b-[.5rem] border-r-[.5rem] border-b-[.5rem] border-[--color-white] flex");
+  playgroundContainer.class(
+    "relative w-full h-full rounded-b-[.5rem] border-r-[.5rem] border-b-[.5rem] border-[--color-white] flex",
+  );
   playgroundContainer.parent(mtDoomWrapper);
 
   let leftSidebar = createCanvasLeftSidebar();
@@ -92,7 +94,9 @@ function createTopToolbar() {
   rightDiv.class("flex items-center gap-1");
   rightDiv.parent(topToolbar);
 
-  let fullscreenButton = createButton("<span class='material-symbols-outlined' style='font-size: 1.8rem'>fullscreen</span>");
+  let fullscreenButton = createButton(
+    "<span class='material-symbols-outlined' style='font-size: 1.8rem'>fullscreen</span>",
+  );
   fullscreenButton.class("w-[2.6rem] h-[2.6rem] text-white flex items-center justify-center");
   fullscreenButton.id("fullscreenButton");
   fullscreenButton.parent(rightDiv);
@@ -149,11 +153,19 @@ function createCanvasLeftSidebar() {
       id: "addLink",
       icon: "arrow_right_alt",
       tipType: "tip",
-      tipMessage: "Adiciona uma transição entre estados da MT no canvas, também pode ser utilizado para definir estado inicial",
+      tipMessage:
+        "Adiciona uma transição entre estados da MT no canvas, também pode ser utilizado para definir estado inicial",
       tipDirection: "left",
       mousePressed: () => setMenuMousePressed("addLink"),
     },
-    { id: "delete", icon: "close", tipType: "tip", tipMessage: "Deleta um elemento do canvas ao clicar sobre ele", tipDirection: "left", mousePressed: () => setMenuMousePressed("delete") },
+    {
+      id: "delete",
+      icon: "close",
+      tipType: "tip",
+      tipMessage: "Deleta um elemento do canvas ao clicar sobre ele",
+      tipDirection: "left",
+      mousePressed: () => setMenuMousePressed("delete"),
+    },
     {
       id: "cleanAll",
       icon: "remove_selection",
@@ -181,7 +193,9 @@ function createCanvasLeftSidebar() {
     toolTipWrapper.parent(topArea);
     let button = createButton(`<span class='material-symbols-outlined' style='font-size: 1.6rem'>${btn.icon}</span>`);
     button.id(btn.id);
-    button.class("w-[5rem] h-[3.6rem] flex items-center justify-center text-white hover:bg-[--color-primary] transition-colors");
+    button.class(
+      "w-[5rem] h-[3.6rem] flex items-center justify-center text-white hover:bg-[--color-primary] transition-colors",
+    );
     button.mousePressed(btn.mousePressed);
     button.parent(toolTipWrapper);
 
@@ -209,8 +223,12 @@ function createCanvasLeftSidebar() {
   let importTooltipWrapper = createDiv("");
   importTooltipWrapper.class("tooltip-wrapper");
   importTooltipWrapper.parent(bottomMenu);
-  let importButton = createButton("<span class='material-symbols-outlined' style='font-size: 1.6rem'>upload_file</span>");
-  importButton.class("w-[5rem] h-[3.6rem] flex items-center justify-center text-white hover:bg-[--color-primary] transition-colors");
+  let importButton = createButton(
+    "<span class='material-symbols-outlined' style='font-size: 1.6rem'>upload_file</span>",
+  );
+  importButton.class(
+    "w-[5rem] h-[3.6rem] flex items-center justify-center text-white hover:bg-[--color-primary] transition-colors",
+  );
   importButton.id("import-button");
   importButton.mousePressed(() => {
     cnvIsFocused = "menu";
@@ -240,7 +258,9 @@ function createCanvasLeftSidebar() {
   exportTooltipWrapper.id("export-tooltip-wrapper");
   exportTooltipWrapper.parent(exportMenuWrapper);
   let exportButton = createButton("<span class='material-symbols-outlined' style='font-size: 1.6rem'>download</span>");
-  exportButton.class("w-[5rem] h-[3.6rem] flex items-center justify-center text-white hover:bg-[--color-primary] transition-colors");
+  exportButton.class(
+    "w-[5rem] h-[3.6rem] flex items-center justify-center text-white hover:bg-[--color-primary] transition-colors",
+  );
   exportButton.id("export-button-toggle");
   exportButton.mousePressed(() => toggleExportMenu());
   exportButton.parent(exportTooltipWrapper);
@@ -263,13 +283,17 @@ function createCanvasLeftSidebar() {
   floatingExportMenu.parent(exportMenuWrapper);
 
   let exportAsPNGButton = createButton("Exportar como imagem");
-  exportAsPNGButton.class("w-full h-[2.4rem] rounded-[.2rem] px-[1rem] mt-[.5rem] text-left text-white text-[1rem] font-medium hover:bg-[#5F5F5F] transition-colors z-[5]");
+  exportAsPNGButton.class(
+    "w-full h-[2.4rem] rounded-[.2rem] px-[1rem] mt-[.5rem] text-left text-white text-[1rem] font-medium hover:bg-[#5F5F5F] transition-colors z-[5]",
+  );
   exportAsPNGButton.id("export-as-png");
   exportAsPNGButton.mousePressed(() => exportAsPNG());
   exportAsPNGButton.parent(floatingExportMenu);
 
   let exportAsJSONButton = createButton("Exportar como arquivo DTM");
-  exportAsJSONButton.class("w-full h-[2.4rem] rounded-[.2rem] px-[1rem] mt-[.5rem] text-left text-white text-[1rem] font-medium hover:bg-[#5F5F5F] transition-colors z-[5]");
+  exportAsJSONButton.class(
+    "w-full h-[2.4rem] rounded-[.2rem] px-[1rem] mt-[.5rem] text-left text-white text-[1rem] font-medium hover:bg-[#5F5F5F] transition-colors z-[5]",
+  );
   exportAsJSONButton.id("export-as-dtm");
   exportAsJSONButton.mousePressed(() => exportAsJSON());
   exportAsJSONButton.parent(floatingExportMenu);
@@ -278,7 +302,9 @@ function createCanvasLeftSidebar() {
   zoomInTooltipWrapper.class("tooltip-wrapper");
   zoomInTooltipWrapper.parent(bottomMenu);
   let zoomInButton = createButton("<span class='material-symbols-outlined' style='font-size: 1.8rem'>zoom_in</span>");
-  zoomInButton.class("w-[5rem] h-[3.6rem] flex items-center justify-center text-white hover:bg-[--color-primary] transition-colors");
+  zoomInButton.class(
+    "w-[5rem] h-[3.6rem] flex items-center justify-center text-white hover:bg-[--color-primary] transition-colors",
+  );
   zoomInButton.id("zoom-in");
   zoomInButton.mousePressed(() => {
     cnvIsFocused = "menu";
@@ -302,7 +328,9 @@ function createCanvasLeftSidebar() {
   zoomOutTooltipWrapper.class("tooltip-wrapper");
   zoomOutTooltipWrapper.parent(bottomMenu);
   let zoomOutButton = createButton("<span class='material-symbols-outlined' style='font-size: 1.8rem'>zoom_out</span>");
-  zoomOutButton.class("w-[5rem] h-[3.6rem] flex items-center justify-center text-white hover:bg-[--color-primary] transition-colors");
+  zoomOutButton.class(
+    "w-[5rem] h-[3.6rem] flex items-center justify-center text-white hover:bg-[--color-primary] transition-colors",
+  );
   zoomOutButton.id("zoom-out");
   zoomOutButton.mousePressed(() => {
     cnvIsFocused = "menu";
@@ -365,13 +393,17 @@ function createMT() {
 
     if (startState === null) {
       let initialStateAlertDiv = createDiv("Defina um estado inicial!");
-      initialStateAlertDiv.class("w-full py-[.5rem] flex items-center justify-center bg-[#ff0000] rounded-[.5rem] text-white text-[1.4rem]");
+      initialStateAlertDiv.class(
+        "w-full py-[.5rem] flex items-center justify-center bg-[#ff0000] rounded-[.5rem] text-white text-[1.4rem]",
+      );
       initialStateAlertDiv.parent(wrapperAlertDiv);
     }
 
     if (endStates.size === 0) {
       let endStateAlertDiv = createDiv("Defina pelo menos um estado final!");
-      endStateAlertDiv.class("mt-[.5rem] w-full py-[.5rem] flex items-center justify-center bg-[#ff0000] rounded-[.5rem] text-white text-[1.4rem]");
+      endStateAlertDiv.class(
+        "mt-[.5rem] w-full py-[.5rem] flex items-center justify-center bg-[#ff0000] rounded-[.5rem] text-white text-[1.4rem]",
+      );
       endStateAlertDiv.parent(wrapperAlertDiv);
     }
 
@@ -541,7 +573,9 @@ function createTape() {
 
   for (let i = 0; i < mtCreated.tape.length; i++) {
     let tapeCell = createDiv("");
-    tapeCell.class("relative w-[3rem] h-[2.4rem] bg-white border-x-[.05rem] border-[--color-white] text-[1.4rem] font-semibold text-[dark-white] flex items-center justify-center");
+    tapeCell.class(
+      "relative w-[3rem] h-[2.4rem] bg-white border-x-[.05rem] border-[--color-white] text-[1.4rem] font-semibold text-[dark-white] flex items-center justify-center",
+    );
     tapeCell.parent(tapeWrapper);
     let span = createElement("span", mtCreated.tape[i]);
     span.parent(tapeCell);
@@ -564,7 +598,9 @@ function createCanvasBottomDrawer() {
   bottomWrapper.class("absolute bottom-0 min-w-full px-[.5rem]");
   let bottomDrawer = createDiv("");
   bottomDrawer.id("bottom-drawer");
-  bottomDrawer.class("w-full flex flex-col items-center justify-center gap-[1rem] bg-[--color-white] pt-[.5rem] rounded-t-[1rem]");
+  bottomDrawer.class(
+    "w-full flex flex-col items-center justify-center gap-[1rem] bg-[--color-white] pt-[.5rem] rounded-t-[1rem]",
+  );
   bottomDrawer.parent(bottomWrapper);
 
   // let maximizeIcon = createElement("span");
@@ -619,7 +655,9 @@ function createCanvasBottomDrawer() {
   buttons.forEach((btn) => {
     let button = createButton(btn.icon);
     button.id(btn.id);
-    button.class("w-[3rem] h-[3rem] rounded-[.4rem] text-white border-[.1rem] flex items-center justify-center outline-none");
+    button.class(
+      "w-[3rem] h-[3rem] rounded-[.4rem] text-white border-[.1rem] flex items-center justify-center outline-none",
+    );
     button.mousePressed(() => btn.mousePressed(button));
     button.parent(bottomDrawerButtons);
   });
@@ -643,7 +681,9 @@ function createCanvasBottomDrawer() {
   inputWord.attribute("maxlength", "200");
   inputWord.attribute("autocomplete", "off");
   inputWord.id("input-word");
-  inputWord.class("w-full h-[2.8rem] px-[1rem] rounded-[.4rem] focus:outline-none bg-transparent border-2 border-[--color-primary] text-[1.4rem] text-white autofill:bg-yellow-200");
+  inputWord.class(
+    "w-full h-[2.8rem] px-[1rem] rounded-[.4rem] focus:outline-none bg-transparent border-2 border-[--color-primary] text-[1.4rem] text-white autofill:bg-yellow-200",
+  );
   inputWord.parent(inputWordDiv);
   inputWord.input(() => {
     mtCreated = createMT();
@@ -686,7 +726,9 @@ function createCanvasBottomDrawer() {
   bottomDrawerSimulationButtonsLeft.class("flex items-center justify-center gap-[.5rem]");
   bottomDrawerSimulationButtonsLeft.parent(bottomDrawerSimulationButtons);
 
-  let fastResetButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>skip_previous</span>");
+  let fastResetButton = createButton(
+    "<span class='material-symbols-outlined' style='font-size: 2rem'>skip_previous</span>",
+  );
   fastResetButton.class("w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[#4B4B4B] flex items-center justify-center");
   fastResetButton.id("fast-reset-button");
   fastResetButton.parent(bottomDrawerSimulationButtonsLeft);
@@ -694,8 +736,12 @@ function createCanvasBottomDrawer() {
     if (fastResetButton.hasClass("active-class")) fastSimulationReset();
   });
 
-  let backwardSimulationButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>chevron_left</span>");
-  backwardSimulationButton.class("w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[#4B4B4B] flex items-center justify-center");
+  let backwardSimulationButton = createButton(
+    "<span class='material-symbols-outlined' style='font-size: 2rem'>chevron_left</span>",
+  );
+  backwardSimulationButton.class(
+    "w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[#4B4B4B] flex items-center justify-center",
+  );
   backwardSimulationButton.id("backward-simulation-button");
   backwardSimulationButton.parent(bottomDrawerSimulationButtonsLeft);
   backwardSimulationButton.mousePressed(() => {
@@ -707,16 +753,24 @@ function createCanvasBottomDrawer() {
   // playButton.id("play-button");
   // playButton.parent(bottomDrawerSimulationButtonsLeft);
 
-  let forwardSimulationButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>chevron_right</span>");
-  forwardSimulationButton.class("w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[--color-primary] flex items-center justify-center active-class");
+  let forwardSimulationButton = createButton(
+    "<span class='material-symbols-outlined' style='font-size: 2rem'>chevron_right</span>",
+  );
+  forwardSimulationButton.class(
+    "w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[--color-primary] flex items-center justify-center active-class",
+  );
   forwardSimulationButton.id("forward-simulation-button");
   forwardSimulationButton.parent(bottomDrawerSimulationButtonsLeft);
   forwardSimulationButton.mousePressed(() => {
     if (forwardSimulationButton.hasClass("active-class")) forwardSimulation();
   });
 
-  let fastSimulationButton = createButton("<span class='material-symbols-outlined' style='font-size: 2rem'>skip_next</span>");
-  fastSimulationButton.class("w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[--color-primary] flex items-center justify-center active-class");
+  let fastSimulationButton = createButton(
+    "<span class='material-symbols-outlined' style='font-size: 2rem'>skip_next</span>",
+  );
+  fastSimulationButton.class(
+    "w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[--color-primary] flex items-center justify-center active-class",
+  );
   fastSimulationButton.id("fast-simulation-button");
   fastSimulationButton.parent(bottomDrawerSimulationButtonsLeft);
   fastSimulationButton.mousePressed(() => {
@@ -800,7 +854,8 @@ function createContextMenu() {
     {
       label: "Estado inicial",
       id: "set-initial-state",
-      class: "w-full py-[.5rem] px-[1rem] text-left hover:bg-[--color-primary-hover] transition-colors text-white text-[1.2rem]",
+      class:
+        "w-full py-[.5rem] px-[1rem] text-left hover:bg-[--color-primary-hover] transition-colors text-white text-[1.2rem]",
       mousePressed: () => {
         if (selectedObject) {
           let index = states.findIndex((state) => state.id === selectedObject.object.id);
@@ -812,7 +867,8 @@ function createContextMenu() {
     {
       label: "Definir como Final",
       id: "set-final-state",
-      class: "w-full py-[.5rem] px-[1rem] text-left hover:bg-[--color-primary-hover] transition-colors text-white text-[1.2rem]",
+      class:
+        "w-full py-[.5rem] px-[1rem] text-left hover:bg-[--color-primary-hover] transition-colors text-white text-[1.2rem]",
       mousePressed: () => {
         toggleFinalState();
         createHistory();
@@ -821,13 +877,15 @@ function createContextMenu() {
     {
       label: "Renomear Estado",
       id: "rename-state",
-      class: "w-full py-[.5rem] px-[1rem] text-left hover:bg-[--color-primary-hover] transition-colors text-white text-[1.2rem] flex items-center justify-between border-y-[1px] border-[#36404e]",
+      class:
+        "w-full py-[.5rem] px-[1rem] text-left hover:bg-[--color-primary-hover] transition-colors text-white text-[1.2rem] flex items-center justify-between border-y-[1px] border-[#36404e]",
       mousePressed: () => renameState(),
     },
     {
       label: "Deletar",
       id: "delete-state",
-      class: "w-full py-[.5rem] px-[1rem] text-left hover:bg-[--color-primary-hover] transition-colors text-white text-[1.2rem] flex items-center justify-between",
+      class:
+        "w-full py-[.5rem] px-[1rem] text-left hover:bg-[--color-primary-hover] transition-colors text-white text-[1.2rem] flex items-center justify-between",
       mousePressed: () => {
         cnvIsFocused = "export-menu";
         deleteObject();
@@ -966,9 +1024,16 @@ function compareJSONObjects(obj1, obj2) {
     if (!obj1.links[i].isSelfLink) {
       if (obj1.links[i].rules.length !== obj2.links[i].rules.length) return false;
 
-      let comparedRules = obj1.links[i].rules.every((rule, index) => JSON.stringify(rule.label) === JSON.stringify(obj2.links[i].rules[index].label));
+      let comparedRules = obj1.links[i].rules.every(
+        (rule, index) => JSON.stringify(rule.label) === JSON.stringify(obj2.links[i].rules[index].label),
+      );
 
-      if (obj1.links[i].stateA !== obj2.links[i].stateA || obj1.links[i].stateB !== obj2.links[i].stateB || !comparedRules) return false;
+      if (
+        obj1.links[i].stateA !== obj2.links[i].stateA ||
+        obj1.links[i].stateB !== obj2.links[i].stateB ||
+        !comparedRules
+      )
+        return false;
 
       if (obj1.links[i].hasCircle !== obj2.links[i].hasCircle) return false;
 
@@ -986,22 +1051,39 @@ function compareJSONObjects(obj1, obj2) {
         )
           return false;
       } else {
-        if (obj1.links[i].startX !== obj2.links[i].startX || obj1.links[i].startY !== obj2.links[i].startY || obj1.links[i].endX !== obj2.links[i].endX || obj1.links[i].endY !== obj2.links[i].endY)
+        if (
+          obj1.links[i].startX !== obj2.links[i].startX ||
+          obj1.links[i].startY !== obj2.links[i].startY ||
+          obj1.links[i].endX !== obj2.links[i].endX ||
+          obj1.links[i].endY !== obj2.links[i].endY
+        )
           return false;
       }
     } else {
       if (obj1.links[i].rules.length !== obj2.links[i].rules.length) return false;
 
-      let comparedRules = obj1.links[i].rules.every((rule, index) => JSON.stringify(rule.label) === JSON.stringify(obj2.links[i].rules[index].label));
+      let comparedRules = obj1.links[i].rules.every(
+        (rule, index) => JSON.stringify(rule.label) === JSON.stringify(obj2.links[i].rules[index].label),
+      );
 
-      if (obj1.links[i].state !== obj2.links[i].state || !comparedRules || obj1.links[i].anchorAngle !== obj2.links[i].anchorAngle) return false;
+      if (
+        obj1.links[i].state !== obj2.links[i].state ||
+        !comparedRules ||
+        obj1.links[i].anchorAngle !== obj2.links[i].anchorAngle
+      )
+        return false;
     }
   }
 
-  if ((obj1.initialStateLink && !obj2.initialStateLink) || (!obj1.initialStateLink && obj2.initialStateLink)) return false;
+  if ((obj1.initialStateLink && !obj2.initialStateLink) || (!obj1.initialStateLink && obj2.initialStateLink))
+    return false;
 
   if (obj1.initialStateLink) {
-    if (obj1.initialStateLink.state !== obj2.initialStateLink.state || obj1.initialStateLink.deltaX !== obj2.initialStateLink.deltaX || obj1.initialStateLink.deltaY !== obj2.initialStateLink.deltaY)
+    if (
+      obj1.initialStateLink.state !== obj2.initialStateLink.state ||
+      obj1.initialStateLink.deltaX !== obj2.initialStateLink.deltaX ||
+      obj1.initialStateLink.deltaY !== obj2.initialStateLink.deltaY
+    )
       return false;
   }
 
@@ -1107,7 +1189,10 @@ function createCanvasStatesFromOBJ(obj) {
   }
 
   if (obj.initialStateLink) {
-    setInitialState(obj.initialStateLink.state, { deltaX: obj.initialStateLink.deltaX, deltaY: obj.initialStateLink.deltaY });
+    setInitialState(obj.initialStateLink.state, {
+      deltaX: obj.initialStateLink.deltaX,
+      deltaY: obj.initialStateLink.deltaY,
+    });
     startLink.selected = false;
   }
 
@@ -1134,7 +1219,12 @@ function handleInputFile(file) {
 function closeContextMenuWhenClickngOutside() {
   // Click outside context menu
   if (contextMenu) {
-    if (mouseX < contextMenu.position().x || mouseX > contextMenu.position().x + contextMenu.width || mouseY < contextMenu.position().y || mouseY > contextMenu.position().y + contextMenu.height) {
+    if (
+      mouseX < contextMenu.position().x ||
+      mouseX > contextMenu.position().x + contextMenu.width ||
+      mouseY < contextMenu.position().y ||
+      mouseY > contextMenu.position().y + contextMenu.height
+    ) {
       contextMenu.hide();
     }
   }
@@ -1150,7 +1240,10 @@ function compareStatesOfHistory(index = -1) {
   let currentState = structuredClone(createJSONExportObj());
   let stateOnIndex = structuredClone(history[realIndex]);
 
-  return { isEqual: compareJSONObjects(currentState, stateOnIndex), currentState: currentState };
+  return {
+    isEqual: compareJSONObjects(currentState, stateOnIndex),
+    currentState: currentState,
+  };
 }
 
 function createHistory() {
@@ -1235,7 +1328,8 @@ function simulationButtonActivation() {
   let inputWord = select("#input-word");
 
   let diactivatedClass = "w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[#4B4B4B] flex items-center justify-center";
-  let activatedClass = "w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[--color-primary] flex items-center justify-center active-class";
+  let activatedClass =
+    "w-[3rem] h-[2.6rem] rounded-[.4rem] text-white bg-[--color-primary] flex items-center justify-center active-class";
 
   fastResetButton.class(diactivatedClass);
   backwardSimulationButton.class(diactivatedClass);
@@ -1252,7 +1346,12 @@ function simulationButtonActivation() {
     }
 
     if (!select("#tape-div").hasClass("word-accepted") && !select("#tape-div").hasClass("word-rejected")) {
-      if (!(mtCreated.endStates.has(mtCreated.currentState) && mtCreated.maxInterectedIndex >= mtCreated.simulatedWord.length)) {
+      if (
+        !(
+          mtCreated.endStates.has(mtCreated.currentState) &&
+          mtCreated.maxInterectedIndex >= mtCreated.simulatedWord.length
+        )
+      ) {
         forwardSimulationButton.class(activatedClass);
         fastSimulationButton.class(activatedClass);
       }
@@ -1295,7 +1394,10 @@ function draw() {
   }
 
   // Move canvas
-  if (mouseIsPressed && ((keyIsDown(CONTROL) && mouseButton === LEFT) || mouseButton === CENTER || selectedLeftSidebarButton === "move")) {
+  if (
+    mouseIsPressed &&
+    ((keyIsDown(CONTROL) && mouseButton === LEFT) || mouseButton === CENTER || selectedLeftSidebarButton === "move")
+  ) {
     moveCanvas();
   }
 
@@ -1342,13 +1444,20 @@ function draw() {
 
 // Action functions
 function createLink() {
-  if ((selectedLeftSidebarButton !== "select" && selectedLeftSidebarButton !== "addLink") || links.some((link) => link.transitionBox.selected)) return;
+  if (
+    (selectedLeftSidebarButton !== "select" && selectedLeftSidebarButton !== "addLink") ||
+    links.some((link) => link.transitionBox.selected)
+  )
+    return;
 
   if (mouseIsPressed && mouseButton === LEFT && (keyIsDown(SHIFT) || selectedLeftSidebarButton === "addLink")) {
     let hoveredObject = getFirstSelectedObject(mouseX, mouseY, false);
 
     if ((hoveredObject && hoveredObject.object instanceof State) || !hoveredObject) {
-      if (hoveredObject && !(currentLink instanceof TemporaryLink && lastSelectedState !== states[hoveredObject.index])) {
+      if (
+        hoveredObject &&
+        !(currentLink instanceof TemporaryLink && lastSelectedState !== states[hoveredObject.index])
+      ) {
         currentLink = new SelfLink(states[hoveredObject.index]);
         lastSelectedState = states[hoveredObject.index];
       } else {
@@ -1374,7 +1483,12 @@ function createLink() {
     if (currentLink instanceof TemporaryLink) {
       currentLink.to = { x: mouseX, y: mouseY };
 
-      if (hoveredObject && hoveredObject.object instanceof State && lastSelectedState && states[hoveredObject.index].id !== lastSelectedState.id) {
+      if (
+        hoveredObject &&
+        hoveredObject.object instanceof State &&
+        lastSelectedState &&
+        states[hoveredObject.index].id !== lastSelectedState.id
+      ) {
         currentLink.to = states[hoveredObject.index].closestPointOnCircle(lastSelectedState.x, lastSelectedState.y);
       } else if (lastSelectedState) {
         currentLink.from = lastSelectedState.closestPointOnCircle(mouseX, mouseY);
@@ -1389,7 +1503,10 @@ function setInitialState(index = null, props = null) {
   let linkSize = 80 * globalScaleFactor;
   if (index === null) {
     if (selectedObject && selectedObject.object instanceof State) {
-      let start = { x: selectedObject.object.x - linkSize, y: selectedObject.object.y };
+      let start = {
+        x: selectedObject.object.x - linkSize,
+        y: selectedObject.object.y,
+      };
       startLink = new StartLink(selectedObject.object, start);
       startLink.selected = true;
 
@@ -1403,7 +1520,10 @@ function setInitialState(index = null, props = null) {
   } else {
     let start = { x: states[index].x - linkSize, y: states[index].y };
     if (props) {
-      start = { x: states[index].x + props.deltaX, y: states[index].y + props.deltaY };
+      start = {
+        x: states[index].x + props.deltaX,
+        y: states[index].y + props.deltaY,
+      };
     }
 
     startLink = new StartLink(states[index], start);
@@ -1575,7 +1695,10 @@ function mousePressedOnCanvas() {
       let stateID = getNewStateId();
       states.push(new State(stateID, mouseX / globalScaleFactor, mouseY / globalScaleFactor, stateRadius));
       states[states.length - 1].selected = true;
-      selectedObject = { object: states[states.length - 1], index: states.length - 1 };
+      selectedObject = {
+        object: states[states.length - 1],
+        index: states.length - 1,
+      };
 
       createHistory();
       return;
@@ -1597,7 +1720,10 @@ function mousePressedOnCanvas() {
     });
   } else if (mouseButton === RIGHT) {
     if (selectedObject && selectedObject.object instanceof State) {
-      contextMenu.position(globalWindowOffset.x + selectedObject.object.x, globalWindowOffset.y + selectedObject.object.y);
+      contextMenu.position(
+        globalWindowOffset.x + selectedObject.object.x,
+        globalWindowOffset.y + selectedObject.object.y,
+      );
 
       if (selectedObject.object.isEndState) {
         select("#set-final-state").html("Definir como Não Final");
@@ -1626,13 +1752,19 @@ function mouseReleasedOnCanvas() {
           let from = lastSelectedState;
           let to = hoveredObject.object.id !== lastSelectedState.id ? hoveredObject.object : null;
 
-          if (from && to && !links.some((link) => link instanceof Link && link.stateA.id === from.id && link.stateB.id === to.id)) {
+          if (
+            from &&
+            to &&
+            !links.some((link) => link instanceof Link && link.stateA.id === from.id && link.stateB.id === to.id)
+          ) {
             links.push(new Link(from, to));
             links[links.length - 1].transitionBox.selected = true;
 
             // Extra: if already exists a link to -> from, turn links curved
             if (links.some((link) => link instanceof Link && link.stateA.id === to.id && link.stateB.id === from.id)) {
-              let link = links.find((link) => link instanceof Link && link.stateA.id === to.id && link.stateB.id === from.id);
+              let link = links.find(
+                (link) => link instanceof Link && link.stateA.id === to.id && link.stateB.id === from.id,
+              );
               if (link) {
                 if (link.perpendicularPart === 0) {
                   link.perpendicularPart = 10;
@@ -1641,7 +1773,9 @@ function mouseReleasedOnCanvas() {
               }
             }
           } else {
-            let link = links.find((link) => link instanceof Link && link.stateA.id === from.id && link.stateB.id === to.id);
+            let link = links.find(
+              (link) => link instanceof Link && link.stateA.id === from.id && link.stateB.id === to.id,
+            );
             if (link) {
               link.transitionBox.selected = true;
               console.log("Link already exists");
@@ -1723,13 +1857,19 @@ function doubleClickOnCanvas() {
       let stateID = getNewStateId();
       states.push(new State(stateID, mouseX / globalScaleFactor, mouseY / globalScaleFactor, stateRadius));
       states[states.length - 1].selected = true;
-      selectedObject = { object: states[states.length - 1], index: states.length - 1 };
+      selectedObject = {
+        object: states[states.length - 1],
+        index: states.length - 1,
+      };
 
       createHistory();
     } else {
       if (hoveredObject.object instanceof State) {
         console.log("Double clicked on state");
-        contextMenu.position(globalWindowOffset.x + hoveredObject.object.x, globalWindowOffset.y + hoveredObject.object.y);
+        contextMenu.position(
+          globalWindowOffset.x + hoveredObject.object.x,
+          globalWindowOffset.y + hoveredObject.object.y,
+        );
 
         if (hoveredObject.object.isEndState) {
           select("#set-final-state").html("Definir como Não Final");
@@ -1747,7 +1887,11 @@ function doubleClickOnCanvas() {
 
 // General mouse functions
 function mousePressed() {
-  if ((mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) || cnvIsFocused === "menu" || cnvIsFocused === "export-menu") {
+  if (
+    (mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) ||
+    cnvIsFocused === "menu" ||
+    cnvIsFocused === "export-menu"
+  ) {
     // Click happened inside the canvas
     if (!selectedLeftSidebarButton && cnvIsFocused !== "export-menu") setSelectedMenuButton("select");
 

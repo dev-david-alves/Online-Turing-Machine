@@ -123,7 +123,12 @@ class State {
     // Different fill based on status
     fill("#ffffff");
 
-    drawText(this.x - (this.input.textWidth / 2) * globalScaleFactor, this.y, this.input.allSubstrings, this.input.fontSize * globalScaleFactor);
+    drawText(
+      this.x - (this.input.textWidth / 2) * globalScaleFactor,
+      this.y,
+      this.input.allSubstrings,
+      this.input.fontSize * globalScaleFactor,
+    );
     pop();
   }
 }

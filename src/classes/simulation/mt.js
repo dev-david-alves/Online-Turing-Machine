@@ -4,7 +4,14 @@ const R = 1; // Right
 const S = 0; // Stay
 
 class MT {
-  constructor(Q = new set(), sigma = new set(), gamma = new set(), delta = {}, initialState = 0, endStates = new set()) {
+  constructor(
+    Q = new set(),
+    sigma = new set(),
+    gamma = new set(),
+    delta = {},
+    initialState = 0,
+    endStates = new set(),
+  ) {
     this.Q = Q;
     this.sigma = sigma;
     this.gamma = gamma;

@@ -95,11 +95,15 @@ class TransitionBox {
     this.inputDiv.class("flex items-center justify-center gap-[.5rem]");
     this.readInput = createInput();
     this.readInput.parent(this.inputDiv);
-    this.readInput.class("px-[1rem] py-1 rounded-[.4rem] focus:outline-none w-[8rem] bg-transparent border-2 border-[--color-primary] text-white");
+    this.readInput.class(
+      "px-[1rem] py-1 rounded-[.4rem] focus:outline-none w-[8rem] bg-transparent border-2 border-[--color-primary] text-white",
+    );
     this.readInput.attribute("placeholder", "Lê");
     this.writeInput = createInput();
     this.writeInput.parent(this.inputDiv);
-    this.writeInput.class("px-[1rem] py-1 rounded-[.4rem] focus:outline-none w-[8rem] bg-transparent border-2 border-[--color-primary] text-white");
+    this.writeInput.class(
+      "px-[1rem] py-1 rounded-[.4rem] focus:outline-none w-[8rem] bg-transparent border-2 border-[--color-primary] text-white",
+    );
     this.writeInput.attribute("placeholder", "Escreve");
 
     // Buttons
@@ -112,19 +116,25 @@ class TransitionBox {
 
     this.leftButton = createButton("E");
     this.leftButton.parent(this.directionButtonDiv);
-    this.leftButton.class("w-[3rem] h-[3rem] text-[1.2rem] text-white font-semibold border-[.1rem] border-[--color-primary] rounded-[.4rem] bg-transparent transition-colors");
+    this.leftButton.class(
+      "w-[3rem] h-[3rem] text-[1.2rem] text-white font-semibold border-[.1rem] border-[--color-primary] rounded-[.4rem] bg-transparent transition-colors",
+    );
     this.leftButton.id("leftButton");
     this.leftButton.mousePressed(() => this.switchButtons("left"));
 
     this.rightButton = createButton("D");
     this.rightButton.parent(this.directionButtonDiv);
-    this.rightButton.class("w-[3rem] h-[3rem] text-[1.2rem] text-white font-semibold border-[.1rem] border-[--color-primary] rounded-[5px] bg-transparent transition-colors");
+    this.rightButton.class(
+      "w-[3rem] h-[3rem] text-[1.2rem] text-white font-semibold border-[.1rem] border-[--color-primary] rounded-[5px] bg-transparent transition-colors",
+    );
     this.rightButton.id("rightButton");
     this.rightButton.mousePressed(() => this.switchButtons("right"));
 
     this.stayButton = createButton("P");
     this.stayButton.parent(this.directionButtonDiv);
-    this.stayButton.class("w-[3rem] h-[3rem] text-[1.2rem] text-white font-semibold border-[.1rem] border-[--color-primary] rounded-[5px] bg-transparent transition-colors");
+    this.stayButton.class(
+      "w-[3rem] h-[3rem] text-[1.2rem] text-white font-semibold border-[.1rem] border-[--color-primary] rounded-[5px] bg-transparent transition-colors",
+    );
     this.stayButton.id("stayButton");
     this.stayButton.mousePressed(() => this.switchButtons("stay"));
 
@@ -153,7 +163,13 @@ class TransitionBox {
       let yy = this.rulesY + i * this.offsetBoxY + this.offsetBoxY * 0.8;
       let xx = this.rulesX;
 
-      if (x > xx - this.rules[i].width / 2 && x < xx + this.rules[i].width / 2 && y > yy - this.offsetBoxY / 2 && y < yy + this.offsetBoxY / 2) return i;
+      if (
+        x > xx - this.rules[i].width / 2 &&
+        x < xx + this.rules[i].width / 2 &&
+        y > yy - this.offsetBoxY / 2 &&
+        y < yy + this.offsetBoxY / 2
+      )
+        return i;
     }
 
     return -1;
@@ -177,7 +193,10 @@ class TransitionBox {
       let rule = allReadSubstrings.concat([" ", "→", " "], allWriteSubstrings, [", "], [direction]);
 
       if (!this.ruleAlreadyExists(rule)) {
-        this.rules[this.selectedRuleIndex] = { label: rule, width: calculateTextWidth(-1000, -1000, rule, this.ruleFontSize) };
+        this.rules[this.selectedRuleIndex] = {
+          label: rule,
+          width: calculateTextWidth(-1000, -1000, rule, this.ruleFontSize),
+        };
       }
     } else {
       let { allReadSubstrings, allWriteSubstrings, direction } = this.changeResultText();
@@ -186,7 +205,10 @@ class TransitionBox {
       let rule = allReadSubstrings.concat([" ", "→", " "], allWriteSubstrings, [", "], [direction]);
 
       if (!this.ruleAlreadyExists(rule)) {
-        this.rules.push({ label: rule, width: calculateTextWidth(-1000, -1000, rule, this.ruleFontSize) });
+        this.rules.push({
+          label: rule,
+          width: calculateTextWidth(-1000, -1000, rule, this.ruleFontSize),
+        });
       }
     }
 
@@ -273,7 +295,8 @@ class TransitionBox {
     this.writeInput.style("border-color", "red");
 
     let readIsValid = this.readInput.value().length === 0 || this.readInput.value().match(regex) || texMap[readValue];
-    let writeIsValid = this.writeInput.value().length === 0 || this.writeInput.value().match(regex) || texMap[writeValue];
+    let writeIsValid =
+      this.writeInput.value().length === 0 || this.writeInput.value().match(regex) || texMap[writeValue];
 
     if (readIsValid) {
       this.readInput.style("border-color", "#1762a3");
